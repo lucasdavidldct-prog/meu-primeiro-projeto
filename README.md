@@ -25,12 +25,23 @@ npm test           # roda os testes do servidor
 ## Para voltar todo dia
 
 - **Sequência 🔥:** cada dia jogando o desafio aumenta a sequência e dá moedinhas extras (até +14).
-- **Conquistas 🏅:** 16 conquistas (100 clientes, 5 perfeitos seguidos, amigo dos vovós, uma semana seguida…), cada uma com moedinhas.
+- **Conquistas 🏅:** 23 conquistas (100 clientes, 5 perfeitos seguidos, amigo dos vovós, uma semana seguida…), cada uma com moedinhas.
 - **Clientes especiais:** apressado ⏱️, famoso ⭐, aniversariante 🎂 e desconfiado 🧐 aparecem em 1 de cada 3 clientes e dão bônus.
 - **Comentários:** os clientes elogiam a decoração da lojinha.
 - **⚡ Relâmpago:** quantos clientes você atende em 60 segundos (recorde no aparelho).
+- **🃏 Figurinhas:** toda partida dá um pacotinho com 3 figurinhas (3 estrelas dão mais um). O álbum tem 39 figurinhas em 5 páginas: vizinhança, bichos do Brasil, especiais, rivais e lojas. Há figurinhas comuns, raras e brilhantes. As de rivais e de lojas se ganham vencendo duelos e comprando lojas. Uma figurinha repetida vira 2 moedinhas.
+- **🐾 Bichinho:** a criança adota um cachorrinho ou gatinho (outros bichos ficam na lojinha), dá comida, brinca e dá banho. Essas necessidades baixam devagar com o tempo, sem nenhuma punição. Cuidar do bichinho e jogar dão corações, que sobem o nível dele. Roupinhas custam moedinhas. O bichinho fica no balcão e comemora cada troco certo.
 
-## Níveis
+## Jogar: a loja cresce
+
+O botão verde abre a jornada da loja. A criança começa na **barraquinha de limonada** e compra a próxima loja com moedinhas: carrinho de pipoca (60), barraca da feira (150), padaria (300), mercadinho (500) e supermercado (800). Cada loja tem toldo, produtos e clientes próprios e fica um pouco mais difícil que a anterior. Lojas maiores pagam mais moedinhas. Dá para voltar a qualquer loja já comprada.
+
+Na mesma tela ficam os outros modos:
+
+- **🆚 Duelo contra a CPU:** a criança e o rival atendem o mesmo cliente, e quem der o troco certo primeiro ganha o ponto. Quem fizer 3 pontos vence. Os rivais são 🐢 Tito Tartaruga, 🦊 Rita Raposa e 🐆 Onça Pintada, e vencer um libera o próximo. A velocidade do rival depende de quantas peças o troco tem, e às vezes ele erra a conta e precisa recontar.
+- **⚡ Relâmpago** e **🎯 Treino** (os 3 níveis).
+
+## Níveis (Treino)
 
 Fora do ranking, a criança joga quantas vezes quiser em 3 níveis. Terminar um nível libera o próximo, e o recorde de estrelas fica salvo no aparelho.
 

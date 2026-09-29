@@ -234,6 +234,25 @@ function cleanBackup(d) {
   out.playerId = validPlayer(d.playerId) ? d.playerId : null;
   out.nick = Regras.validNick(d.nick) ? d.nick : null;
   out.uf = Regras.UFS.includes(d.uf) ? d.uf : null;
+  // Lojas, figurinhas, bichinho e rivais vencidos
+  const x = d.extras && typeof d.extras === "object" ? d.extras : {};
+  const int = (v, max) => (Number.isInteger(v) && v >= 0 && v <= max ? v : 0);
+  out.extras = {
+    stores: Array.isArray(x.stores) ? x.stores.filter(idOk).slice(0, 20) : [],
+    store: idOk(x.store) ? x.store : null,
+    stickers: {},
+    packs: int(x.packs, 99),
+    rivals: Array.isArray(x.rivals) ? x.rivals.filter(idOk).slice(0, 20) : [],
+    pet: null,
+  };
+  if (x.stickers && typeof x.stickers === "object") {
+    for (const [k, v] of Object.entries(x.stickers).slice(0, 100)) if (idOk(k) && int(v, 999)) out.extras.stickers[k] = v;
+  }
+  const pt = x.pet;
+  if (pt && typeof pt === "object") {
+    out.extras.pet = { name: int(pt.name, 99), hearts: int(pt.hearts, 1e6), wear: idOk(pt.wear) ? pt.wear : null,
+      acc: Array.isArray(pt.acc) ? pt.acc.filter(idOk).slice(0, 30) : [] };
+  }
   return out;
 }
 

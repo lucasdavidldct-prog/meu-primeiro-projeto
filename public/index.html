@@ -421,6 +421,125 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   .tray.shake, .mascot.bob { animation: none; }
   .note:active, .coin:active, .btn:active { transform: none; }
 }
+
+/* ---------- Loja que cresce ---------- */
+.shop .awning { position: absolute; left: 0; right: 0; top: 0; height: 16px; z-index: 1; background: repeating-linear-gradient(90deg, var(--a1) 0 20px, var(--a2) 20px 40px); }
+.shop .awning::after { content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 8px;
+  background: radial-gradient(circle at 10px 0, var(--a1) 7px, transparent 7.5px) 0 0 / 40px 8px repeat-x, radial-gradient(circle at 30px 0, var(--a2) 7px, transparent 7.5px) 0 0 / 40px 8px repeat-x; }
+.shop .awning ~ .deco-top, .shop .awning ~ .deco-emoji { top: 22px; }
+.app.game .shop .awning { height: 10px; }
+.app.game .shop .awning ~ .deco-top, .app.game .shop .awning ~ .deco-emoji { top: 15px; }
+.shop .store-sign { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); z-index: 3; white-space: nowrap;
+  font-family: var(--font-display); font-weight: 800; font-size: 0.85rem; line-height: 1.3; color: #fff; padding: 0 10px; border-radius: 8px; background: rgba(31,43,82,.35); }
+.app.game .shop .store-sign { font-size: 0.65rem; bottom: 2px; padding: 0 6px; left: auto; right: 8px; transform: none; }
+.btn.glow { animation: glow 1.4s ease-in-out infinite; }
+@keyframes glow { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.12); transform: scale(1.02); } }
+.journey { gap: 12px; }
+.path { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.stop { border: 0; border-radius: 14px; padding: 6px 2px; background: var(--bg); display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; filter: grayscale(1); opacity: .55; }
+.stop .ic { font-size: 1.5rem; line-height: 1.1; }
+.stop .nm { font-size: 0.6rem; font-weight: 800; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stop .st { font-size: 0.62rem; font-weight: 800; color: var(--muted); }
+.stop.own { filter: none; opacity: 1; background: #e6f8ec; }
+.stop.next { filter: none; opacity: 1; background: #fff4cf; box-shadow: 0 0 0 2px var(--sun); }
+.stop.here { background: var(--accent); box-shadow: 0 3px 0 var(--accent-dark); }
+.stop.here .nm, .stop.here .st { color: #fff; }
+.modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.modes.two { grid-template-columns: repeat(2, 1fr); }
+.mode { border: 0; border-radius: 18px; padding: 12px 6px; background: var(--surface); box-shadow: 0 4px 0 var(--line); display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; }
+.mode:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+.mode .ic { font-size: 2rem; line-height: 1.1; }
+.mode .ic.big { font-size: 4rem; }
+.mode strong { font-family: var(--font-display); font-size: 1.05rem; line-height: 1.1; }
+.mode small { font-size: 0.72rem; color: var(--muted); font-weight: 800; }
+.mode.duel { background: #ffe9e4; box-shadow: 0 4px 0 #f5b8a8; }
+.mode.flash { background: #efe6ff; box-shadow: 0 4px 0 #c9b3f5; }
+.mode.train { background: #e6f8ec; box-shadow: 0 4px 0 #a9dfbb; }
+/* Início: 4 atalhos */
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.tile { position: relative; border: 0; border-radius: 18px; padding: 10px 8px; background: var(--surface); box-shadow: 0 4px 0 var(--line); display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center; min-width: 0; }
+.tile:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+.tile .ic { font-size: 2rem; line-height: 1.15; }
+.tile b { font-family: var(--font-display); font-size: 1.1rem; line-height: 1.1; }
+.tile small { font-size: 0.75rem; color: var(--muted); font-weight: 800; }
+.badge { position: absolute; top: -6px; right: -4px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: var(--pink); color: #fff; font-weight: 800; font-size: 0.85rem; display: grid; place-items: center; box-shadow: 0 2px 0 #c2185b; animation: bob 1.6s ease-in-out infinite; }
+/* ---------- Duelo ---------- */
+.duel-bar { display: grid; gap: 4px; }
+.duel-score { display: flex; justify-content: center; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; line-height: 1.1; }
+.duel-score b { font-size: 1.3rem; }
+.duel-score .vs { color: var(--muted); }
+.cpu-prog { position: relative; height: 20px; border-radius: 10px; background: var(--surface); overflow: hidden; box-shadow: 0 2px 0 var(--line); }
+.cpu-prog i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--rc); opacity: .55; transition: width .1s linear; }
+.cpu-prog span { position: relative; display: block; text-align: center; font-size: 0.75rem; font-weight: 800; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
+.level.rival { background: var(--surface); box-shadow: 0 5px 0 var(--rc); }
+/* ---------- Figurinhas ---------- */
+.stk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stk { position: relative; border-radius: 14px; background: #fff; padding: 8px 6px 6px; box-shadow: 0 3px 0 var(--line), inset 0 0 0 3px #fff, inset 0 0 0 4px var(--line); display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; cursor: pointer; }
+.stk-art { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 10px; overflow: hidden; background: var(--bg); }
+.stk-art .customer { position: static; width: 100%; height: 100%; animation: none; }
+.stk-art .emo { width: 100%; height: 100%; display: grid; place-items: center; font-size: 2.6rem; line-height: 1; }
+.stk-art .emo svg { width: 80%; height: 80%; }
+.stk-art .emo.pink { filter: hue-rotate(290deg) saturate(1.4); }
+.stk-art .emo.gold { background: radial-gradient(circle, #fff6c2, #f0c04a); }
+.stk-art .emo.gold svg { filter: sepia(1) saturate(3) brightness(1.05); }
+.stk-art .emo.rainbow { background: linear-gradient(135deg, #ff6b6b, #ffb347, #ffe66d, #7ee081, #4fb3ff, #9b6bff); }
+.stk-art .emo.rainbow svg { animation: hue 3s linear infinite; }
+@keyframes hue { to { filter: hue-rotate(360deg); } }
+.stk-art .emo.shopart { background: linear-gradient(180deg, transparent 30%, #fff1cf 30%); position: relative; }
+.stk-art .emo.shopart::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 30%; background: repeating-linear-gradient(90deg, var(--a1) 0 14px, var(--a2) 14px 28px); }
+.stk-nm { font-size: 0.72rem; font-weight: 800; line-height: 1.15; }
+.stk-num { position: absolute; top: 2px; left: 2px; min-width: 18px; padding: 0 4px; border-radius: 8px; background: #fff; font-size: 0.62rem; font-weight: 800; color: var(--muted); z-index: 1; text-align: center; }
+.stk-rep { position: absolute; top: 3px; right: 6px; font-size: 0.7rem; font-weight: 800; color: var(--accent-dark); }
+.stk.r { box-shadow: 0 3px 0 #9ec5ff, inset 0 0 0 3px #fff, inset 0 0 0 4px #4fb3ff; }
+.stk.b { box-shadow: 0 3px 0 #f0c04a, inset 0 0 0 3px #fff, inset 0 0 0 4px #f0c04a; overflow: hidden; }
+.stk.b::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.75) 45%, transparent 60%) -150% 0 / 250% 100% no-repeat; animation: shine 2.4s ease-in-out infinite; }
+@keyframes shine { to { background-position: 150% 0; } }
+.stk.miss { background: #eef3fb; box-shadow: inset 0 0 0 2px var(--line); }
+.stk.miss .stk-art { background: transparent; border: 2px dashed var(--line); }
+.stk.miss .q { font-family: var(--font-display); font-size: 2rem; color: var(--line); font-weight: 800; }
+.stk.miss .stk-nm { color: var(--muted); font-size: 0.65rem; }
+.stk-tag { position: absolute; top: -8px; right: -6px; background: var(--pink); color: #fff; border-radius: 999px; font-size: 0.7rem; font-weight: 800; padding: 2px 7px; z-index: 2; }
+.stk-tag.rep { background: var(--muted); }
+.pack { border: 0; border-radius: 22px; padding: 14px; display: flex; align-items: center; gap: 14px; text-align: left; font-family: var(--font-display); font-weight: 800; font-size: 1.35rem;
+  background: linear-gradient(135deg, #ff6b9a, #ffc93c 50%, #4fb3ff); color: #fff; box-shadow: 0 5px 0 #c2185b; animation: glow 1.4s ease-in-out infinite; }
+.pack:active { transform: translateY(4px); box-shadow: 0 1px 0 #c2185b; }
+.pack .pk-foil { width: 70px; height: 90px; border-radius: 10px; background: linear-gradient(135deg, #fff, #d8e6ff 40%, #fff 60%, #ffe7f0); color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 2rem; line-height: 1; transform: rotate(-6deg); box-shadow: 0 3px 0 rgba(0,0,0,.2); }
+.pack .pk-foil b { font-size: 0.6rem; text-align: center; line-height: 1.1; margin-top: 4px; }
+.pack .pk-txt { display: flex; flex-direction: column; text-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.pack small { font-family: var(--font-body); font-size: 0.85rem; }
+.reveal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; perspective: 600px; }
+.flip { animation: flipIn .6s var(--d) both cubic-bezier(.2,.9,.3,1.3); }
+@keyframes flipIn { from { transform: rotateY(90deg) scale(.6); opacity: 0; } to { transform: rotateY(0) scale(1); opacity: 1; } }
+/* ---------- Bichinho ---------- */
+.pet-body { position: relative; display: inline-block; line-height: 1; }
+.pet-body .acc { position: absolute; left: 50%; transform: translateX(-50%); font-size: 0.55em; line-height: 1; }
+.pet-body .acc.head { top: -0.38em; }
+.pet-body .acc.eyes { top: 0.18em; font-size: 0.5em; }
+.pet-body .acc.neck { bottom: -0.05em; font-size: 0.5em; }
+.shop .pet .pet-need { position: absolute; top: -0.9em; right: -0.5em; font-size: 0.55em; animation: bob 1.6s ease-in-out infinite; }
+.shop .pet.cheer { animation: cheer .6s ease-out; }
+@keyframes cheer { 0%,100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-22px) rotate(-10deg); } 60% { transform: translateY(0) rotate(8deg); } }
+.tile .ic .pet-body { font-size: 2rem; }
+.pet-stage { position: relative; height: 210px; border-radius: 24px; overflow: hidden; background: linear-gradient(180deg, #bfe9ff 0 70%, #8fd47a 70%); display: grid; place-items: end start; padding: 0 0 18px 24px; }
+.pet-big { font-size: 6.5rem; line-height: 1; transform-origin: 50% 100%; animation: petIdle 2.8s ease-in-out infinite; }
+.pet-big.sad { filter: saturate(.6); }
+.pet-big.jump { animation: cheer .7s ease-out 2; }
+.pet-big.chomp { animation: chomp .25s ease-in-out 4; }
+.pet-big.wiggle { animation: nope .5s 2; }
+@keyframes chomp { 50% { transform: scale(1.08, .9); } }
+.pet-stage .say { width: calc(100% - 170px); }
+.float-emo { position: absolute; left: 90px; bottom: 90px; font-size: 2.2rem; animation: floatUp 1.2s ease-out forwards; pointer-events: none; z-index: 4; }
+@keyframes floatUp { from { transform: translateY(0) scale(.6); opacity: 1; } to { transform: translateY(-110px) scale(1.3); opacity: 0; } }
+.needs { gap: 8px; }
+.need { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 10px; font-weight: 800; font-size: 0.95rem; }
+.need .bar { height: 12px; border-radius: 6px; }
+.need .bar span { border-radius: 6px; transition: width .4s; }
+.center { text-align: center; }
+.pet-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.pet-actions .mode { padding: 10px 4px; }
+.pet-actions .mode .ic { font-size: 1.8rem; }
+.pet-actions .mode strong { font-size: 0.9rem; }
+.pet-actions .mode small { font-size: 0.62rem; }
 </style>
 </head>
 <body>
@@ -557,12 +676,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     ["uma mochila 🎒", 6000, 20000], ["um fone de ouvido 🎧", 5000, 20000], ["um relógio ⌚", 6000, 20000], ["um tênis 👟", 12000, 20000],
     ["um skate 🛹", 10000, 20000], ["um patinete 🛴", 15000, 20000], ["um violão infantil 🎸", 15000, 20000], ["uma barraca ⛺", 15000, 20000],
   ];
-  function productFor(price, pick) {
-    let fits = PRODUCTS.filter(([, lo, hi]) => price >= lo && price <= hi);
-    if (!fits.length) fits = [PRODUCTS.reduce((best, p) => (Math.abs(p[2] - price) < Math.abs(best[2] - price) ? p : best))];
+  function productFor(price, pick, list = PRODUCTS) {
+    let fits = list.filter(([, lo, hi]) => price >= lo && price <= hi);
+    if (!fits.length) fits = [list.reduce((best, p) => (Math.abs(p[2] - price) < Math.abs(best[2] - price) ? p : best))];
     return pick(fits)[0];
   }
-  function makeCustomer(seedStr, round, price) {
+  function makeCustomer(seedStr, round, price, products = PRODUCTS) {
     let h = 2166136261;
     for (const ch of seedStr + "#" + round) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
     const pick = (arr) => { h = Math.imul(h ^ (h >>> 13), 0x5bd1e995) >>> 0; return arr[h % arr.length]; };
@@ -573,7 +692,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       hair: group === "vovo" ? pick(["#d9d9d9", "#bdbdbd", "#f0f0f0"]) : pick(HAIRS),
       shirt: pick(SHIRTS), glasses: group === "vovo" || pick([0, 0, 0, 0, 1]) === 1,
       freckles: pick([0, 0, 0, 1]) === 1,
-      item: productFor(price, pick),
+      item: productFor(price, pick, products),
       // 1 em cada 3 clientes é especial
       special: pick([null, null, null, null, null, null, null, null, "apressado", "famoso", "aniversario", "desconfiado"]),
     };
@@ -896,12 +1015,16 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function decorLayers(d = deco()) {
     const wall = findItem("parede", d.parede), shelf = findItem("prateleira", d.prateleira);
     const pet = findItem("bichinho", d.bichinho), orn = findItem("enfeite", d.enfeite);
-    const toy = findItem("antigo", d.antigo), reg = findItem("estado", d.estado);
-    return `<div class="wall" style="background:${wall.css}"></div>
+    const toy = findItem("antigo", d.antigo), reg = findItem("estado", d.estado), st = activeStore();
+    // Lojas ao ar livre (barraquinha, pipoca, feira) mostram céu e grama, se a parede não foi trocada
+    const wallCss = st.out && d.parede === DEFAULT_DECO.parede ? "linear-gradient(180deg, #bfe9ff 0 66%, #8fd47a 66%)" : wall.css;
+    const shelfTxt = shelf.text || st.props;
+    return `<div class="wall" style="background:${wallCss}"></div>
+      ${storeLayers(st)}
       ${orn.css ? `<div class="deco-top" style="background-image:${orn.css}"></div>` : ""}
       ${orn.text ? `<div class="deco-emoji" aria-hidden="true">${orn.text}</div>` : ""}
-      ${shelf.text ? `<div class="shelf" aria-hidden="true">${graphemes(shelf.text).map((ch) => `<span>${ch}</span>`).join("")}</div>` : ""}
-      ${pet.text ? `<div class="pet" aria-hidden="true">${pet.text}</div>` : ""}
+      <div class="shelf" aria-hidden="true">${graphemes(shelfTxt).map((ch) => `<span>${ch}</span>`).join("")}</div>
+      ${pet.text ? `<div class="pet" aria-hidden="true">${petHtml()}${petNeedy() ? `<span class="pet-need">💭</span>` : ""}</div>` : ""}
       ${toy.text ? `<div class="on-counter toy" aria-hidden="true">${toy.text}</div>` : ""}
       ${reg.text ? `<div class="on-counter uf" aria-hidden="true">${reg.text}</div>` : ""}`;
   }
@@ -914,8 +1037,11 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function coinsFor(res) {
     const extras = (res.bonus || 0) + (res.streakBonus || 0);
     if (res.flash) return res.results.length * 2 + extras;
+    if (res.duel) return res.duel.me * 2 + (res.duel.won ? 10 : 0) + (res.firstWin ? 20 : 0) + extras;
     const perRound = res.results.reduce((a, r) => a + 2 + (isPerfect(r) ? 2 : 0), 0);
-    return perRound + starsOf(res.results) * 3 + (res.firstToday ? 10 : 0) + extras;
+    // Lojas maiores pagam um pouco mais
+    const bigger = res.career ? STORES.findIndex((x) => x.id === res.career) * 2 : 0;
+    return perRound + starsOf(res.results) * 3 + (res.firstToday ? 10 : 0) + bigger + extras;
   }
 
   // ---------- Estatísticas, sequência de dias 🔥 e conquistas 🏅 ----------
@@ -947,7 +1073,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   const ACHIEVEMENTS = [
     { id: "c1", icon: "🪙", name: "Primeiro troco", desc: "Atenda o seu primeiro cliente", prog: (s) => [s.served, 1], reward: 5 },
     { id: "c100", icon: "🧑‍🤝‍🧑", name: "100 clientes", desc: "Atenda 100 clientes", prog: (s) => [s.served, 100], reward: 30 },
-    { id: "c500", icon: "🏪", name: "Dono do mercadinho", desc: "Atenda 500 clientes", prog: (s) => [s.served, 500], reward: 80 },
+    { id: "c500", icon: "🏪", name: "Caixa de ouro", desc: "Atenda 500 clientes", prog: (s) => [s.served, 500], reward: 80 },
     { id: "p10", icon: "✨", name: "Troco caprichado", desc: "Dê 10 trocos perfeitos", prog: (s) => [s.perfect, 10], reward: 15 },
     { id: "r5", icon: "🔥", name: "Mão quente", desc: "5 trocos perfeitos seguidos", prog: (s) => [s.bestRun, 5], reward: 20 },
     { id: "r15", icon: "💎", name: "Imparável", desc: "15 trocos perfeitos seguidos", prog: (s) => [s.bestRun, 15], reward: 50 },
@@ -961,6 +1087,13 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     { id: "f20", icon: "🌩️", name: "Super relâmpago", desc: "Atenda 20 clientes no modo relâmpago", prog: (s) => [s.flashBest, 20], reward: 60 },
     { id: "b1", icon: "🛍️", name: "Primeira compra", desc: "Compre algo na lojinha", prog: (s) => [s.bought, 1], reward: 5 },
     { id: "b15", icon: "🧺", name: "Colecionador", desc: "Compre 15 itens na lojinha", prog: (s) => [s.bought, 15], reward: 50 },
+    { id: "loja2", icon: "🍿", name: "A loja cresceu!", desc: "Compre a sua segunda loja", prog: () => [ownedStores().size, 2], reward: 15 },
+    { id: "super", icon: "🛒", name: "Dono do supermercado", desc: "Chegue até o supermercado", prog: () => [ownedStores().has("super") ? 1 : 0, 1], reward: 100 },
+    { id: "fig20", icon: "🃏", name: "Álbum pela metade", desc: "Junte 20 figurinhas diferentes", prog: () => [stickerCount(), 20], reward: 30 },
+    { id: "figall", icon: "📖", name: "Álbum completo", desc: "Complete o álbum de figurinhas", prog: () => [stickerCount(), STICKERS.length], reward: 150 },
+    { id: "pet20", icon: "💛", name: "Melhor amigo", desc: "Ganhe 20 corações do bichinho", prog: () => [pet().hearts, 20], reward: 20 },
+    { id: "duel1", icon: "🆚", name: "Primeiro duelo", desc: "Vença um duelo", prog: () => [beaten().size ? 1 : 0, 1], reward: 15 },
+    { id: "duel3", icon: "🐆", name: "Mais rápido que a onça", desc: "Vença a Onça Pintada no duelo", prog: () => [beaten().has("pintada") ? 1 : 0, 1], reward: 60 },
   ];
   // Confere conquistas novas, paga as moedinhas e devolve a lista das novas
   function checkAchievements() {
@@ -979,6 +1112,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   const brandHtml = () => `<span class="brand">${mascot("happy", "")}Troco Certo</span>`;
   const isPerfect = (r) => r.wrong === 0 && r.pieces === r.best;
   function starsFor(res) {
+    if (res.duel) return res.duel.won ? (res.duel.cpu === 0 ? 3 : 2) : 1;
     if (res.flash) return res.results.length >= 12 ? 3 : res.results.length >= 7 ? 2 : 1;
     return starsOf(res.results);
   }
@@ -1024,8 +1158,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const dailySub = paused ? "você tem um desafio pela metade" : played ? "🐣 🦊 🦁 · bora bater seu recorde?" : "🐣 🦊 🦁 · vale pro ranking do Brasil";
     const streak = streakNow(), playedToday = (store("tc-streak") || {}).last === todayKey();
     const greet = greeted ? "O que vamos fazer agora?"
+      : packs() ? `Oi! Você tem ${packs()} ${packs() === 1 ? "pacotinho" : "pacotinhos"} de figurinhas pra abrir! Toque em Figurinhas.`
+      : petNeedy() ? `Oi! ${petName()} está com saudade. Vai lá cuidar dele!`
       : streak && !playedToday ? `Oi! Você está com ${streak} ${streak === 1 ? "dia" : "dias seguidos"}! Jogue o desafio do dia no botão amarelo pra não perder a sequência!`
-      : `Oi! Eu sou a Moedinha! No botão verde, você joga os níveis. No amarelo, ${played ? "tente bater o seu recorde de hoje" : "tem o desafio do dia, valendo ranking"}. E no branco, decora a sua lojinha!`;
+      : `Oi! Eu sou a Moedinha! No botão verde, você joga e faz a sua loja crescer. No amarelo, ${played ? "tente bater o seu recorde de hoje" : "tem o desafio do dia, valendo ranking"}. Embaixo tem figurinhas, bichinho e a lojinha pra decorar!`;
     greeted = true;
     app.replaceChildren(el(`
       <header class="top">${brandHtml()}<span class="left">
@@ -1038,10 +1174,14 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         </div>
       </section>
       <nav class="menu">
-        <button class="btn" id="levels"><span class="big">${`<svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#fff" opacity=".25"/><path d="M15 11 L30 20 L15 29 Z" fill="#fff"/></svg>`}</span><span class="txt">Jogar<small>🐣 🦊 🦁 níveis</small></span></button>
+        <button class="btn" id="levels"><span class="big">${`<svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#fff" opacity=".25"/><path d="M15 11 L30 20 L15 29 Z" fill="#fff"/></svg>`}</span><span class="txt">Jogar<small>${activeStore().icon} ${activeStore().name} · duelo · relâmpago</small></span></button>
         <button class="btn sun" id="go"><span class="big">🏆</span><span class="txt">Desafio do dia<small>${dailySub}</small></span></button>
-        <button class="btn ghost" id="shopBtn"><span class="big">🏪</span><span class="txt">Minha lojinha<small>🪙 ${bank()} moedinhas</small></span></button>
-        <button class="btn ghost" id="albumBtn"><span class="big">🏅</span><span class="txt">Conquistas<small>${(store("tc-ach") || []).length} de ${ACHIEVEMENTS.length}</small></span></button>
+        <div class="tiles">
+          <button class="tile" id="stkBtn"><span class="ic">🃏</span><b>Figurinhas</b><small>${stickerCount()} de ${STICKERS.length}</small>${packs() ? `<span class="badge">${packs()}</span>` : ""}</button>
+          <button class="tile" id="petBtn"><span class="ic">${petEmoji() ? petHtml() : "🐾"}</span><b>${petEmoji() ? petName() : "Bichinho"}</b><small>${!petEmoji() ? "adote um!" : petNeedy() ? "precisa de você!" : "❤️ " + pet().hearts}</small>${petNeedy() || !petEmoji() ? `<span class="badge">!</span>` : ""}</button>
+          <button class="tile" id="shopBtn"><span class="ic">🎨</span><b>Lojinha</b><small>🪙 ${bank()} moedinhas</small></button>
+          <button class="tile" id="albumBtn"><span class="ic">🏅</span><b>Conquistas</b><small>${(store("tc-ach") || []).length} de ${ACHIEVEMENTS.length}</small></button>
+        </div>
         ${played ? `<button class="btn ghost" id="rankBtn"><span class="big">🏆</span><span class="txt">Ranking de hoje<small>${DAILY[played.dif || "dificil"].emoji} seu melhor: ${fmtTime(played.score.total)}</small></span></button>` : ""}
       </nav>
       ${togglesHtml()}
@@ -1053,7 +1193,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     document.getElementById("go").addEventListener("click", () => { enterScreen(); store("tc-onboarded") ? renderDailyPick() : renderWelcome(1); });
     const rankBtn = document.getElementById("rankBtn");
     if (rankBtn) rankBtn.addEventListener("click", () => { enterScreen(); renderResult({ ...played, dif: played.dif || "dificil", fromMenu: true }); });
-    document.getElementById("levels").addEventListener("click", () => { enterScreen(); renderLevels(); });
+    document.getElementById("levels").addEventListener("click", () => { enterScreen(); renderPlay(); });
+    document.getElementById("stkBtn").addEventListener("click", () => { enterScreen(); renderStickers(); });
+    document.getElementById("petBtn").addEventListener("click", () => { enterScreen(); renderPet(); });
     document.getElementById("shopBtn").addEventListener("click", () => { enterScreen(); renderShop(); });
     document.getElementById("albumBtn").addEventListener("click", () => { enterScreen(); renderAlbum(); });
     bindHold(document.getElementById("parents"), () => { enterScreen(); renderParents(); });
@@ -1303,7 +1445,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     stopTick();
     app.replaceChildren(el(`
       <header class="top">
-        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🎮 Níveis</span></span>
+        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🎯 Treino</span></span>
       </header>
       <div class="talk">
         ${mascot("happy", "mascot bob")}
@@ -1318,19 +1460,487 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
           <span class="lv-stars" aria-label="Recorde: ${bestOf(k)} de 3 estrelas">${starsHtml(bestOf(k))}</span>
         </button>`;
       }).join("")}
-        <button class="level flash-card" data-flash="1">
-          <span class="lv-emoji">⚡</span>
-          <span class="lv-body"><strong>Relâmpago</strong><small>Quantos clientes você atende em 60 segundos?${Number(store("tc-flash-best")) ? ` Recorde: ${store("tc-flash-best")}` : ""}</small></span>
-        </button>
       </div>
       ${togglesHtml()}
     `));
     bindToggles();
-    document.querySelector("[data-flash]").addEventListener("click", () => { sfx.tap(); speak("Relâmpago! Atenda o máximo de clientes em 60 segundos. Valendo!"); startGame("relampago"); });
-    document.getElementById("back").addEventListener("click", goBack);
+    document.getElementById("back").addEventListener("click", () => renderPlay());
     speak("Escolha um nível! O pintinho é o mais fácil, a raposa é médio e o leão é o mais difícil.");
     app.querySelectorAll(".level[data-lv]:not(.locked)").forEach((b) => b.addEventListener("click", () => { sfx.tap(); startGame(b.dataset.lv); }));
     app.querySelectorAll(".level.locked").forEach((b) => { b.disabled = false; b.addEventListener("click", () => { sfx.bad(); speak("Esse ainda está trancado. Termine o nível anterior pra abrir!"); }); });
+  }
+
+  // ---------- Minha loja cresce: da barraquinha ao supermercado ----------
+  // Cada loja tem os seus produtos, o seu toldo e fica um pouco mais difícil que a anterior.
+  const STORES = [
+    { id: "limonada", open: "a barraquinha", name: "Barraquinha de limonada", short: "Limonada", a: "a", icon: "🍋", price: 0, out: true, easy: true,
+      awning: ["#ffd23f", "#fffbe6"], props: "🍋🥤🍋🧊",
+      tiers: [{ min: 50, max: 300, step: 50, pays: [500] }, { min: 100, max: 400, step: 50, pays: [500] }, { min: 50, max: 450, step: 50, pays: [500] },
+        { min: 150, max: 450, step: 50, pays: [500] }, { min: 100, max: 400, step: 50, pays: [500] }],
+      products: [["uma limonada 🍋", 100, 450], ["um suco de laranja 🍊", 150, 450], ["uma água 💧", 50, 300], ["um cookie 🍪", 50, 300],
+        ["um caldo de cana 🥤", 150, 450], ["um bolinho 🧁", 100, 450]] },
+    { id: "pipoca", open: "o carrinho", name: "Carrinho de pipoca", short: "Pipoca", a: "o", icon: "🍿", price: 60, out: true, easy: true,
+      awning: ["#ff5a5f", "#ffffff"], props: "🍿🍭🍿🌭",
+      tiers: [{ min: 200, max: 800, step: 50, pays: [1000] }, { min: 100, max: 450, step: 50, pays: [500] }, { min: 300, max: 900, step: 50, pays: [1000] },
+        { min: 250, max: 950, step: 50, pays: [1000] }, { min: 500, max: 1500, step: 100, pays: [2000] }],
+      products: [["uma pipoca doce 🍿", 200, 900], ["uma pipoca salgada 🍿", 200, 900], ["um algodão-doce 🍭", 300, 1000], ["uma maçã do amor 🍎", 300, 1000],
+        ["um churros", 400, 1200], ["um cachorro-quente 🌭", 500, 1500], ["uma paçoca 🥜", 100, 450], ["um refri 🥤", 300, 900]] },
+    { id: "feira", open: "a barraca", name: "Barraca da feira", short: "Feira", a: "a", icon: "🍉", price: 150, out: true,
+      awning: ["#2fbf71", "#eaffea"], props: "🍌🍎🍉🥕",
+      tiers: [{ min: 150, max: 900, step: 25, pays: [1000] }, { min: 300, max: 1800, step: 25, pays: [2000] }, { min: 200, max: 900, step: 25, pays: [1000, 2000] },
+        { min: 500, max: 1900, step: 25, pays: [2000] }, { min: 800, max: 1900, step: 25, pays: [2000] }],
+      products: [["umas bananas 🍌", 150, 900], ["umas maçãs 🍎", 300, 1500], ["umas laranjas 🍊", 300, 1500], ["uma melancia 🍉", 800, 1900],
+        ["um abacaxi 🍍", 400, 1200], ["uma alface 🥬", 150, 600], ["uns tomates 🍅", 300, 1200], ["umas cenouras 🥕", 200, 900],
+        ["umas uvas 🍇", 500, 1900], ["uns morangos 🍓", 500, 1900], ["uma dúzia de ovos 🥚", 800, 1900], ["uns milhos 🌽", 150, 900]] },
+    { id: "padaria", open: "a padaria", name: "Padaria", short: "Padaria", a: "a", icon: "🥖", price: 300,
+      awning: ["#c8864a", "#fff1dc"], props: "🥖🥐🍞🧁",
+      tiers: [{ min: 150, max: 900, pays: [1000, 2000] }, { min: 300, max: 1900, pays: [2000] }, { min: 600, max: 1900, pays: [2000, 5000] },
+        { min: 1200, max: 4600, pays: [5000] }, { min: 500, max: 1900, pays: [2000], extraCoins: true }],
+      products: [["uns pães franceses 🥖", 150, 1200], ["um pão de queijo 🧀", 150, 900], ["um sonho 🍩", 300, 900], ["um bolo 🎂", 2000, 4600],
+        ["umas coxinhas 🍗", 500, 1900], ["um café com leite ☕", 300, 900], ["um pão de forma 🍞", 600, 1500], ["uma torta 🥧", 2000, 4600],
+        ["um sanduíche 🥪", 800, 2500], ["um croissant 🥐", 400, 1500], ["uns biscoitos 🍪", 500, 1900], ["um bolo de cenoura 🥕", 1500, 4000]] },
+    { id: "mercadinho", open: "o mercadinho", name: "Mercadinho", short: "Mercadinho", a: "o", icon: "🏪", price: 500,
+      awning: ["#4f8ef7", "#ffffff"], props: "🥫🧃🧻🍫",
+      tiers: [{ min: 1000, max: 4500, pays: [5000], extraCoins: true }, { min: 2000, max: 4800, pays: [5000, 10000] }, { min: 3000, max: 9600, pays: [10000], extraCoins: true },
+        { min: 1200, max: 4600, pays: [5000] }, { min: 4000, max: 9900, pays: [10000], extraCoins: true }],
+      products: [["um pacote de arroz 🍚", 1500, 4500], ["um feijão", 1000, 3000], ["um café ☕", 1000, 3500], ["um azeite 🫒", 2000, 4800],
+        ["uns produtos de limpeza 🧽", 2000, 6000], ["uma ração pro cachorro 🦴", 3000, 9900], ["uns chocolates 🍫", 1000, 4500],
+        ["uma cesta de frutas 🧺", 3000, 8000], ["um sabão em pó", 1500, 4500], ["uma carne pro churrasco 🥩", 4000, 9900], ["um lanche da escola 🧃", 1000, 3000]] },
+    { id: "super", open: "o supermercado", name: "Supermercado", short: "Supermercado", a: "o", icon: "🛒", price: 800,
+      awning: ["#9b6bff", "#ffe14d"], props: "🛒🥫🧴🍪",
+      tiers: LEVELS.avancado.tiers,
+      products: [["as compras da semana 🛒", 8000, 19900], ["um ventilador", 10000, 19900], ["uma panela 🍳", 4000, 12000], ["um liquidificador", 10000, 19900],
+        ["uma bola de futebol ⚽", 4000, 12000], ["um jogo de tabuleiro 🎲", 4000, 15000], ["um ursinho 🧸", 3000, 12000], ["uma mochila 🎒", 6000, 19900],
+        ["um patinete 🛴", 15000, 19900], ["um fone de ouvido 🎧", 5000, 19900], ["um carrinho de controle remoto 🏎️", 8000, 19900], ["um kit de pintura 🎨", 2000, 8000]] },
+  ];
+  const bang = (t) => (/[!?]$/.test(t) ? t : t + "!");
+  const storeById = (id) => STORES.find((s) => s.id === id) || STORES[0];
+  const ownedStores = () => new Set(["limonada", ...(store("tc-stores") || [])]);
+  const activeStore = () => { const id = store("tc-store"); return ownedStores().has(id) ? storeById(id) : STORES[0]; };
+  const storeBest = (id) => Number(store("tc-store-best-" + id)) || 0;
+  const nextStore = () => STORES.find((s) => !ownedStores().has(s.id)) || null;
+  // Toldo e placa da loja atual (vão dentro de .shop, junto com a decoração)
+  function storeLayers(st) {
+    return `<div class="awning" style="--a1:${st.awning[0]};--a2:${st.awning[1]}"></div>
+      <div class="store-sign" aria-hidden="true">${st.icon} ${st.short}</div>`;
+  }
+
+  // ---------- Duelo contra a CPU ----------
+  // Você e o rival atendem o mesmo cliente; quem der o troco certo primeiro ganha o ponto. 3 pontos vencem.
+  const RIVALS = [
+    { id: "tito", name: "Tito", full: "Tito Tartaruga", a: "o", emoji: "🐢", color: "#5aa05a", desc: "Devagar e sempre… mas não se distraia!",
+      tiers: LEVELS.iniciante.tiers, base: 10000, per: 2000, slip: 0.25, easy: true },
+    { id: "rita", name: "Rita", full: "Rita Raposa", a: "a", emoji: "🦊", color: "#f08a24", desc: "Esperta e rapidinha!",
+      tiers: LEVELS.intermediario.tiers, base: 6500, per: 1300, slip: 0.15 },
+    { id: "pintada", name: "Pintada", full: "Onça Pintada", a: "a", emoji: "🐆", color: "#d99a00", desc: "A caixa mais rápida do Brasil!",
+      tiers: LEVELS.avancado.tiers, base: 4200, per: 900, slip: 0.08 },
+  ];
+  const rivalOf = (id) => RIVALS.find((r) => r.id === id) || RIVALS[0];
+  const beaten = () => new Set(store("tc-rivals") || []);
+  const rivalOpen = (i) => i === 0 || beaten().has(RIVALS[i - 1].id);
+
+  // ---------- Figurinhas ----------
+  const STICKER_PAGES = [
+    { id: "viz", name: "Vizinhança", icon: "🏘️" }, { id: "bichos", name: "Bichos", icon: "🌳" }, { id: "esp", name: "Especiais", icon: "✨" },
+    { id: "rivais", name: "Rivais", icon: "🆚" }, { id: "lojas", name: "Lojas", icon: "🏪" },
+  ];
+  const person = (name, group, style, skin, hair, shirt, more = {}) =>
+    ({ name, group, style, skin: SKINS[skin], hair, shirt: SHIRTS[shirt], glasses: false, freckles: false, special: null, ...more });
+  const emojiArt = (e, bg, cls = "") => `<span class="emo ${cls}" style="background:${bg}">${e}</span>`;
+  const STICKERS = [
+    ...[
+      person("Léo", "menino", "bone", 0, HAIRS[1], 1), person("Bia", "menina", "chiquinha", 2, HAIRS[0], 0, { freckles: true }),
+      person("Davi", "menino", "black", 4, HAIRS[4], 3), person("Malu", "menina", "longo", 1, HAIRS[2], 4),
+      person("Vó Cida", "vovo", "vovo", 1, "#d9d9d9", 5, { glasses: true }), person("Théo", "menino", "curto", 3, HAIRS[0], 6, { glasses: true }),
+      person("Nina", "menina", "coque", 0, HAIRS[3], 2), person("Vô Zé", "vovo", "vovo", 3, "#bdbdbd", 7, { glasses: true }),
+      person("Duda", "menina", "black", 3, HAIRS[4], 6), person("Gael", "menino", "curto", 2, HAIRS[1], 2, { freckles: true }),
+      person("Vó Nena", "vovo", "vovo", 4, "#f0f0f0", 3, { glasses: true }), person("Heitor", "menino", "bone", 1, HAIRS[2], 5),
+    ].map((c, i) => ({ id: "viz-" + (i + 1), page: "viz", name: c.name, rar: i % 4 === 3 ? "r" : "c", art: () => customerSvg(c, "happy") })),
+    ...[[200, "Tartaruga", "c"], [500, "Garça", "c"], [1000, "Arara", "c"], [2000, "Mico-leão", "r"], [5000, "Onça-pintada", "r"], [10000, "Garoupa", "c"]]
+      .map(([c, name, rar]) => ({ id: "bicho-" + c, page: "bichos", name, rar, art: () => `<span class="emo" style="background:${DENOMS.find((d) => d.c === c).color}">${noteSvg(c)}</span>` })),
+    ...[["capivara", "Capivara", "🦫", "c", "#cdeac0"], ["preguica", "Bicho-preguiça", "🦥", "r", "#e6dccb"], ["jacare", "Jacaré", "🐊", "c", "#bfe3f2"],
+      ["coruja", "Coruja", "🦉", "r", "#d8d2f0"], ["boto", "Boto-cor-de-rosa", "🐬", "r", "#ffd6e5"], ["perereca", "Perereca", "🐸", "c", "#d9f7c9"]]
+      .map(([id, name, e, rar, bg]) => ({ id: "bicho-" + id, page: "bichos", name, rar, art: () => emojiArt(e, bg, id === "boto" ? "pink" : "") })),
+    ...["famoso", "aniversario", "apressado", "desconfiado"].map((sp, i) => ({
+      id: "esp-" + sp, page: "esp", rar: "r", name: SPECIALS[sp].chip.replace(/^\S+\s/, "").replace(/^./, (x) => x.toUpperCase()),
+      art: () => customerSvg(person("", ["menina", "menino", "menina", "vovo"][i], ["longo", "curto", "chiquinha", "vovo"][i], i + 1, i === 3 ? "#d9d9d9" : HAIRS[i], i * 2, { special: sp }), "happy"),
+    })),
+    { id: "esp-dourada", page: "esp", rar: "b", name: "Moedinha Dourada", art: () => `<span class="emo gold">${mascot("wow", "")}</span>` },
+    { id: "esp-arcoiris", page: "esp", rar: "b", name: "Moedinha Arco-íris", art: () => `<span class="emo rainbow">${mascot("happy", "")}</span>` },
+    ...RIVALS.map((r) => ({ id: "rival-" + r.id, page: "rivais", rar: "r", name: r.full, how: `Vença ${r.a} ${r.full} no duelo`, art: () => emojiArt(r.emoji, r.color) })),
+    ...STORES.map((s) => ({ id: "loja-" + s.id, page: "lojas", rar: "c", name: s.name, how: `Tenha ${s.a} ${s.name.toLowerCase()}`,
+      art: () => `<span class="emo shopart" style="--a1:${s.awning[0]};--a2:${s.awning[1]}">${s.icon}</span>` })),
+  ];
+  const PACK_PAGES = ["viz", "bichos", "esp"];
+  const stickers = () => store("tc-stickers") || {};
+  const stickerCount = () => Object.keys(stickers()).filter((id) => STICKERS.some((s) => s.id === id)).length;
+  function giveSticker(id) {
+    const s = stickers(), isNew = !s[id];
+    s[id] = (s[id] || 0) + 1;
+    store("tc-stickers", s);
+    return isNew;
+  }
+  const packs = () => Number(store("tc-packs")) || 0;
+  const addPacks = (n) => store("tc-packs", Math.max(0, packs() + n));
+  const RAR_WEIGHT = { c: 10, r: 3, b: 1 };
+  function drawSticker() {
+    const pool = STICKERS.filter((s) => PACK_PAGES.includes(s.page));
+    let t = Math.random() * pool.reduce((a, s) => a + RAR_WEIGHT[s.rar], 0);
+    for (const s of pool) { t -= RAR_WEIGHT[s.rar]; if (t <= 0) return s; }
+    return pool[0];
+  }
+  // Abre um pacotinho: 3 figurinhas; a repetida vira 2 moedinhas
+  function openPack() {
+    addPacks(-1);
+    return [0, 1, 2].map(() => {
+      const s = drawSticker(), isNew = giveSticker(s.id);
+      if (!isNew) setBank(bank() + 2);
+      return { s, isNew };
+    });
+  }
+
+  // ---------- Bichinho de estimação ----------
+  const PET_NAMES = ["Pipoca", "Paçoca", "Bolinha", "Tico", "Farofa", "Biscoito", "Pingo", "Mel", "Chiclete", "Cocada", "Pudim", "Jujuba"];
+  const PET_ACC = [
+    { id: "flor", name: "Florzinha", icon: "🌸", price: 10, pos: "head" }, { id: "laco", name: "Laço", icon: "🎀", price: 15, pos: "head" },
+    { id: "cachecol", name: "Cachecol", icon: "🧣", price: 20, pos: "neck" }, { id: "cartola", name: "Cartola", icon: "🎩", price: 25, pos: "head" },
+    { id: "oculos", name: "Óculos", icon: "🕶️", price: 30, pos: "eyes" }, { id: "capelo", name: "Formatura", icon: "🎓", price: 40, pos: "head" },
+    { id: "coroa", name: "Coroa", icon: "👑", price: 60, pos: "head" },
+  ];
+  const pet = () => ({ name: 0, fedAt: 0, playedAt: 0, bathAt: 0, hearts: 0, acc: [], wear: null, ...(store("tc-pet") || {}) });
+  const savePet = (p) => store("tc-pet", p);
+  const petEmoji = () => findItem("bichinho", deco().bichinho).text || "";
+  const petName = () => PET_NAMES[pet().name] || PET_NAMES[0];
+  // 100 = satisfeito. Fica cheio por 4 horas e depois cai devagar (comida e brincadeira em ~1 dia, banho em ~2 dias)
+  const need = (at, hours) => Math.max(0, Math.min(100, Math.round(100 - (((Date.now() - (at || 0)) / 3600000) - 4) * (100 / hours))));
+  const petNeeds = (p = pet()) => ({ food: need(p.fedAt, 20), fun: need(p.playedAt, 20), bath: need(p.bathAt, 44) });
+  const petNeedy = () => { if (!petEmoji()) return false; const n = petNeeds(); return Math.min(n.food, n.fun, n.bath) < 30; };
+  const petLevel = (h = pet().hearts) => 1 + Math.floor(h / 10);
+  const accOf = (id) => PET_ACC.find((a) => a.id === id);
+  function petHtml(p = pet(), cls = "") {
+    const a = p.wear && accOf(p.wear);
+    return `<span class="pet-body ${cls}">${petEmoji()}${a ? `<span class="acc ${a.pos}">${a.icon}</span>` : ""}</span>`;
+  }
+  function addHearts(n) { const p = pet(); p.hearts += n; savePet(p); }
+
+  // ---------- Tela: Jogar (loja que cresce + outros modos) ----------
+  function renderPlay(msg) {
+    app.classList.remove("game");
+    stopTick();
+    if (!stickers()["loja-limonada"]) giveSticker("loja-limonada");
+    const st = activeStore(), own = ownedStores(), nx = nextStore(), money = bank();
+    const line = msg || (nx && money >= nx.price
+      ? `Você já tem moedinhas pra comprar ${nx.a} ${nx.name.toLowerCase()}! Toque no botão amarelo!`
+      : `Hora de abrir ${st.a} ${st.name.toLowerCase()}! Toque no botão verde.`);
+    app.replaceChildren(el(`
+      <header class="top">
+        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🎮 Jogar</span></span>
+        <span class="pill bank" aria-label="Suas moedinhas">🪙 ${money}</span>
+      </header>
+      <section class="shop preview" id="shop">
+        ${decorLayers()}
+        ${mascot("happy", "mascot")}
+        <p class="say pop" id="say" data-speak="${line}">${line}</p>
+        <div class="counter" style="${counterStyle()}"></div>
+      </section>
+      <button class="btn" id="open"><span>▶ Abrir ${st.open}</span><small>${st.icon} ${st.name} · recorde ${"⭐".repeat(storeBest(st.id)) || "—"}</small></button>
+      <section class="card journey">
+        <p class="eyebrow">Sua loja vai crescer</p>
+        <div class="path">${STORES.map((s) => {
+          const mine = own.has(s.id), here = s.id === st.id, isNext = nx && s.id === nx.id;
+          return `<button class="stop${mine ? " own" : ""}${here ? " here" : ""}${isNext ? " next" : ""}" data-store="${s.id}" aria-label="${s.name}">
+            <span class="ic">${mine || isNext ? s.icon : "❔"}</span><span class="nm">${s.short}</span>
+            <span class="st">${here ? "aqui" : mine ? "✔" : "🪙" + s.price}</span></button>`;
+        }).join("")}</div>
+        ${nx ? `<button class="btn ${money >= nx.price ? "sun glow" : "ghost"}" id="grow"><span>${nx.icon} Crescer: ${nx.name}</span>
+          <small>${money >= nx.price ? `🪙 ${nx.price} · você já pode comprar!` : `🪙 ${nx.price} · faltam ${nx.price - money} moedinhas`}</small></button>`
+          : `<p class="unlock center">🏆 Você é dono do supermercado!</p>`}
+      </section>
+      <p class="eyebrow">Mais jeitos de jogar</p>
+      <div class="modes">
+        <button class="mode duel" id="duelBtn"><span class="ic">🆚</span><strong>Duelo</strong><small>contra a CPU</small></button>
+        <button class="mode flash" id="flashBtn"><span class="ic">⚡</span><strong>Relâmpago</strong><small>${Number(store("tc-flash-best")) ? "recorde " + store("tc-flash-best") : "60 segundos"}</small></button>
+        <button class="mode train" id="lvBtn"><span class="ic">🎯</span><strong>Treino</strong><small>🐣 🦊 🦁</small></button>
+      </div>
+      ${togglesHtml()}
+    `));
+    bindToggles();
+    speak(line);
+    document.getElementById("back").addEventListener("click", goBack);
+    document.getElementById("open").addEventListener("click", () => { sfx.tap(); startGame("loja", null, { store: st.id }); });
+    document.getElementById("duelBtn").addEventListener("click", () => { sfx.tap(); renderDuelPick(); });
+    document.getElementById("flashBtn").addEventListener("click", () => { sfx.tap(); speak("Relâmpago! Atenda o máximo de clientes em 60 segundos. Valendo!"); startGame("relampago"); });
+    document.getElementById("lvBtn").addEventListener("click", () => { sfx.tap(); renderLevels(); });
+    const grow = document.getElementById("grow");
+    if (grow) grow.addEventListener("click", buyNextStore);
+    app.querySelectorAll("[data-store]").forEach((b) => b.addEventListener("click", () => {
+      const s = storeById(b.dataset.store);
+      if (ownedStores().has(s.id)) {
+        sfx.tap(); store("tc-store", s.id);
+        return renderPlay(`Agora você está ${s.a === "a" ? "na" : "no"} ${s.name.toLowerCase()}! ${s.icon}`);
+      }
+      if (nx && s.id === nx.id) return buyNextStore();
+      sfx.bad();
+      const say = document.getElementById("say");
+      say.textContent = `Essa ainda está longe! Primeiro compre ${nx.a} ${nx.name.toLowerCase()}.`;
+      speak(say.textContent);
+    }));
+  }
+  function buyNextStore() {
+    const nx = nextStore();
+    if (!nx) return;
+    if (bank() < nx.price) {
+      sfx.bad();
+      const say = document.getElementById("say");
+      say.textContent = `Faltam ${nx.price - bank()} moedinhas pra ${nx.a} ${nx.name.toLowerCase()}. Atenda mais clientes! 💪`;
+      speak(say.textContent);
+      return;
+    }
+    setBank(bank() - nx.price);
+    store("tc-stores", [...ownedStores()].filter((id) => id !== "limonada").concat(nx.id));
+    store("tc-store", nx.id);
+    giveSticker("loja-" + nx.id);
+    const fresh = checkAchievements();
+    sfx.achieve();
+    renderPlay(`Uau! Agora você tem ${nx.a === "a" ? "uma" : "um"} ${nx.name.toLowerCase()}! 🎉 E ganhou a figurinha da loja!` +
+      (fresh.length ? ` Conquista: ${fresh[0].icon} ${bang(fresh[0].name)}` : ""));
+    confetti(document.getElementById("shop"));
+    setTimeout(() => confetti(document.getElementById("shop")), 300);
+  }
+
+  // ---------- Tela: escolher o rival do duelo ----------
+  function renderDuelPick() {
+    app.classList.remove("game");
+    stopTick();
+    const won = beaten();
+    const line = "Duelo! Você e o rival atendem o mesmo cliente. Quem der o troco certo primeiro ganha o ponto. Quem fizer 3 pontos vence!";
+    app.replaceChildren(el(`
+      <header class="top">
+        <span class="left"><button class="back" id="back" aria-label="Voltar">←</button><span class="brand">🆚 Duelo</span></span>
+      </header>
+      <div class="talk">${mascot("happy", "mascot bob")}<p class="bubble" data-speak="${line}">Quem der o troco certo primeiro ganha o ponto. 3 pontos vencem! <span class="hear">🔈</span></p></div>
+      <div class="levels">${RIVALS.map((r, i) => {
+        const open = rivalOpen(i);
+        return `<button class="level rival${open ? "" : " locked"}" data-rival="${r.id}" style="--rc:${r.color}">
+          <span class="lv-emoji">${open ? r.emoji : "🔒"}</span>
+          <span class="lv-body"><strong>${r.full}</strong><small>${open ? r.desc : `Vença ${RIVALS[i - 1].a} ${RIVALS[i - 1].full} pra liberar`}</small></span>
+          ${won.has(r.id) ? `<span class="lv-stars" aria-label="Vencido">🏆</span>` : ""}
+        </button>`;
+      }).join("")}</div>
+    `));
+    speak(line);
+    document.getElementById("back").addEventListener("click", () => renderPlay());
+    app.querySelectorAll("[data-rival]").forEach((b, i) => b.addEventListener("click", () => {
+      if (!rivalOpen(i)) { sfx.bad(); return speak(`Primeiro vença ${RIVALS[i - 1].a} ${RIVALS[i - 1].full}!`); }
+      sfx.tap();
+      const r = rivalOf(b.dataset.rival);
+      speak(`Valendo! Você contra ${r.a} ${r.full}!`);
+      startGame("duelo", null, { rival: r.id });
+    }));
+  }
+  function paintDuel(msg) {
+    const D = S && S.duel;
+    if (!D) return;
+    const me = document.getElementById("dMe"), cpu = document.getElementById("dCpu"), m = document.getElementById("dMsg");
+    if (me) me.textContent = D.me;
+    if (cpu) cpu.textContent = D.cpu;
+    if (m && msg) m.textContent = msg;
+  }
+  // O rival terminou de contar antes: ponto dele
+  function cpuScores() {
+    const D = S.duel, R = rivalOf(D.rival), r = S.rounds[S.i];
+    D.cpu++;
+    S.busy = true; S.pausedAt = performance.now(); S.roundWrong = 0;
+    app.classList.add("busy");
+    play("bad", 0.7);
+    setCustomer("normal", `Valeu, ${R.name}! ${R.emoji}`, "", "bump");
+    flash(`${R.emoji} ${R.name} foi mais rápid${R.a}! O troco era ${brl(r.change)}.`, "bad");
+    speak(`${R.name} foi mais rápid${R.a}! O troco era ${falaValor(r.change)}.`);
+    const bar = document.getElementById("dProg");
+    if (bar) bar.style.width = "100%";
+    paintDuel(`Ponto d${R.a} ${R.name}!`);
+    advance(1600, 2300);
+  }
+
+  // ---------- Tela: figurinhas ----------
+  let stkPage = "viz";
+  function stickerCard(s, n, isNew) {
+    const have = n > 0 || isNew !== undefined;
+    const num = STICKERS.indexOf(s) + 1;
+    return `<div class="stk ${s.rar}${have ? "" : " miss"}" ${have ? `data-speak="${s.name}"` : `data-speak="${s.how || "Figurinha " + num + ". Ainda falta essa!"}"`}>
+      <span class="stk-num">${num}</span>
+      <div class="stk-art">${have ? s.art() : `<span class="q">?</span>`}</div>
+      <span class="stk-nm">${have ? s.name : s.how || "?"}</span>
+      ${isNew === true ? `<span class="stk-tag">NOVA!</span>` : isNew === false ? `<span class="stk-tag rep">repetida +2🪙</span>` : n > 1 ? `<span class="stk-rep">x${n}</span>` : ""}
+    </div>`;
+  }
+  function renderStickers(revealed) {
+    app.classList.remove("game");
+    stopTick();
+    const got = stickers(), total = STICKERS.length, have = stickerCount(), pk = packs();
+    const page = STICKER_PAGES.find((p) => p.id === stkPage);
+    const list = STICKERS.filter((s) => s.page === stkPage);
+    const line = revealed ? "Olha só o que veio no pacotinho!"
+      : pk ? `Você tem ${pk} ${pk === 1 ? "pacotinho" : "pacotinhos"} pra abrir! Toque no pacotinho.`
+      : `Você já tem ${have} de ${total} figurinhas! Jogue pra ganhar pacotinhos.`;
+    app.replaceChildren(el(`
+      <header class="top">
+        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🃏 Figurinhas</span></span>
+        <span class="pill">${have}/${total}</span>
+      </header>
+      <div class="talk">${mascot(revealed ? "wow" : "happy", "mascot bob")}<p class="bubble" data-speak="${line}">${line} <span class="hear">🔈</span></p></div>
+      ${revealed ? `<section class="reveal">${revealed.map((x, k) => `<div class="flip" style="--d:${k * 0.35}s">${stickerCard(x.s, 1, x.isNew)}</div>`).join("")}</section>
+        <button class="btn" id="keep">${pk ? `🃏 Abrir outro (${pk})` : "📖 Guardar no álbum"}</button>`
+      : pk ? `<button class="pack" id="openPack"><span class="pk-foil">🃏<b>TROCO<br>CERTO</b></span><span class="pk-txt">Abrir pacotinho<small>você tem ${pk}</small></span></button>` : ""}
+      <div class="tabs" role="tablist">${STICKER_PAGES.map((p) => {
+        const n = STICKERS.filter((s) => s.page === p.id && got[s.id]).length, t = STICKERS.filter((s) => s.page === p.id).length;
+        return `<button class="tab" role="tab" data-page="${p.id}" aria-selected="${p.id === stkPage}">${p.icon} ${p.name} ${n}/${t}</button>`;
+      }).join("")}</div>
+      <div class="stk-grid">${list.map((s) => stickerCard(s, got[s.id] || 0)).join("")}</div>
+      <p class="pause-note">${stkPage === "rivais" ? "Vença os rivais no Duelo pra ganhar essas!" : stkPage === "lojas" ? "Cada loja nova que você compra vira figurinha!" : "Cada partida dá um pacotinho. 3 estrelas dão mais um! ✨ As brilhantes são raras."}</p>
+    `));
+    speak(line);
+    document.getElementById("back").addEventListener("click", goBack);
+    const op = document.getElementById("openPack");
+    if (op) op.addEventListener("click", doOpenPack);
+    const keep = document.getElementById("keep");
+    if (keep) keep.addEventListener("click", () => (packs() ? doOpenPack() : (sfx.tap(), renderStickers())));
+    app.querySelectorAll("[data-page]").forEach((b) => b.addEventListener("click", () => { sfx.tap(); stkPage = b.dataset.page; renderStickers(); }));
+    app.querySelectorAll(".stk").forEach((b) => b.addEventListener("click", () => speak(b.dataset.speak)));
+  }
+  function doOpenPack() {
+    if (!packs()) return;
+    const got = openPack();
+    stkPage = got[0].s.page;
+    renderStickers(got);
+    const fresh = checkAchievements();
+    const shiny = got.some((x) => x.s.rar === "b" && x.isNew);
+    play("note", 0.9);
+    setTimeout(() => (shiny ? sfx.special("famoso") : got.some((x) => x.isNew) ? sfx.achieve() : sfx.ok()), 900);
+    if (fresh.length) setTimeout(sfx.achieve, 2200);
+    setTimeout(() => {
+      const names = got.map((x) => x.s.name + (x.isNew ? ", nova" : ""));
+      speak(`Você ganhou: ${names.join("; ")}!${fresh.length ? ` E a conquista ${bang(fresh[0].name)}` : ""}`);
+    }, 1200);
+  }
+
+  // ---------- Tela: bichinho ----------
+  function renderPet(msg, anim = "") {
+    app.classList.remove("game");
+    stopTick();
+    if (!petEmoji()) return renderAdopt();
+    const p = pet(), n = petNeeds(p), lv = petLevel(p.hearts), toNext = lv * 10 - p.hearts, money = bank(), name = petName();
+    const low = Math.min(n.food, n.fun, n.bath);
+    const line = msg || (n.food < 30 ? `${name} está com fominha! 🥺` : n.bath < 30 ? `${name} está precisando de um banho! 🫧`
+      : n.fun < 30 ? `${name} quer brincar! ⚽` : low < 70 ? `${name} está feliz de te ver! 😊` : `${name} te adora! 💛`);
+    const bar = (icon, label, v) => `<div class="need"><span>${icon} ${label}</span><span class="bar"><span style="width:${v}%;background:${v < 30 ? "var(--bad)" : v < 70 ? "var(--sun)" : "var(--accent)"}"></span></span></div>`;
+    app.replaceChildren(el(`
+      <header class="top">
+        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🐾 ${name}</span></span>
+        <span class="pill" aria-label="Corações">❤️ ${p.hearts}</span>
+      </header>
+      <section class="pet-stage" id="stage">
+        <div class="pet-big ${low < 30 ? "sad" : ""} ${anim}" id="petBig">${petHtml(p)}</div>
+        <p class="say pop" id="say">${line}</p>
+      </section>
+      <div class="card needs">${bar("🍖", "Comida", n.food)}${bar("😊", "Alegria", n.fun)}${bar("🫧", "Banho", n.bath)}
+        <p class="eyebrow center">Nível ${lv} · faltam ${toNext} ❤️ pro nível ${lv + 1}</p></div>
+      <div class="pet-actions">
+        <button class="mode" data-act="food"><span class="ic">🍖</span><strong>Comida</strong><small>grátis</small></button>
+        <button class="mode" data-act="play"><span class="ic">⚽</span><strong>Brincar</strong><small>grátis</small></button>
+        <button class="mode" data-act="bath"><span class="ic">🫧</span><strong>Banho</strong><small>grátis</small></button>
+        <button class="mode" data-act="treat"><span class="ic">🦴</span><strong>Petisco</strong><small>🪙 3 · +2 ❤️</small></button>
+      </div>
+      <p class="eyebrow">Roupinhas <span class="muted">· você tem 🪙 ${money}</span></p>
+      <div class="items">${[{ id: null, name: "Nada", icon: "🚫", price: 0 }, ...PET_ACC].map((a) => {
+        const have = !a.id || p.acc.includes(a.id), on = p.wear === a.id;
+        return `<button class="item${on ? " on" : ""}${!have && a.price > money ? " poor" : ""}" data-acc="${a.id || ""}">
+          <span class="sw">${a.icon}</span><span class="nm">${a.name}</span><span class="pr">${on ? "✔ Usando" : have ? "Usar" : "🪙 " + a.price}</span></button>`;
+      }).join("")}</div>
+      <div class="row">
+        <button class="btn ghost small" id="rename">🎲 Outro nome</button>
+        <button class="btn ghost small" id="swap">🐾 Outro bichinho</button>
+      </div>
+      <p class="pause-note">${name} torce por você no caixa: cada partida dá 1 ❤️!</p>
+    `));
+    speak(line);
+    document.getElementById("back").addEventListener("click", goBack);
+    document.getElementById("rename").addEventListener("click", () => {
+      const q = pet(); q.name = (q.name + 1 + Math.floor(Math.random() * (PET_NAMES.length - 1))) % PET_NAMES.length; savePet(q);
+      sfx.tap(); renderPet(`Agora eu me chamo ${petName()}! 😄`);
+    });
+    document.getElementById("swap").addEventListener("click", () => { sfx.tap(); shopTab = "bichinho"; renderShop("Escolha o seu bichinho! 🐾"); });
+    app.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => petAct(b.dataset.act)));
+    app.querySelectorAll("[data-acc]").forEach((b) => b.addEventListener("click", () => petWear(b.dataset.acc || null)));
+  }
+  function petAct(act) {
+    const p = pet(), n = petNeeds(p), name = petName();
+    const floatUp = (e) => {
+      const st = document.getElementById("stage"), f = document.createElement("span");
+      f.className = "float-emo"; f.textContent = e; st.appendChild(f);
+    };
+    let gain = 0, text = "", anim = "", emo = "";
+    if (act === "treat") {
+      if (bank() < 3) { sfx.bad(); const say = document.getElementById("say"); say.textContent = "Faltam moedinhas pro petisco. Dê comida, que é grátis! 🍖"; return speak(say.textContent); }
+      setBank(bank() - 3); p.fedAt = Date.now(); gain = 2; text = `Nhac! ${name} amou o petisco! 😋`; anim = "chomp"; emo = "🦴";
+    } else if (act === "food") {
+      gain = n.food < 90 ? 1 : 0; p.fedAt = Date.now(); anim = "chomp"; emo = "🍖";
+      text = gain ? `Nham nham! Obrigado! 😋` : `${name} está de barriga cheia! Que tal brincar? ⚽`;
+    } else if (act === "play") {
+      gain = n.fun < 90 ? 1 : 0; p.playedAt = Date.now(); anim = "jump"; emo = "⚽";
+      text = gain ? `Eba! Que brincadeira boa! 🥳` : `Hehe! Mais uma vez! ⚽`;
+    } else {
+      gain = n.bath < 90 ? 1 : 0; p.bathAt = Date.now(); anim = "wiggle"; emo = "🫧";
+      text = gain ? `Que cheirinho bom! ✨` : `Já tô limpinho! 🫧`;
+    }
+    const lvBefore = petLevel(p.hearts);
+    p.hearts += gain; savePet(p);
+    const up = petLevel(p.hearts) > lvBefore;
+    const fresh = checkAchievements();
+    if (up) text = `${name} subiu pro nível ${petLevel(p.hearts)}! 🎉`;
+    else if (fresh.length) text += ` Conquista: ${fresh[0].icon} ${bang(fresh[0].name)}`;
+    renderPet(text, anim);
+    floatUp(emo);
+    if (gain) setTimeout(() => floatUp("❤️"), 350);
+    play(act === "play" ? "tap" : act === "bath" ? "door" : "note", 0.8, act === "play" ? 0.8 : 1);
+    if (up || fresh.length) { sfx.achieve(); confetti(document.getElementById("stage")); }
+  }
+  function petWear(id) {
+    const p = pet(), a = id && accOf(id);
+    if (a && !p.acc.includes(id)) {
+      if (bank() < a.price) {
+        sfx.bad();
+        const say = document.getElementById("say");
+        say.textContent = `Faltam ${a.price - bank()} moedinhas pra ${a.name.toLowerCase()}. Atenda mais clientes! 💪`;
+        return speak(say.textContent);
+      }
+      setBank(bank() - a.price); p.acc.push(id);
+    }
+    p.wear = id; savePet(p);
+    sfx.ok();
+    renderPet(a ? `Olha que chique com ${a.name.toLowerCase()}! ✨` : "Assim também fica lindo! 💛", "jump");
+  }
+  function renderAdopt() {
+    const line = "Adote um bichinho! Ele vai morar na sua loja e torcer por você. Escolha um:";
+    app.replaceChildren(el(`
+      <header class="top"><span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🐾 Bichinho</span></span></header>
+      <div class="talk">${mascot("happy", "mascot bob")}<p class="bubble" data-speak="${line}">${line} <span class="hear">🔈</span></p></div>
+      <div class="modes two">
+        <button class="mode" data-adopt="a-cao"><span class="ic big">🐶</span><strong>Cachorrinho</strong><small>grátis</small></button>
+        <button class="mode" data-adopt="a-gato"><span class="ic big">🐱</span><strong>Gatinho</strong><small>grátis</small></button>
+      </div>
+      <p class="pause-note">Outros bichinhos (tartaruga, coelho, dinossauro, unicórnio…) ficam na Lojinha.</p>
+    `));
+    speak(line);
+    document.getElementById("back").addEventListener("click", goBack);
+    app.querySelectorAll("[data-adopt]").forEach((b) => b.addEventListener("click", () => {
+      store("tc-owned", [...owned(), b.dataset.adopt]);
+      store("tc-deco", { ...deco(), bichinho: b.dataset.adopt });
+      const p = pet(); p.name = Math.floor(Math.random() * PET_NAMES.length); p.bathAt = Date.now(); savePet(p);
+      sfx.achieve();
+      renderPet(`Oi! Eu sou ${petName()}! Tô com fominha… 🥺`, "jump");
+      confetti(document.getElementById("stage"));
+    }));
   }
 
   // ---------- Navegação (botão voltar da tela e do Android) ----------
@@ -1379,15 +1989,20 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   window.addEventListener("pagehide", saveProgress);
 
   // level: "iniciante" / "intermediario" / "avancado" / "relampago", ou null para o desafio do dia (com dif)
-  function startGame(level, dif = "facil") {
+  // "loja" (com extra.store) e "duelo" (com extra.rival) também são modos de treino, fora do ranking
+  function startGame(level, dif = "facil", extra = {}) {
     const flashMode = level === "relampago";
+    const career = level === "loja" ? storeById(extra.store) : null;
+    const rival = level === "duelo" ? rivalOf(extra.rival) : null;
     const training = !!level;
     const seed = training ? `nivel-${level}-${Date.now()}` : dailySeed(todayKey(), dif);
-    const tiers = flashMode ? LEVELS.intermediario.tiers : training ? LEVELS[level].tiers : DAILY[dif].tiers;
+    const tiers = flashMode ? LEVELS.intermediario.tiers : career ? career.tiers : rival ? rival.tiers : training ? LEVELS[level].tiers : DAILY[dif].tiers;
     S = {
-      training, level, flash: flashMode, dif: training ? null : dif, seed, tiers,
+      training, level: career || rival ? null : level, flash: flashMode, dif: training ? null : dif, seed, tiers,
       rounds: makeRounds(seed, tiers), i: 0, tray: {}, results: [], bonus: 0, bonusList: [],
-      easy: level === "iniciante" || (!training && dif === "facil"),
+      products: career ? career.products : PRODUCTS, career: career ? career.id : null,
+      duel: rival ? { rival: rival.id, me: 0, cpu: 0, cpuMs: 0 } : null, replay: [level, dif, extra],
+      easy: level === "iniciante" || (!training && dif === "facil") || !!(career && career.easy) || !!(rival && rival.easy),
       wrong: 0, roundStart: performance.now(), gameStart: performance.now(),
       uf: store("tc-uf") || null, day: todayKey(),
       attempt: training ? null : Math.random().toString(36).slice(2, 10) + Date.now().toString(36),
@@ -1435,6 +2050,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     app.querySelectorAll("[data-daily]").forEach((b) => b.addEventListener("click", () => { sfx.tap(); startGame(null, b.dataset.daily); }));
   }
 
+  const custNow = () => makeCustomer(S.seed, S.i, S.rounds[S.i].price, S.products);
   function traySum() { return Object.entries(S.tray).reduce((a, [c, n]) => a + Number(c) * n, 0); }
   function trayCount() { return Object.values(S.tray).reduce((a, n) => a + n, 0); }
 
@@ -1453,16 +2069,22 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function askSpeech(c, r) { return `Quero ${c.item}. Custa ${falaValor(r.price)}. Toma ${falaValor(r.paid)}.`; }
 
   function setCustomer(mood, text, kind = "", anim = "") {
-    const c = makeCustomer(S.seed, S.i, S.rounds[S.i].price);
+    const c = custNow();
     document.getElementById("cust").innerHTML = customerSvg(c, mood, anim);
     const say = document.getElementById("say");
     say.className = "say " + kind;
-    const who = S.flash ? `${c.name} · cliente ${S.i + 1}` : `${c.name} · cliente ${S.i + 1} de 5`;
+    const who = S.flash || S.duel ? `${c.name} · cliente ${S.i + 1}` : `${c.name} · cliente ${S.i + 1} de 5`;
     say.innerHTML = `<span class="who">${who}${c.special ? ` <span class="sp-chip">${SPECIALS[c.special].chip}</span>` : ""}</span>${text}`;
   }
 
   const retrigger = (node, cls) => { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); };
 
+  function modeLabel() {
+    if (S.flash) return "⚡ Relâmpago";
+    if (S.career) { const st = storeById(S.career); return st.icon + " " + st.short; }
+    if (S.duel) { const r = rivalOf(S.duel.rival); return "🆚 " + r.full; }
+    return S.training ? LEVELS[S.level].emoji + " " + LEVELS[S.level].name : DAILY[S.dif].emoji + " Desafio do dia";
+  }
   // Monta a tela do caixa uma vez; depois só o cliente e o visor mudam
   function renderRound() {
     app.classList.add("game");
@@ -1470,7 +2092,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       <header class="top">
         <span class="left">
           <button class="back" id="back" aria-label="${S.training ? "Sair do nível" : "Pausar e voltar ao início"}">←</button>
-          <span class="brand">${S.flash ? "⚡ Relâmpago" : S.training ? LEVELS[S.level].emoji + " " + LEVELS[S.level].name : DAILY[S.dif].emoji + " Desafio do dia"}</span>
+          <span class="brand">${modeLabel()}</span>
         </span>
         <span class="left">
           <button class="back" id="sound" aria-label="Ligar ou desligar o som">${soundOn() ? "🔊" : "🔇"}</button>
@@ -1478,6 +2100,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         </span>
       </header>
       ${S.flash ? `<div class="flash-count" id="fcount">⚡ <b>0</b> clientes atendidos</div>`
+        : S.duel ? `<div class="duel-bar" style="--rc:${rivalOf(S.duel.rival).color}">
+            <div class="duel-score"><span>🙂 Você <b id="dMe">0</b></span><span class="vs">x</span><span><b id="dCpu">0</b> ${rivalOf(S.duel.rival).emoji} ${rivalOf(S.duel.rival).name}</span></div>
+            <div class="cpu-prog"><i id="dProg"></i><span id="dMsg">contando o troco…</span></div></div>`
         : `<div class="round-dots" id="dots">${S.rounds.map(() => "<span></span>").join("")}</div>`}
       <section class="shop" id="shop">
         ${decorLayers()}
@@ -1528,7 +2153,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   // Um cliente novo chega ao caixa
   function showCustomer() {
     ping("inicio", S.i);
-    const r = S.rounds[S.i], c = makeCustomer(S.seed, S.i, S.rounds[S.i].price);
+    const r = S.rounds[S.i], c = custNow();
     document.querySelectorAll("#dots span").forEach((d, k) => { d.className = k < S.i ? "done" : k === S.i ? "now" : ""; });
     const fc = document.querySelector("#fcount b");
     if (fc) { fc.textContent = S.results.length; retrigger(fc, "bump"); }
@@ -1536,6 +2161,15 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const intro = c.special ? SPECIALS[c.special].hello : decorComment(c);
     S.intro = intro;
     if (c.special) setTimeout(() => { if (S && S.rounds[S.i] === r) sfx.special(c.special); }, 250);
+    if (S.duel) {
+      // Tempo do rival: base + um pouco por peça do troco, com variação; às vezes ele erra a conta
+      const R = rivalOf(S.duel.rival), D = S.duel;
+      D.cpuMs = (R.base + R.per * minPieces(r.change)) * (0.85 + Math.random() * 0.3);
+      D.slip = Math.random() < R.slip; D.slipped = false;
+      const bar = document.getElementById("dProg");
+      if (bar) bar.style.width = "0%";
+      paintDuel(`${R.name} está contando o troco…`);
+    }
     setCustomer("normal", (intro ? intro + " " : "") + askText(c, r), "", "enter");
     const talk = (intro ? intro + " " : "") + askSpeech(c, r);
     document.getElementById("say").dataset.speak = talk;
@@ -1589,14 +2223,14 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       retrigger(document.getElementById("register"), "shake");
       lcdVal.textContent = "ERRO!";
       lcdLn.className = "ln q"; retrigger(lcdLn, "bad");
-      flash(S.easy ? `Dica: o troco é ${brl(r.change)} 😉` : S.flash ? "Tente de novo! (-3s)" : "Tente de novo! (+5s)", "bad");
+      flash(S.easy ? `Dica: o troco é ${brl(r.change)} 😉` : S.flash ? "Tente de novo! (-3s)" : S.duel ? "Tente de novo, rápido!" : "Tente de novo! (+5s)", "bad");
       const sadLine = sum > r.change ? "Hmm... você me deu troco a mais! 🤔" : "Hmm... acho que faltou troco! 🤔";
       setCustomer("sad", sadLine, "bad", "nope");
       speak(S.easy ? `${sadLine} Dica: o troco é ${falaValor(r.change)}.` : sadLine);
       const cur = S, round = S.i, token = (S.token = (S.token || 0) + 1);
       setTimeout(() => {
         if (S !== cur || S.i !== round || S.token !== token || S.busy) return;
-        setCustomer("normal", askText(makeCustomer(S.seed, S.i, r.price), r));
+        setCustomer("normal", askText(custNow(), r));
         lcdVal.textContent = "?"; lcdLn.className = "ln q";
       }, 1600);
       return;
@@ -1611,10 +2245,13 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const fast = S.flash;
     app.classList.add("busy");
     sfx.ok(); buzz(40);
+    if (S.duel) { S.duel.me++; paintDuel("Ponto seu! 🎉"); }
+    const petEl = document.querySelector(".shop .pet");
+    if (petEl) retrigger(petEl, "cheer");
     lcdVal.textContent = brl(r.change) + " ✓";
     lcdLn.className = "ln q ok";
     flash("", "");
-    const cust = makeCustomer(S.seed, S.i, r.price), last = S.results[S.results.length - 1];
+    const cust = custNow(), last = S.results[S.results.length - 1];
     const sp = cust.special && SPECIALS[cust.special];
     const extraCoins = sp ? sp.bonus(last, last.ms) : 0;
     if (extraCoins) { S.bonus += extraCoins; S.bonusList.push(`${sp.chip.split(" ")[0]} +${extraCoins}`); }
@@ -1624,8 +2261,13 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     speak(extraCoins ? `${thanks} Mais ${extraCoins} moedinhas!` : sp ? thanks : "Valeu!");
     confetti(document.getElementById("shop"));
     if (cust.special === "aniversario") setTimeout(() => confetti(document.getElementById("shop")), 250);
+    advance(fast ? 350 : 800, fast ? 650 : 1200);
+  }
+
+  // O cliente vai embora e chega o próximo (ou a partida acaba)
+  function advance(leaveMs, nextMs) {
     const cur = S;
-    setTimeout(() => { if (S === cur) document.querySelector(".customer").classList.add("leave"); }, fast ? 350 : 800);
+    setTimeout(() => { if (S === cur) document.querySelector(".customer").classList.add("leave"); }, leaveMs);
     setTimeout(() => {
       if (S !== cur) return;
       app.classList.remove("busy");
@@ -1635,11 +2277,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       if (S.flash && S.i + 1 >= S.rounds.length) S.rounds.push(...makeRounds(`${S.seed}-${S.rounds.length}`, S.tiers));
       S.i++; S.roundStart = resume;
       if (S.flash && flashLeft() <= 0) return finish();
+      if (S.duel && (S.duel.me >= 3 || S.duel.cpu >= 3)) return finish();
       if (S.i >= S.rounds.length) return finish();
       saveProgress();
       sfx.door();
       showCustomer();
-    }, fast ? 650 : 1200);
+    }, nextMs);
   }
 
   function finish() {
@@ -1673,7 +2316,29 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       if (res.isBest) store("tc-flash-best", res.flashCount);
       bumpStats((st) => { st.flashBest = Math.max(st.flashBest, res.flashCount); });
     }
+    if (S.duel) {
+      const D = S.duel, won = D.me > D.cpu, b = beaten();
+      res.duel = { rival: D.rival, me: D.me, cpu: D.cpu, won };
+      if (won) {
+        res.firstWin = !b.has(D.rival);
+        b.add(D.rival); store("tc-rivals", [...b]);
+        if (res.firstWin) { giveSticker("rival-" + D.rival); res.sticker = "rival-" + D.rival; }
+      }
+    }
+    if (S.career) {
+      res.career = S.career;
+      const stars = starsOf(S.results);
+      res.isBest = stars > storeBest(S.career);
+      if (res.isBest) store("tc-store-best-" + S.career, stars);
+    }
+    res.replay = S.replay;
     bumpStats((st) => { st.games++; });
+    // Toda partida dá um pacotinho de figurinhas (3 estrelas dão mais um) e 1 coração pro bichinho
+    if (S.results.length || S.duel) {
+      res.packs = 1 + (starsFor(res) === 3 ? 1 : 0);
+      addPacks(res.packs);
+    }
+    if (petEmoji()) addHearts(1);
     if (S.level && !S.flash) {
       const next = LEVEL_ORDER[LEVEL_ORDER.indexOf(S.level) + 1];
       const wasOpen = next ? isOpen(next) : true;
@@ -1711,7 +2376,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const perfect = res.results.filter(isPerfect).length;
     const stars = starsFor(res);
     const fresh = !res.fromMenu;
-    const cheer = res.flash
+    const R = res.duel ? rivalOf(res.duel.rival) : null;
+    const cheer = res.duel ? (res.duel.won ? `Você venceu ${R.a} ${R.name}!` : `${R.name} ganhou dessa vez!`)
+      : res.flash
       ? (stars === 3 ? "Que rapidez!" : stars === 2 ? "Mandou bem!" : "Boa! Tente de novo!")
       : stars === 3 ? "Incrível! Troco perfeito!" : stars === 2 ? "Mandou bem!" : "Boa! Treine e fique ainda melhor!";
     const rows = res.results.map((r, k) => {
@@ -1721,16 +2388,20 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     }).join("");
     const daily = !res.training;
     const text = daily ? shareText(res) : "";
-    const pill = res.flash ? "⚡ Relâmpago" : res.level ? LEVELS[res.level].emoji + " " + LEVELS[res.level].name : DAILY[res.dif || "dificil"].emoji + " " + ddmm(res.day);
+    const pill = res.duel ? "🆚 " + R.name : res.career ? storeById(res.career).icon + " " + storeById(res.career).short
+      : res.flash ? "⚡ Relâmpago" : res.level ? LEVELS[res.level].emoji + " " + LEVELS[res.level].name : DAILY[res.dif || "dificil"].emoji + " " + ddmm(res.day);
     const chips = [];
-    if (res.flash) chips.push(`<span class="stat">✅ ${perfect} perfeitos</span>`);
+    if (res.duel) chips.push(`<span class="stat">${R.emoji} ${R.full}</span>`);
+    else if (res.flash) chips.push(`<span class="stat">✅ ${perfect} perfeitos</span>`);
     else chips.push(`<span class="stat">✅ ${perfect} de ${res.results.length} perfeitos</span>`);
     if (res.coins && fresh) chips.push(`<span class="stat earned-stat">🪙 +${res.coins} moedinhas</span>`);
+    if (fresh && res.firstWin) chips.push(`<span class="stat earned-stat">🏆 Primeira vitória contra ${R.a} ${R.name}! Figurinha nova!</span>`);
+    if (fresh && res.career && res.isBest) chips.push(`<span class="stat earned-stat">🏅 Novo recorde nesta loja!</span>`);
     if (fresh && res.bonusList && res.bonusList.length) chips.push(`<span class="stat earned-stat">✨ clientes especiais: ${res.bonusList.join(" ")}</span>`);
     if (fresh && res.streak) chips.push(`<span class="stat earned-stat">🔥 ${res.streak} ${res.streak === 1 ? "dia" : "dias seguidos"}! +${res.streakBonus}</span>`);
     if (fresh && res.isBest && res.prevBest) chips.push(`<span class="stat earned-stat">🏅 Novo recorde!</span>`);
     if (fresh && !res.isBest && res.prevBest && (daily || res.flash)) chips.push(`<span class="stat">🏅 Seu recorde: ${res.flash ? res.prevBest + " clientes" : fmtTime(res.prevBest)}</span>`);
-    if (!res.flash && sc.wrong) chips.push(`<span class="stat">❌ ${sc.wrong} ${sc.wrong === 1 ? "erro" : "erros"}</span>`);
+    if (!res.flash && !res.duel && sc.wrong) chips.push(`<span class="stat">❌ ${sc.wrong} ${sc.wrong === 1 ? "erro" : "erros"}</span>`);
     const achHtml = fresh && res.achievements && res.achievements.length
       ? `<section class="card ach-new">${res.achievements.map((a) => `<p class="unlock">🏅 Conquista: ${a.icon} ${a.name}! <small>+${a.reward} 🪙</small></p>`).join("")}</section>` : "";
     app.replaceChildren(el(`
@@ -1742,12 +2413,15 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         ${mascot(stars === 3 ? "wow" : "happy", "mascot bob")}
         <h1>${cheer}</h1>
         <div class="stars" aria-label="${stars} de 3 estrelas">${"⭐".repeat(stars)}<span class="off">${"⭐".repeat(3 - stars)}</span></div>
-        <div class="score">${res.flash ? `⚡ ${res.results.length} <small class="score-unit">clientes</small>` : fmtTime(sc.total)}</div>
+        <div class="score">${res.duel ? `${res.duel.me} <small class="score-unit">x</small> ${res.duel.cpu}` : res.flash ? `⚡ ${res.results.length} <small class="score-unit">clientes</small>` : fmtTime(sc.total)}</div>
         ${daily ? `<p class="rank-line" id="rankLine">🏆 Buscando sua posição…</p>` : ""}
         <div class="stats">${chips.join("")}</div>
       </section>
       ${achHtml}
       ${res.unlocked ? `<p class="unlock center">🔓 Você liberou o nível ${LEVELS[res.unlocked].emoji} ${LEVELS[res.unlocked].name}!</p>` : ""}
+      ${fresh && packs() ? `<button class="btn sun glow" id="packBtn">🃏 Abrir ${packs() === 1 ? "o pacotinho" : packs() + " pacotinhos"} de figurinhas!</button>` : ""}
+      ${res.duel && res.duel.won && RIVALS[RIVALS.indexOf(R) + 1] ? `<button class="btn" id="nextRival">▶ Próximo rival: ${RIVALS[RIVALS.indexOf(R) + 1].emoji} ${RIVALS[RIVALS.indexOf(R) + 1].full}</button>` : ""}
+      ${res.career && nextStore() && bank() >= nextStore().price ? `<button class="btn" id="growBtn">🏪 Você já pode comprar ${nextStore().a} ${nextStore().name.toLowerCase()}!</button>` : ""}
       ${nextLevel(res) ? `<button class="btn" id="nextLv">▶ Próximo: ${LEVELS[nextLevel(res)].emoji} ${LEVELS[nextLevel(res)].name}</button>` : ""}
       <div class="row">
         <button class="btn sun" id="again">🔁 De novo</button>
@@ -1788,7 +2462,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     `));
     const on = (id, fn) => { const b = document.getElementById(id); if (b) b.addEventListener("click", fn); };
     on("nextLv", () => startGame(nextLevel(res)));
-    on("again", () => startGame(res.flash ? "relampago" : res.level || null, res.dif || "dificil"));
+    on("again", () => (res.replay ? startGame(...res.replay) : startGame(res.flash ? "relampago" : res.level || null, res.dif || "dificil")));
+    on("packBtn", () => { enterScreen(); doOpenPack(); });
+    on("nextRival", () => startGame("duelo", null, { rival: RIVALS[RIVALS.indexOf(R) + 1].id }));
+    on("growBtn", () => { enterScreen(); renderPlay(); });
     on("shopBtn", () => { enterScreen(); renderShop(); });
     document.getElementById("home").addEventListener("click", goBack);
     document.getElementById("back").addEventListener("click", goBack);
@@ -1803,10 +2480,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       res.spoken = true;
       const parts = [cheer];
       if (res.flash) parts.push(`Você atendeu ${res.results.length} clientes!`);
+      if (res.duel) parts.push(`${res.duel.me} a ${res.duel.cpu}.`);
       if (res.isBest && res.prevBest) parts.push("Novo recorde!");
       if (res.streak > 1) parts.push(`${res.streak} dias seguidos!`);
       if (res.coins) parts.push(`Você ganhou ${res.coins} moedinhas!`);
       if (res.achievements && res.achievements.length) parts.push(`E ganhou a conquista ${res.achievements[0].name}!`);
+      if (res.packs) parts.push(res.packs > 1 ? `E ${res.packs} pacotinhos de figurinhas!` : "E um pacotinho de figurinhas!");
       setTimeout(() => speak(parts.join(" ")), 900);
     }
   }
@@ -1873,7 +2552,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function backupData() {
     const levels = {};
     for (const k of LEVEL_ORDER) levels[k] = bestOf(k);
-    return { bank: bank(), owned: [...owned()], deco: deco(), levels, playerId: playerId(), nick: myNick(), uf: store("tc-uf") || null };
+    const p = pet();
+    return { bank: bank(), owned: [...owned()], deco: deco(), levels, playerId: playerId(), nick: myNick(), uf: store("tc-uf") || null,
+      extras: { stores: store("tc-stores") || [], store: store("tc-store") || null, stickers: stickers(), packs: packs(), rivals: [...beaten()],
+        pet: { name: p.name, hearts: p.hearts, wear: p.wear, acc: p.acc } } };
   }
   async function backupSave(silent) {
     const b = store("tc-backup");
@@ -1895,6 +2577,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     if (d.playerId) store("tc-player", d.playerId);
     if (d.nick) store("tc-nick", d.nick);
     if (d.uf) store("tc-uf", d.uf);
+    const x = d.extras;
+    if (x) {
+      store("tc-stores", x.stores || []); if (x.store) store("tc-store", x.store);
+      store("tc-stickers", x.stickers || {}); store("tc-packs", x.packs || 0); store("tc-rivals", x.rivals || []);
+      if (x.pet) savePet({ ...pet(), ...x.pet });
+    }
     store("tc-backup", { code: code.trim().toLowerCase(), secret: null, at: Date.now() });
   }
 
@@ -1994,6 +2682,21 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function paintClock() {
     const c = document.getElementById("clock");
     if (!c || !S) return;
+    if (S.duel) {
+      c.textContent = "🆚";
+      if (S.busy) return;
+      const D = S.duel, R = rivalOf(D.rival);
+      let p = (now() - S.roundStart) / D.cpuMs;
+      if (D.slip && !D.slipped && p > 0.6) {
+        D.slipped = true; D.cpuMs *= 1.45; p = (now() - S.roundStart) / D.cpuMs;
+        paintDuel(`Ops! ${R.name} errou a conta e vai contar de novo 😅`);
+        play("desconfiado", 0.6);
+      }
+      const bar = document.getElementById("dProg");
+      if (bar) bar.style.width = Math.min(100, p * 100).toFixed(1) + "%";
+      if (p >= 1) cpuScores();
+      return;
+    }
     if (S.flash) {
       const left = flashLeft();
       const sec = Math.max(0, Math.ceil(left / 1000));

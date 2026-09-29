@@ -222,7 +222,8 @@ test("painel do dono exige senha, lista o dia e remove do ranking", async () => 
 
 // ---------- Código de recuperação ----------
 test("cria, atualiza e restaura um código de recuperação", async () => {
-  const data = { bank: 120, owned: ["a-gato", "x-MG-0"], deco: { bichinho: "a-gato" }, levels: { iniciante: 3 }, playerId: "jogador-backup-1", nick: { n: 2, a: 3, num: 9 }, uf: "MG" };
+  const data = { bank: 120, owned: ["a-gato", "x-MG-0"], deco: { bichinho: "a-gato" }, levels: { iniciante: 3 }, playerId: "jogador-backup-1", nick: { n: 2, a: 3, num: 9 }, uf: "MG",
+    extras: { stores: ["pipoca"], store: "pipoca", stickers: { "viz-1": 2, "bicho-200": 1 }, packs: 3, rivals: ["tito"], pet: { name: 4, hearts: 12, wear: "coroa", acc: ["coroa"] } } };
   const c = await fetch(base + "/api/backup", { method: "POST", body: JSON.stringify({ data }) });
   assert.strictEqual(c.status, 201);
   const { code, secret } = await c.json();
@@ -235,10 +236,12 @@ test("cria, atualiza e restaura um código de recuperação", async () => {
   assert.strictEqual(r.data.bank, 150);
   assert.deepStrictEqual(r.data.owned, ["a-gato", "x-MG-0"]);
   assert.strictEqual(r.data.uf, "MG");
+  assert.deepStrictEqual(r.data.extras, data.extras);
   // lixo é descartado
-  const junk = await fetch(base + "/api/backup", { method: "POST", body: JSON.stringify({ data: { bank: -5, owned: ["<script>"], uf: "XX" } }) }).then((x) => x.json());
+  const junk = await fetch(base + "/api/backup", { method: "POST", body: JSON.stringify({ data: { bank: -5, owned: ["<script>"], uf: "XX", extras: { stickers: { "<b>": 5, "viz-2": -1 }, packs: 1e9, pet: { name: "x", hearts: -3 } } } }) }).then((x) => x.json());
   const j = await fetch(`${base}/api/backup/${junk.code}`).then((x) => x.json());
   assert.deepStrictEqual([j.data.bank, j.data.owned, j.data.uf], [0, [], null]);
+  assert.deepStrictEqual([j.data.extras.stickers, j.data.extras.packs, j.data.extras.pet], [{}, 0, { name: 0, hearts: 0, wear: null, acc: [] }]);
   assert.strictEqual((await fetch(`${base}/api/backup/nao-existe-mesmo-10`)).status, 404);
 });
 
