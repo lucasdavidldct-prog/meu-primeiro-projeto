@@ -26,16 +26,52 @@
   function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
-  function makeRounds(seedStr) {
+  // Níveis (fora do ranking). "step" é o menor passo do preço, em centavos.
+  const LEVELS = {
+    iniciante: {
+      name: "Iniciante", emoji: "🐣", desc: "Preços redondos e trocos pequenos. Com dicas!",
+      tiers: [
+        { min: 100, max: 400, step: 50, pays: [500] },
+        { min: 200, max: 800, step: 50, pays: [1000] },
+        { min: 150, max: 900, step: 50, pays: [1000] },
+        { min: 500, max: 1500, step: 100, pays: [2000] },
+        { min: 300, max: 1800, step: 50, pays: [2000] },
+      ],
+    },
+    intermediario: {
+      name: "Intermediário", emoji: "🦊", desc: "Centavos quebrados e notas de até R$ 50.",
+      tiers: [
+        { min: 150, max: 900, pays: [1000, 2000] },
+        { min: 600, max: 1900, pays: [2000, 5000] },
+        { min: 1200, max: 4600, pays: [5000] },
+        { min: 1000, max: 4500, pays: [5000], extraCoins: true },
+        { min: 2000, max: 4800, pays: [5000, 10000] },
+      ],
+    },
+    avancado: {
+      name: "Avançado", emoji: "🦁", desc: "Valores altos e clientes espertinhos que dão moedas a mais.",
+      tiers: [
+        { min: 600, max: 1900, pays: [2000], extraCoins: true },
+        { min: 3000, max: 9600, pays: [10000], extraCoins: true },
+        { min: 6000, max: 18900, pays: [20000] },
+        { min: 4000, max: 9900, pays: [10000], extraCoins: true },
+        { min: 11000, max: 19900, pays: [20000], extraCoins: true },
+      ],
+    },
+  };
+  const LEVEL_ORDER = ["iniciante", "intermediario", "avancado"];
+
+  function makeRounds(seedStr, tiers = TIERS) {
     const rng = mulberry32(hashStr(seedStr));
     const randInt = (a, b) => a + Math.floor(rng() * (b - a + 1));
-    return TIERS.map((t) => {
-      const price = 5 * randInt(t.min / 5, t.max / 5);
+    return tiers.map((t) => {
+      const step = t.step || 5;
+      const price = step * randInt(Math.ceil(t.min / step), Math.floor(t.max / step));
       const options = t.pays.filter((p) => p > price);
       let paid = options[randInt(0, options.length - 1)];
       // Às vezes o cliente "facilita" e completa com as moedas dos centavos
       const cents = price % 100;
-      if (t.extraCoins && cents !== 0 && rng() < 0.45) paid += cents;
+      if (t.extraCoins && cents !== 0 && rng() < (t.extraChance || 0.45)) paid += cents;
       return { price, paid, change: paid - price };
     });
   }
@@ -66,5 +102,5 @@
     return { raw, wrong, extra, total: raw + wrong * WRONG_PENALTY + extra * EXTRA_PENALTY };
   }
 
-  return { UFS, VALORES, WRONG_PENALTY, EXTRA_PENALTY, makeRounds, dailySeed, dayKey, msToNextDay, challengeNumber, minPieces, scoreOf };
+  return { UFS, VALORES, LEVELS, LEVEL_ORDER, WRONG_PENALTY, EXTRA_PENALTY, makeRounds, dailySeed, dayKey, msToNextDay, challengeNumber, minPieces, scoreOf };
 });

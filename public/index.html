@@ -166,6 +166,28 @@ select { font: inherit; font-weight: 800; padding: 12px 14px; border-radius: 14p
 .chip .mini { width: 26px; height: 16px; flex: none; }
 .chip .mini.round { width: 18px; height: 18px; }
 
+/* Níveis */
+.levels { display: grid; gap: 12px; }
+.level {
+  border: 0; border-radius: 20px; padding: 14px; display: flex; align-items: center; gap: 12px; text-align: left;
+  background: var(--surface); box-shadow: 0 5px 0 var(--line); width: 100%;
+}
+.level:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--line); }
+.level[data-lv="iniciante"] { background: #e6f8ec; box-shadow: 0 5px 0 #a9dfbb; }
+.level[data-lv="intermediario"] { background: #fff0dc; box-shadow: 0 5px 0 #f3c98d; }
+.level[data-lv="avancado"] { background: #ffe4ea; box-shadow: 0 5px 0 #f3a9b9; }
+.level.locked { filter: grayscale(0.8); opacity: 0.6; }
+.level .lv-emoji { font-size: 2.6rem; line-height: 1; flex: none; }
+.level .lv-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.level strong { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.1; }
+.level small { font-size: 0.85rem; color: var(--muted); font-weight: 700; }
+.level .lv-stars { font-size: 1.1rem; flex: none; }
+.lv-stars .off, .unlock .off { filter: grayscale(1); opacity: 0.3; }
+.unlock { font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; color: var(--accent-dark); }
+.toggles { display: flex; gap: 8px; justify-content: center; }
+.toggle { border: 0; border-radius: 999px; padding: 8px 14px; background: var(--surface); font-weight: 800; box-shadow: 0 3px 0 var(--line); }
+.toggle[aria-pressed="false"] { opacity: 0.55; }
+
 /* Resultado */
 .celebrate { background: var(--surface); border-radius: 24px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; box-shadow: 0 4px 0 var(--line); }
 .stars { font-size: 2.6rem; letter-spacing: 4px; line-height: 1; }
@@ -281,7 +303,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   "use strict";
 
   // ---------- Utilidades ----------
-  const { UFS, makeRounds, dailySeed, dayKey, msToNextDay, minPieces, scoreOf, WRONG_PENALTY } = window.Regras;
+  const { UFS, LEVELS, LEVEL_ORDER, makeRounds, dailySeed, dayKey, msToNextDay, minPieces, scoreOf, WRONG_PENALTY } = window.Regras;
 
   // Denominações em centavos (sem a nota de 200: o troco máximo é menor que isso)
   const DENOMS = [
@@ -438,12 +460,89 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur);
     } catch (e) { /* sem áudio */ }
   }
-  const sfx = {
+  const beeps = {
     tap: () => beep(740, 0.06, "triangle", 0, 0.08),
     ok: () => { beep(988, 0.1, "square", 0, 0.06); beep(1319, 0.25, "square", 0.1, 0.06); },
     bad: () => { beep(220, 0.18, "sawtooth", 0, 0.07); beep(165, 0.25, "sawtooth", 0.15, 0.07); },
     door: () => beep(1047, 0.15, "sine", 0, 0.07),
+    win: () => { [523, 659, 784, 1047].forEach((f, k) => beep(f, 0.2, "square", k * 0.12, 0.06)); },
   };
+  // Sons gravados em public/sons (gerados por tools/gerar-audio.mjs)
+  const SOUND_FILES = { tap: "toque", ok: "caixa", bad: "erro", door: "porta", win: "vitoria", music: "musica" };
+  const buffers = {};
+  function audioCtx() {
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+    return actx;
+  }
+  function loadSounds() {
+    const ctx = audioCtx();
+    if (!ctx) return;
+    for (const [key, file] of Object.entries(SOUND_FILES)) {
+      fetch(`sons/${file}.mp3`)
+        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(file))))
+        .then((data) => ctx.decodeAudioData(data))
+        .then((buf) => { buffers[key] = buf; if (key === "music") syncMusic(); })
+        .catch(() => { /* sem o arquivo: usa os bipes */ });
+    }
+  }
+  function play(key, vol = 1) {
+    if (!soundOn()) return;
+    const ctx = audioCtx();
+    if (!ctx || !buffers[key]) return beeps[key] && beeps[key]();
+    if (ctx.state === "suspended") ctx.resume();
+    const src = ctx.createBufferSource(), g = ctx.createGain();
+    g.gain.value = vol; src.buffer = buffers[key];
+    src.connect(g).connect(ctx.destination); src.start();
+  }
+  const sfx = {
+    tap: () => play("tap", 0.5), ok: () => play("ok", 0.9), bad: () => play("bad", 0.8),
+    door: () => play("door", 0.6), win: () => play("win", 0.9),
+  };
+
+  // Música de fundo em loop
+  const musicOn = () => store("tc-music") !== "off";
+  let musicSrc = null, unlocked = false;
+  function syncMusic() {
+    const ctx = audioCtx();
+    const want = musicOn() && unlocked && buffers.music && document.visibilityState !== "hidden";
+    if (want && !musicSrc && ctx) {
+      if (ctx.state === "suspended") ctx.resume();
+      const g = ctx.createGain(); g.gain.value = 0.3;
+      musicSrc = ctx.createBufferSource(); musicSrc.buffer = buffers.music; musicSrc.loop = true;
+      musicSrc.connect(g).connect(ctx.destination); musicSrc.start();
+    } else if (!want && musicSrc) {
+      try { musicSrc.stop(); } catch (e) { /* já parou */ }
+      musicSrc = null;
+    }
+  }
+  // O navegador só deixa tocar som depois do primeiro toque
+  document.addEventListener("pointerdown", () => {
+    unlocked = true;
+    const ctx = audioCtx();
+    if (ctx && ctx.state === "suspended") ctx.resume();
+    syncMusic();
+  }, { once: true, capture: true });
+  // App em segundo plano: silêncio total
+  document.addEventListener("visibilitychange", () => {
+    const ctx = audioCtx();
+    if (!ctx) return;
+    if (document.visibilityState === "hidden") ctx.suspend(); else { ctx.resume(); }
+    syncMusic();
+  });
+  function togglesHtml() {
+    return `<div class="toggles">
+      <button class="toggle" id="tMusic" aria-pressed="${musicOn()}">🎵 Música</button>
+      <button class="toggle" id="tSound" aria-pressed="${soundOn()}">🔊 Sons</button>
+    </div>`;
+  }
+  function bindToggles() {
+    document.getElementById("tMusic").addEventListener("click", (e) => {
+      store("tc-music", musicOn() ? "off" : "on"); e.currentTarget.setAttribute("aria-pressed", musicOn()); unlocked = true; syncMusic();
+    });
+    document.getElementById("tSound").addEventListener("click", (e) => {
+      store("tc-sound", soundOn() ? "off" : "on"); e.currentTarget.setAttribute("aria-pressed", soundOn()); sfx.tap();
+    });
+  }
   const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* ok */ } };
 
   function confetti(host) {
@@ -514,14 +613,47 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       </label>
       <button class="btn" id="go">${main}<small>${played ? "você já jogou hoje!" : "vale pro ranking · 1 vez por dia"}</small></button>
       ${paused ? `<p class="pause-note">O relógio continua de onde parou.</p>` : ""}
-      <button class="btn sun" id="train">🎯 Treinar<small>jogue quantas vezes quiser</small></button>
+      <button class="btn sun" id="levels">🎮 Níveis<small>iniciante, intermediário e avançado</small></button>
+      ${togglesHtml()}
     `));
+    bindToggles();
     document.getElementById("uf").addEventListener("change", (e) => store("tc-uf", e.target.value));
     document.getElementById("go").addEventListener("click", () => {
       enterScreen();
-      if (played) renderResult(played); else startGame(false);
+      if (played) renderResult(played); else startGame(null);
     });
-    document.getElementById("train").addEventListener("click", () => { enterScreen(); startGame(true); });
+    document.getElementById("levels").addEventListener("click", () => { enterScreen(); renderLevels(); });
+  }
+
+  // ---------- Níveis ----------
+  const bestOf = (k) => Number(store("tc-level-" + k)) || 0;
+  const isOpen = (k) => { const i = LEVEL_ORDER.indexOf(k); return i === 0 || bestOf(LEVEL_ORDER[i - 1]) > 0; };
+  const starsHtml = (n) => `${"⭐".repeat(n)}<span class="off">${"⭐".repeat(3 - n)}</span>`;
+
+  function renderLevels() {
+    stopTick();
+    app.replaceChildren(el(`
+      <header class="top">
+        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🎮 Níveis</span></span>
+      </header>
+      <div class="talk">
+        ${mascot("happy", "mascot bob")}
+        <p class="bubble">Escolha um nível! Termine um pra liberar o próximo. Aqui não tem ranking: jogue quantas vezes quiser.</p>
+      </div>
+      <div class="levels">${LEVEL_ORDER.map((k, i) => {
+        const L = LEVELS[k], open = isOpen(k);
+        return `<button class="level${open ? "" : " locked"}" data-lv="${k}" ${open ? "" : "disabled"}>
+          <span class="lv-emoji">${open ? L.emoji : "🔒"}</span>
+          <span class="lv-body"><strong>${L.name}</strong>
+            <small>${open ? L.desc : `Termine o ${LEVELS[LEVEL_ORDER[i - 1]].name} pra liberar`}</small></span>
+          <span class="lv-stars" aria-label="Recorde: ${bestOf(k)} de 3 estrelas">${starsHtml(bestOf(k))}</span>
+        </button>`;
+      }).join("")}</div>
+      ${togglesHtml()}
+    `));
+    bindToggles();
+    document.getElementById("back").addEventListener("click", goBack);
+    app.querySelectorAll(".level:not(.locked)").forEach((b) => b.addEventListener("click", () => { sfx.tap(); startGame(b.dataset.lv); }));
   }
 
   // ---------- Navegação (botão voltar da tela e do Android) ----------
@@ -565,10 +697,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveProgress(); });
   window.addEventListener("pagehide", saveProgress);
 
-  function startGame(training) {
-    const seed = training ? "treino-" + Date.now() : dailySeed(todayKey());
+  // level = null para o desafio do dia, ou "iniciante" / "intermediario" / "avancado"
+  function startGame(level) {
+    const training = !!level;
+    const seed = training ? `nivel-${level}-${Date.now()}` : dailySeed(todayKey());
     S = {
-      training, seed, rounds: makeRounds(seed), i: 0, tray: {}, results: [],
+      training, level, seed, rounds: makeRounds(seed, training ? LEVELS[level].tiers : undefined), i: 0, tray: {}, results: [],
       wrong: 0, roundStart: performance.now(), gameStart: performance.now(),
       uf: store("tc-uf") || "SP", day: todayKey(),
     };
@@ -605,8 +739,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     app.replaceChildren(el(`
       <header class="top">
         <span class="left">
-          <button class="back" id="back" aria-label="${S.training ? "Sair do treino" : "Pausar e voltar ao início"}">←</button>
-          <span class="brand">${S.training ? "🎯 Treino" : "Desafio do dia"}</span>
+          <button class="back" id="back" aria-label="${S.training ? "Sair do nível" : "Pausar e voltar ao início"}">←</button>
+          <span class="brand">${S.training ? LEVELS[S.level].emoji + " " + LEVELS[S.level].name : "Desafio do dia"}</span>
         </span>
         <span class="left">
           <button class="back" id="sound" aria-label="Ligar ou desligar o som">${soundOn() ? "🔊" : "🔇"}</button>
@@ -715,7 +849,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       retrigger(document.getElementById("register"), "shake");
       lcdVal.textContent = "ERRO!";
       lcdLn.className = "ln q"; retrigger(lcdLn, "bad");
-      flash("Tente de novo! (+5s)", "bad");
+      flash(S.level === "iniciante" ? `Dica: o troco é ${brl(r.change)} 😉 (+5s)` : "Tente de novo! (+5s)", "bad");
       setCustomer("sad", sum > r.change ? "Hmm... você me deu troco a mais! 🤔" : "Hmm... acho que faltou troco! 🤔", "bad", "nope");
       const cur = S, round = S.i, token = (S.token = (S.token || 0) + 1);
       setTimeout(() => {
@@ -756,9 +890,16 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   function finish() {
     stopTick();
-    const res = { day: S.day, uf: S.uf, training: S.training, results: S.results, score: scoreOf(S.results) };
+    const res = { day: S.day, uf: S.uf, training: S.training, level: S.level, results: S.results, score: scoreOf(S.results) };
     if (!S.training) { store("tc-day-" + S.day, res); clearProgress(); }
+    if (S.level) {
+      const next = LEVEL_ORDER[LEVEL_ORDER.indexOf(S.level) + 1];
+      const wasOpen = next ? isOpen(next) : true;
+      store("tc-level-" + S.level, Math.max(bestOf(S.level), starsOf(S.results)));
+      if (next && !wasOpen && isOpen(next)) res.unlocked = next;
+    }
     S = null;
+    sfx.win();
     renderResult(res);
   }
 
@@ -766,6 +907,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   function shareText(res) {
     return `Troco Certo ${ddmm(res.day)} (${res.uf})\n${squares(res.results)}\n⏱️ ${fmtTime(res.score.total)}\nVocê é bom de troco?`;
+  }
+
+  function nextLevel(res) {
+    if (!res.level) return null;
+    const next = LEVEL_ORDER[LEVEL_ORDER.indexOf(res.level) + 1];
+    return next && isOpen(next) ? next : null;
   }
 
   function renderResult(res) {
@@ -782,7 +929,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     app.replaceChildren(el(`
       <header class="top">
         <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button>${brandHtml()}</span>
-        <span class="pill num">${res.training ? "🎯 Treino" : ddmm(res.day)}</span>
+        <span class="pill num">${res.level ? LEVELS[res.level].emoji + " " + LEVELS[res.level].name : ddmm(res.day)}</span>
       </header>
       <section class="celebrate">
         ${mascot(stars === 3 ? "wow" : "happy", "mascot bob")}
@@ -795,17 +942,19 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
           ${sc.extra ? `<span class="stat">🪙 ${sc.extra} ${sc.extra === 1 ? "peça" : "peças"} a mais (+${sc.extra * 2}s)</span>` : ""}
         </div>
       </section>
-      ${res.training ? `
+      ${res.level ? `
       <section class="card daily">
-        <h2>🎯 Isso foi um treino</h2>
-        <p>Treino não conta pro ranking. Jogue quantas vezes quiser pra ficar craque!</p>
+        <h2>${LEVELS[res.level].emoji} Nível ${LEVELS[res.level].name}</h2>
+        <p>Seu recorde neste nível: <span class="lv-stars">${starsHtml(bestOf(res.level))}</span></p>
+        ${res.unlocked ? `<p class="unlock">🔓 Você liberou o nível ${LEVELS[res.unlocked].emoji} ${LEVELS[res.unlocked].name}!</p>` : ""}
+        <p>Os níveis não contam pro ranking. Jogue quantas vezes quiser!</p>
       </section>` : `
       <section class="card daily">
         <h2>📅 Como funciona o desafio do dia</h2>
         <p>Todo mundo do Brasil recebe os <strong>mesmos 5 clientes</strong> no dia. Ele vale <strong>1 vez por dia</strong> pro ranking, pra ser justo com todos.</p>
         <p>Um desafio novo chega em:</p>
         <div class="countdown" id="next">--:--:--</div>
-        <p>Enquanto isso, <strong>treine quantas vezes quiser</strong>!</p>
+        <p>Enquanto isso, <strong>jogue os níveis quantas vezes quiser</strong>!</p>
       </section>
       <section class="card">
         <h2>📣 Mostre pros amigos</h2>
@@ -828,12 +977,16 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         </table></div>
         <p class="muted" style="font-size:.85rem">Peças: quantas você usou / o mínimo possível.</p>
       </details>
+      ${nextLevel(res) ? `<button class="btn" id="nextLv">▶ Próximo: ${LEVELS[nextLevel(res)].emoji} ${LEVELS[nextLevel(res)].name}</button>` : ""}
       <div class="row">
-        <button class="btn sun" id="train">🎯 ${res.training ? "Treinar de novo" : "Treinar"}</button>
+        ${res.level ? `<button class="btn sun" id="again">🔁 De novo</button>` : `<button class="btn sun" id="levels">🎮 Níveis</button>`}
         <button class="btn ghost" id="home">🏠 Início</button>
       </div>
     `));
-    document.getElementById("train").addEventListener("click", () => { enterScreen(); startGame(true); });
+    const on = (id, fn) => { const b = document.getElementById(id); if (b) b.addEventListener("click", fn); };
+    on("nextLv", () => startGame(nextLevel(res)));
+    on("again", () => startGame(res.level));
+    on("levels", () => { enterScreen(); renderLevels(); });
     document.getElementById("home").addEventListener("click", goBack);
     document.getElementById("back").addEventListener("click", goBack);
     const copy = document.getElementById("copy");
@@ -934,6 +1087,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function stopTick() { if (tick) clearInterval(tick); tick = null; }
 
   function boot() {
+    if (!Object.keys(buffers).length) loadSounds();
     const played = store("tc-day-" + todayKey());
     renderStart();
     // Resultado de hoje que ainda não chegou ao servidor: tenta enviar em segundo plano

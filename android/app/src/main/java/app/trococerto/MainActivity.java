@@ -75,6 +75,19 @@ public class MainActivity extends Activity {
         else web.loadUrl("https://" + HOST + "/assets/index.html");
     }
 
+    // App em segundo plano: pausa a página (a música para junto)
+    @Override
+    protected void onPause() {
+        super.onPause();
+        web.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        web.onResume();
+    }
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);

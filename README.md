@@ -18,6 +18,25 @@ npm test           # roda os testes do servidor
 - O resultado sai em quadradinhos (🟩 perfeito, 🟨 com erro ou peça a mais) para compartilhar no WhatsApp.
 - "Treinar" gera clientes aleatórios e não conta para o ranking.
 
+## Níveis
+
+Fora do ranking, a criança joga quantas vezes quiser em 3 níveis. Terminar um nível libera o próximo, e o recorde de estrelas fica salvo no aparelho.
+
+| Nível | Como é |
+|---|---|
+| 🐣 Iniciante | Preços redondos (de 50 em 50 centavos), trocos pequenos e dica do valor do troco depois de um erro |
+| 🦊 Intermediário | Centavos quebrados e notas de até R$ 50 |
+| 🦁 Avançado | Valores até R$ 200 e clientes que dão moedas a mais para facilitar o troco |
+
+## Música e sons
+
+A música de fundo e os efeitos ficam em `public/sons/`. Eles são compostos em código, no estilo de videogame antigo (chiptune), por `tools/gerar-audio.mjs`. Para mudar e gerar de novo:
+
+```bash
+npm install
+npm run audio
+```
+
 ## Como o ranking funciona
 
 | Arquivo | O que faz |
