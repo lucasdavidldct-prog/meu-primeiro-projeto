@@ -189,6 +189,35 @@ select { font: inherit; font-weight: 800; padding: 12px 14px; border-radius: 14p
 .toggle { border: 0; border-radius: 999px; padding: 8px 14px; background: var(--surface); font-weight: 800; box-shadow: 0 3px 0 var(--line); }
 .toggle[aria-pressed="false"] { opacity: 0.55; }
 
+/* Decoração da lojinha */
+.shop .wall { position: absolute; inset: 0; }
+.shop .deco-top { position: absolute; left: 0; right: 0; top: 0; height: 18px; background-repeat: repeat-x; background-size: auto 100%; }
+.shop .deco-emoji { position: absolute; left: 50%; top: 2px; transform: translateX(-50%); font-size: 1rem; letter-spacing: 6px; white-space: nowrap; }
+.app.game .shop .deco-emoji { left: 22%; }
+.shop .pet { position: absolute; right: 10px; bottom: 18px; font-size: 2.2rem; line-height: 1; animation: petIdle 2.8s ease-in-out infinite; transform-origin: 50% 100%; z-index: 2; }
+@keyframes petIdle { 0%,100% { transform: scale(1, 1); } 50% { transform: scale(1.04, 0.96); } }
+.shop.preview { height: 170px; border-radius: 22px; }
+.shop.preview .counter { border-radius: 0 0 22px 22px; }
+.shop.preview .mascot { position: absolute; left: 14px; bottom: 16px; width: 92px; height: 92px; z-index: 1; }
+.shop.preview .say { width: calc(100% - 140px); }
+.bank { font-variant-numeric: tabular-nums; }
+.tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.tab { border: 0; border-radius: 999px; padding: 7px 11px; font-size: 0.9rem; font-weight: 800; background: var(--surface); box-shadow: 0 3px 0 var(--line); white-space: nowrap; flex: none; }
+.tab[aria-selected="true"] { background: var(--ink); color: #fff; box-shadow: 0 3px 0 #0e1530; }
+.items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.item {
+  border: 0; border-radius: 16px; background: var(--surface); box-shadow: 0 4px 0 var(--line); padding: 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; text-align: center;
+}
+.item:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+.item .sw { width: 100%; aspect-ratio: 4 / 3; border-radius: 10px; display: grid; place-items: center; font-size: 1.5rem; background: var(--bg); overflow: hidden; }
+.item .nm { font-size: 0.8rem; font-weight: 800; line-height: 1.15; }
+.item .pr { font-size: 0.8rem; font-weight: 800; }
+.item.on { box-shadow: 0 0 0 3px var(--accent), 0 4px 0 var(--accent-dark); }
+.item.poor .pr { color: var(--bad); }
+.item.shake { animation: shake 0.35s; }
+.earned { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; color: var(--warn); }
+
 /* Resultado */
 .celebrate { background: var(--surface); border-radius: 24px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; box-shadow: 0 4px 0 var(--line); }
 .stars { font-size: 2.6rem; letter-spacing: 4px; line-height: 1; }
@@ -219,9 +248,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   position: relative; height: 160px; border-radius: 22px 22px 0 0; overflow: hidden;
   background: linear-gradient(180deg, #fff1cf 0 62%, #f7dca0 62% 64%, #fff1cf 64%);
 }
-.shop .shelf { position: absolute; right: 12px; bottom: 34px; width: calc(100% - 160px); display: flex; justify-content: space-around; font-size: 1.4rem; }
+.shop .shelf { position: absolute; right: 62px; bottom: 34px; width: calc(100% - 210px); display: flex; justify-content: space-around; font-size: 1.4rem; }
 .shop .counter { position: absolute; left: 0; right: 0; bottom: 0; height: 30px; background: #e98a5b; box-shadow: inset 0 5px 0 #f4a57c; }
-.customer { position: absolute; left: 14px; bottom: 18px; width: 118px; height: 138px; transform-origin: 50% 100%; }
+.customer { z-index: 1; position: absolute; left: 14px; bottom: 18px; width: 118px; height: 138px; transform-origin: 50% 100%; }
 .customer.enter { animation: walkIn 0.55s cubic-bezier(.2,.9,.3,1.25); }
 .customer.leave { animation: walkOut 0.4s ease-in forwards; }
 .customer.bump { animation: bump 0.5s; }
@@ -237,7 +266,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 .confetti i { position: absolute; left: 22%; top: 45%; width: 8px; height: 12px; border-radius: 2px; animation: conf 0.9s ease-out forwards; }
 @keyframes conf { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
 .say {
-  position: absolute; right: 12px; top: 12px; width: calc(100% - 160px); min-width: 0;
+  z-index: 3; position: absolute; right: 12px; top: 12px; width: calc(100% - 160px); min-width: 0;
   background: var(--surface); border-radius: 16px; padding: 8px 12px; font-size: 0.95rem; line-height: 1.3;
   box-shadow: 0 3px 0 rgba(31,43,82,0.15);
 }
@@ -295,7 +324,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 .app.game .customer { height: calc(100% - 14px); width: auto; aspect-ratio: 120 / 140; bottom: 10px; left: 10px; }
 .app.game .say { top: 8px; padding: 6px 10px; font-size: 0.88rem; width: calc(100% - 44% - 20px); }
 .app.game .shop .counter { height: 22px; }
-.app.game .shop .shelf { display: none; }
+.app.game .shop .shelf { font-size: 1.1rem; bottom: 24px; right: 54px; width: calc(56% - 64px); }
+.app.game .shop .pet { font-size: 1.7rem; bottom: 12px; }
 .app.game .register { padding: 8px; gap: 8px; margin-top: -14px; flex: none; }
 .app.game .lcd { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; font-size: 1.3rem; padding: 6px 12px; }
 .app.game .lcd .ln.q { grid-column: 1 / -1; }
@@ -632,6 +662,90 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     setTimeout(() => box.remove(), 1000);
   }
 
+  // ---------- Lojinha: moedinhas e decoração ----------
+  // SVG embutido num url() sem aspas, para caber dentro de style="..."
+  const svgUrl = (svg) => `url(data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g, "%27").replace(/\(/g, "%28").replace(/\)/g, "%29")})`;
+  const bunting = (colors) => svgUrl(`<svg xmlns='http://www.w3.org/2000/svg' width='${colors.length * 22}' height='18'><path d='M0 1.5 H${colors.length * 22}' stroke='#ffffff' stroke-width='1.5'/>${colors.map((c, i) => `<path d='M${i * 22 + 2} 2 L${i * 22 + 20} 2 L${i * 22 + 11} 16 Z' fill='${c}'/>`).join("")}</svg>`);
+  const lights = svgUrl("<svg xmlns='http://www.w3.org/2000/svg' width='60' height='18'><path d='M0 3 Q15 9 30 3 Q45 9 60 3' stroke='#3a5a40' stroke-width='1.5' fill='none'/><circle cx='8' cy='10' r='3.5' fill='#ffd23f'/><circle cx='22' cy='11' r='3.5' fill='#ff6b9a'/><circle cx='38' cy='11' r='3.5' fill='#4fb3ff'/><circle cx='52' cy='10' r='3.5' fill='#7ee081'/></svg>");
+  const DECOR = {
+    parede: { label: "Parede", icon: "🎨", items: [
+      { id: "p-creme", name: "Creminho", price: 0, css: "linear-gradient(180deg, #fff1cf 0 62%, #f7dca0 62% 64%, #fff1cf 64%)" },
+      { id: "p-ceu", name: "Céu", price: 15, css: "linear-gradient(180deg, #a9dcff, #e6f6ff)" },
+      { id: "p-rosa", name: "Rosinha", price: 15, css: "linear-gradient(180deg, #ffd0e0, #ffeef4)" },
+      { id: "p-listras", name: "Listras", price: 25, css: "repeating-linear-gradient(90deg, #fff3c4 0 14px, #ffe08a 14px 28px)" },
+      { id: "p-bolinhas", name: "Bolinhas", price: 30, css: "radial-gradient(circle, #ffb3c9 3px, transparent 4px) 0 0 / 18px 18px, #fff0f5" },
+      { id: "p-xadrez", name: "Xadrez", price: 35, css: "repeating-conic-gradient(#d8f3dc 0 25%, #b7e4c7 0 50%) 0 0 / 24px 24px" },
+      { id: "p-noite", name: "Noite estrelada", price: 60, css: "radial-gradient(circle, #fff 1px, transparent 1.6px) 0 0 / 22px 22px, radial-gradient(circle, #ffe66d 1.5px, transparent 2.2px) 11px 11px / 22px 22px, linear-gradient(180deg, #1d1b4f, #3b2f7a)" },
+    ] },
+    balcao: { label: "Balcão", icon: "🪵", items: [
+      { id: "b-coral", name: "Coral", price: 0, bg: "#e98a5b", top: "#f4a57c" },
+      { id: "b-madeira", name: "Madeira", price: 20, bg: "repeating-linear-gradient(0deg, #a8703f 0 5px, #b57c49 5px 9px)", top: "#c99260" },
+      { id: "b-menta", name: "Menta", price: 20, bg: "#43c59e", top: "#7fe0c0" },
+      { id: "b-azul", name: "Azulão", price: 20, bg: "#4f8ef7", top: "#86b3ff" },
+      { id: "b-roxo", name: "Roxinho", price: 25, bg: "#8f63e8", top: "#b596ff" },
+      { id: "b-arco", name: "Arco-íris", price: 60, bg: "linear-gradient(90deg, #ff6b6b, #ffb347, #ffe66d, #7ee081, #4fb3ff, #9b6bff)", top: "rgba(255,255,255,.55)" },
+    ] },
+    prateleira: { label: "Prateleira", icon: "🧺", items: [
+      { id: "s-nada", name: "Vazia", price: 0, text: "" },
+      { id: "s-frutas", name: "Frutas", price: 15, text: "🍎🍌🍇🍉" },
+      { id: "s-doces", name: "Doces", price: 20, text: "🍭🍫🍬🧁" },
+      { id: "s-plantas", name: "Plantinhas", price: 25, text: "🌵🌻🪴🌷" },
+      { id: "s-livros", name: "Papelaria", price: 25, text: "📚📒🖍️🎨" },
+      { id: "s-brinquedos", name: "Brinquedos", price: 30, text: "🧸🪀⚽🪁" },
+    ] },
+    bichinho: { label: "Bichinho", icon: "🐾", items: [
+      { id: "a-nada", name: "Nenhum", price: 0, text: "" },
+      { id: "a-gato", name: "Gatinho", price: 35, text: "🐱" },
+      { id: "a-cao", name: "Cachorrinho", price: 35, text: "🐶" },
+      { id: "a-tartaruga", name: "Tartaruga", price: 40, text: "🐢" },
+      { id: "a-coelho", name: "Coelhinho", price: 40, text: "🐰" },
+      { id: "a-papagaio", name: "Papagaio", price: 45, text: "🦜" },
+      { id: "a-dino", name: "Dinossauro", price: 80, text: "🦖" },
+      { id: "a-unicornio", name: "Unicórnio", price: 90, text: "🦄" },
+    ] },
+    enfeite: { label: "Enfeite", icon: "🎉", items: [
+      { id: "e-nada", name: "Nenhum", price: 0 },
+      { id: "e-relogio", name: "Relógio", price: 20, text: "🕰️" },
+      { id: "e-baloes", name: "Balões", price: 25, text: "🎈🎈🎈" },
+      { id: "e-bandeiras", name: "Bandeirinhas", price: 30, css: bunting(["#ff6b9a", "#ffc93c", "#4fb3ff", "#22b35e"]) },
+      { id: "e-estrelas", name: "Estrelas", price: 35, text: "⭐⭐⭐" },
+      { id: "e-luzes", name: "Luzinhas", price: 40, css: lights },
+      { id: "e-arco", name: "Arco-íris", price: 50, text: "🌈" },
+    ] },
+  };
+  function graphemes(t) {
+    try { return [...new Intl.Segmenter("pt", { granularity: "grapheme" }).segment(t)].map((x) => x.segment); }
+    catch (e) { return t.match(/\p{Extended_Pictographic}\uFE0F?/gu) || []; }
+  }
+  const DEFAULT_DECO = { parede: "p-creme", balcao: "b-coral", prateleira: "s-nada", bichinho: "a-nada", enfeite: "e-nada" };
+  const findItem = (cat, id) => DECOR[cat].items.find((x) => x.id === id) || DECOR[cat].items[0];
+  const bank = () => Number(store("tc-bank")) || 0;
+  const setBank = (n) => store("tc-bank", Math.max(0, n));
+  const owned = () => new Set(store("tc-owned") || []);
+  const isOwned = (it) => it.price === 0 || owned().has(it.id);
+  const deco = () => ({ ...DEFAULT_DECO, ...(store("tc-deco") || {}) });
+
+  // Camadas de decoração que vão dentro de .shop (parede, enfeite, prateleira, bichinho)
+  function decorLayers(d = deco()) {
+    const wall = findItem("parede", d.parede), shelf = findItem("prateleira", d.prateleira);
+    const pet = findItem("bichinho", d.bichinho), orn = findItem("enfeite", d.enfeite);
+    return `<div class="wall" style="background:${wall.css}"></div>
+      ${orn.css ? `<div class="deco-top" style="background-image:${orn.css}"></div>` : ""}
+      ${orn.text ? `<div class="deco-emoji" aria-hidden="true">${orn.text}</div>` : ""}
+      ${shelf.text ? `<div class="shelf" aria-hidden="true">${graphemes(shelf.text).map((ch) => `<span>${ch}</span>`).join("")}</div>` : ""}
+      ${pet.text ? `<div class="pet" aria-hidden="true">${pet.text}</div>` : ""}`;
+  }
+  function counterStyle(d = deco()) {
+    const c = findItem("balcao", d.balcao);
+    return `background:${c.bg};box-shadow:inset 0 5px 0 ${c.top}`;
+  }
+
+  // Moedinhas ganhas numa partida
+  function coinsFor(res) {
+    const perRound = res.results.reduce((a, r) => a + 2 + (isPerfect(r) ? 2 : 0), 0);
+    return perRound + starsOf(res.results) * 3 + (res.training ? 0 : 10);
+  }
+
   const brandHtml = () => `<span class="brand">${mascot("happy", "")}Troco Certo</span>`;
   const isPerfect = (r) => r.wrong === 0 && r.pieces === r.best;
   function starsOf(results) {
@@ -667,7 +781,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const main = played ? "⭐ Ver meu resultado"
       : paused ? `▶ Continuar (cliente ${paused.i + 1} de 5)` : "▶ Desafio do dia";
     app.replaceChildren(el(`
-      <header class="top">${brandHtml()}<span class="pill num">${ddmm(todayKey())}</span></header>
+      <header class="top">${brandHtml()}<span class="pill bank" aria-label="Suas moedinhas">🪙 ${bank()}</span></header>
       <section class="hero">
         <div class="talk">
           ${mascot("happy", "mascot bob")}
@@ -686,6 +800,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       <button class="btn" id="go">${main}<small>${played ? "você já jogou hoje!" : "vale pro ranking · 1 vez por dia"}</small></button>
       ${paused ? `<p class="pause-note">O relógio continua de onde parou.</p>` : ""}
       <button class="btn sun" id="levels">🎮 Níveis<small>iniciante, intermediário e avançado</small></button>
+      <button class="btn ghost" id="shopBtn">🏪 Minha lojinha<small>gaste suas moedinhas decorando a loja</small></button>
       ${togglesHtml()}
     `));
     bindToggles();
@@ -695,6 +810,67 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       if (played) renderResult(played); else startGame(null);
     });
     document.getElementById("levels").addEventListener("click", () => { enterScreen(); renderLevels(); });
+    document.getElementById("shopBtn").addEventListener("click", () => { enterScreen(); renderShop(); });
+  }
+
+  // ---------- Minha lojinha ----------
+  let shopTab = "parede";
+  function renderShop(msg) {
+    app.classList.remove("game");
+    stopTick();
+    const d = deco(), cat = DECOR[shopTab], money = bank();
+    app.replaceChildren(el(`
+      <header class="top">
+        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🏪 Minha lojinha</span></span>
+        <span class="pill bank" aria-label="Suas moedinhas">🪙 ${money}</span>
+      </header>
+      <section class="shop preview" id="shop">
+        ${decorLayers(d)}
+        ${mascot("happy", "mascot")}
+        <p class="say pop" id="say">${msg || "Bem-vindo à sua lojinha! Escolha o que quer mudar 👇"}</p>
+        <div class="counter" style="${counterStyle(d)}"></div>
+      </section>
+      <div class="tabs" role="tablist">${Object.entries(DECOR).map(([k, c]) => `
+        <button class="tab" role="tab" data-tab="${k}" aria-selected="${k === shopTab}">${c.icon} ${c.label}</button>`).join("")}
+      </div>
+      <div class="items">${cat.items.map((it) => {
+        const have = isOwned(it), on = d[shopTab] === it.id;
+        const sw = shopTab === "parede" ? `<span class="sw" style="background:${it.css}"></span>`
+          : shopTab === "balcao" ? `<span class="sw" style="background:${it.bg};box-shadow:inset 0 6px 0 ${it.top}"></span>`
+          : it.css ? `<span class="sw" style="background:${it.css} repeat-x top / auto 40%, var(--bg)"></span>`
+          : `<span class="sw">${it.text || "🚫"}</span>`;
+        const pr = on ? "✔ Usando" : have ? "Usar" : `🪙 ${it.price}`;
+        return `<button class="item${on ? " on" : ""}${!have && it.price > money ? " poor" : ""}" data-id="${it.id}">
+          ${sw}<span class="nm">${it.name}</span><span class="pr">${pr}</span></button>`;
+      }).join("")}</div>
+      <p class="pause-note">Ganhe moedinhas atendendo clientes: troco perfeito vale mais!</p>
+    `));
+    document.getElementById("back").addEventListener("click", goBack);
+    app.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => { sfx.tap(); shopTab = b.dataset.tab; renderShop(); }));
+    app.querySelectorAll(".item").forEach((b) => b.addEventListener("click", () => chooseItem(b)));
+  }
+  function chooseItem(btn) {
+    const it = findItem(shopTab, btn.dataset.id), d = deco();
+    if (d[shopTab] === it.id) return;
+    if (!isOwned(it)) {
+      if (bank() < it.price) {
+        sfx.bad();
+        btn.classList.remove("shake"); void btn.offsetWidth; btn.classList.add("shake");
+        const say = document.getElementById("say");
+        say.textContent = `Faltam ${it.price - bank()} moedinhas pra ${it.name}. Atenda mais uns clientes! 💪`;
+        return;
+      }
+      setBank(bank() - it.price);
+      store("tc-owned", [...owned(), it.id]);
+      store("tc-deco", { ...d, [shopTab]: it.id });
+      sfx.ok();
+      renderShop(`Oba! ${it.name} é seu! 🎉`);
+      confetti(document.getElementById("shop"));
+      return;
+    }
+    store("tc-deco", { ...d, [shopTab]: it.id });
+    sfx.tap();
+    renderShop(it.price === 0 && /nada|Nenhum|Vazia/.test(it.id + it.name) ? "Tirei. Quer colocar outro?" : `Ficou lindo com ${it.name}! ✨`);
   }
 
   // ---------- Níveis ----------
@@ -823,10 +999,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       </header>
       <div class="round-dots" id="dots">${S.rounds.map(() => "<span></span>").join("")}</div>
       <section class="shop" id="shop">
-        <div class="shelf" aria-hidden="true"><span>🧃</span><span>🍎</span><span>🧸</span><span>🍞</span><span>🎈</span></div>
+        ${decorLayers()}
         <div id="cust"></div>
         <p class="say" id="say" aria-live="polite"></p>
-        <div class="counter"></div>
+        <div class="counter" style="${counterStyle()}"></div>
       </section>
       <section class="register" id="register">
         <div class="lcd" id="lcd" aria-label="Visor do caixa">
@@ -972,6 +1148,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       store("tc-level-" + S.level, Math.max(bestOf(S.level), starsOf(S.results)));
       if (next && !wasOpen && isOpen(next)) res.unlocked = next;
     }
+    res.coins = coinsFor(res);
+    setBank(bank() + res.coins);
     S = null;
     sfx.win();
     renderResult(res);
@@ -1013,6 +1191,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         <div class="score">${fmtTime(sc.total)}</div>
         <div class="stats">
           <span class="stat">✅ ${perfect} de 5 perfeitos</span>
+          ${res.coins ? `<span class="stat earned-stat">🪙 +${res.coins} moedinhas</span>` : ""}
           ${sc.wrong ? `<span class="stat">❌ ${sc.wrong} ${sc.wrong === 1 ? "erro" : "erros"} (+${sc.wrong * 5}s)</span>` : ""}
           ${sc.extra ? `<span class="stat">🪙 ${sc.extra} ${sc.extra === 1 ? "peça" : "peças"} a mais (+${sc.extra * 2}s)</span>` : ""}
         </div>
@@ -1053,6 +1232,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         <p class="muted" style="font-size:.85rem">Peças: quantas você usou / o mínimo possível.</p>
       </details>
       ${nextLevel(res) ? `<button class="btn" id="nextLv">▶ Próximo: ${LEVELS[nextLevel(res)].emoji} ${LEVELS[nextLevel(res)].name}</button>` : ""}
+      <button class="btn ghost" id="shopBtn">🏪 Gastar na lojinha<small>você tem 🪙 ${bank()} moedinhas</small></button>
       <div class="row">
         ${res.level ? `<button class="btn sun" id="again">🔁 De novo</button>` : `<button class="btn sun" id="levels">🎮 Níveis</button>`}
         <button class="btn ghost" id="home">🏠 Início</button>
@@ -1062,6 +1242,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     on("nextLv", () => startGame(nextLevel(res)));
     on("again", () => startGame(res.level));
     on("levels", () => { enterScreen(); renderLevels(); });
+    on("shopBtn", () => { enterScreen(); renderShop(); });
     document.getElementById("home").addEventListener("click", goBack);
     document.getElementById("back").addEventListener("click", goBack);
     const copy = document.getElementById("copy");

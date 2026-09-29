@@ -28,6 +28,10 @@ Fora do ranking, a criança joga quantas vezes quiser em 3 níveis. Terminar um 
 | 🦊 Intermediário | Centavos quebrados e notas de até R$ 50 |
 | 🦁 Avançado | Valores até R$ 200 e clientes que dão moedas a mais para facilitar o troco |
 
+## Minha lojinha
+
+Cada cliente atendido rende moedinhas 🪙: 2 por troco certo, mais 2 se for perfeito, mais 3 por estrela e 10 de bônus no desafio do dia. Com elas a criança compra decoração para a loja onde atende os clientes: parede, balcão, prateleira, bichinho e enfeite (33 itens, de 15 a 90 moedinhas). A carteira e a decoração ficam salvas no aparelho.
+
 ## Música e sons
 
 A música de fundo e os efeitos ficam em `public/sons/`. Eles são compostos em código, no estilo de videogame antigo (chiptune), por `tools/gerar-audio.mjs`. Para mudar e gerar de novo:
