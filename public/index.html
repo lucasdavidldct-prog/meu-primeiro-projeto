@@ -170,7 +170,7 @@ tr.me td { font-weight: 700; color: var(--accent); }
   "use strict";
 
   // ---------- Utilidades ----------
-  const { UFS, makeRounds, dailySeed, dayKey, msToNextDay, challengeNumber: challengeOf, minPieces, scoreOf, WRONG_PENALTY } = window.Regras;
+  const { UFS, makeRounds, dailySeed, dayKey, msToNextDay, minPieces, scoreOf, WRONG_PENALTY } = window.Regras;
 
   // Denominações em centavos (sem a nota de 200: o troco máximo é menor que isso)
   const DENOMS = [
@@ -199,7 +199,7 @@ tr.me td { font-weight: 700; color: var(--accent); }
   }
 
   const todayKey = () => dayKey();
-  const challengeNumber = () => challengeOf(todayKey());
+  const ddmm = (day) => day.slice(8, 10) + "/" + day.slice(5, 7); // "2026-09-29" -> "29/09"
 
 
   // ---------- Estado ----------
@@ -212,14 +212,13 @@ tr.me td { font-weight: 700; color: var(--accent); }
   // ---------- Telas ----------
   function renderStart() {
     stopTick();
-    const num = challengeNumber();
     const uf = store("tc-uf") || "SP";
     const played = store("tc-day-" + todayKey());
     const paused = pausedGame();
     const main = played ? "Ver meu resultado de hoje"
       : paused ? `Continuar desafio (cliente ${paused.i + 1} de 5)` : "Abrir o caixa";
     app.replaceChildren(el(`
-      <header class="top"><span class="brand">Troco Certo</span><span class="pill num">Desafio #${num}</span></header>
+      <header class="top"><span class="brand">Troco Certo</span><span class="pill num">${ddmm(todayKey())}</span></header>
       <section class="hero">
         <p class="eyebrow">Desafio do dia · igual para todo o Brasil</p>
         <h1>Você é bom de troco?</h1>
@@ -290,7 +289,7 @@ tr.me td { font-weight: 700; color: var(--accent); }
     S = {
       training, rounds: makeRounds(seed), i: 0, tray: {}, results: [],
       wrong: 0, roundStart: performance.now(), gameStart: performance.now(),
-      uf: store("tc-uf") || "SP", num: challengeNumber(), day: todayKey(),
+      uf: store("tc-uf") || "SP", day: todayKey(),
     };
     const paused = training ? null : pausedGame();
     if (paused) {
@@ -314,7 +313,7 @@ tr.me td { font-weight: 700; color: var(--accent); }
       <header class="top">
         <span class="left">
           <button class="back" id="back" aria-label="${S.training ? "Sair do treino" : "Pausar e voltar ao início"}">←</button>
-          <span class="brand">${S.training ? "Treino" : "Desafio #" + S.num}</span>
+          <span class="brand">${S.training ? "Treino" : "Desafio de hoje"}</span>
         </span>
         <span class="pill num" id="clock">0,0s</span>
       </header>
@@ -399,7 +398,7 @@ tr.me td { font-weight: 700; color: var(--accent); }
 
   function finish() {
     stopTick();
-    const res = { num: S.num, day: S.day, uf: S.uf, training: S.training, results: S.results, score: scoreOf(S.results) };
+    const res = { day: S.day, uf: S.uf, training: S.training, results: S.results, score: scoreOf(S.results) };
     if (!S.training) { store("tc-day-" + S.day, res); clearProgress(); }
     S = null;
     renderResult(res);
@@ -408,7 +407,7 @@ tr.me td { font-weight: 700; color: var(--accent); }
   function squares(results) { return results.map((r) => (r.wrong === 0 && r.pieces === r.best) ? "🟩" : "🟨").join(""); }
 
   function shareText(res) {
-    return `Troco Certo #${res.num} (${res.uf})\n${squares(res.results)}\n⏱️ ${secs(res.score.total)}\nVocê é bom de troco?`;
+    return `Troco Certo ${ddmm(res.day)} (${res.uf})\n${squares(res.results)}\n⏱️ ${secs(res.score.total)}\nVocê é bom de troco?`;
   }
 
   function renderResult(res) {
@@ -423,7 +422,7 @@ tr.me td { font-weight: 700; color: var(--accent); }
     app.replaceChildren(el(`
       <header class="top">
         <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">Troco Certo</span></span>
-        <span class="pill num">${res.training ? "Treino" : "Desafio #" + res.num}</span>
+        <span class="pill num">${res.training ? "Treino" : ddmm(res.day)}</span>
       </header>
       <section class="hero">
         <p class="eyebrow">${res.training ? "Resultado do treino" : "Seu resultado de hoje"}</p>

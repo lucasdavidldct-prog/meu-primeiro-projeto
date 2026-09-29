@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowInsets;
+import android.widget.FrameLayout;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -24,8 +25,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // A WebView ignora o próprio padding, então o espaço das barras do sistema
+        // é aplicado numa moldura em volta dela
+        FrameLayout frame = new FrameLayout(this);
         web = new WebView(this);
-        setContentView(web);
+        frame.addView(web, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        setContentView(frame);
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -58,8 +64,8 @@ public class MainActivity extends Activity {
 
         // Android 15 desenha atrás das barras do sistema: afasta o jogo delas
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            web.setOnApplyWindowInsetsListener((v, insets) -> {
-                Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+            frame.setOnApplyWindowInsetsListener((v, insets) -> {
+                Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
                 v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
                 return WindowInsets.CONSUMED;
             });
