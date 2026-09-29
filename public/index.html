@@ -56,6 +56,9 @@ p { margin: 0; }
 .eyebrow { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
 
 header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+header.top .left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.back { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; width: 40px; height: 40px; display: grid; place-items: center; font-size: 1.2rem; line-height: 1; flex: none; }
+.pause-note { font-size: 0.9rem; color: var(--muted); text-align: center; }
 header.top .brand { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; }
 .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 0.85rem; font-weight: 700; }
 
@@ -211,6 +214,10 @@ tr.me td { font-weight: 700; color: var(--accent); }
     stopTick();
     const num = challengeNumber();
     const uf = store("tc-uf") || "SP";
+    const played = store("tc-day-" + todayKey());
+    const paused = pausedGame();
+    const main = played ? "Ver meu resultado de hoje"
+      : paused ? `Continuar desafio (cliente ${paused.i + 1} de 5)` : "Abrir o caixa";
     app.replaceChildren(el(`
       <header class="top"><span class="brand">Troco Certo</span><span class="pill num">Desafio #${num}</span></header>
       <section class="hero">
@@ -226,13 +233,57 @@ tr.me td { font-weight: 700; color: var(--accent); }
       <label class="field" for="uf">Seu estado (para o ranking)
         <select id="uf">${UFS.map((u) => `<option ${u === uf ? "selected" : ""}>${u}</option>`).join("")}</select>
       </label>
-      <button class="btn" id="go">Abrir o caixa</button>
+      <button class="btn" id="go">${main}</button>
+      ${paused ? `<p class="pause-note">O relógio continua de onde parou.</p>` : ""}
       <button class="btn ghost" id="train">Treinar com clientes aleatórios</button>
     `));
     document.getElementById("uf").addEventListener("change", (e) => store("tc-uf", e.target.value));
-    document.getElementById("go").addEventListener("click", () => startGame(false));
-    document.getElementById("train").addEventListener("click", () => startGame(true));
+    document.getElementById("go").addEventListener("click", () => {
+      enterScreen();
+      if (played) renderResult(played); else startGame(false);
+    });
+    document.getElementById("train").addEventListener("click", () => { enterScreen(); startGame(true); });
   }
+
+  // ---------- Navegação (botão voltar da tela e do Android) ----------
+  // Cada tela aberta a partir do início ganha uma entrada no histórico;
+  // voltar (pelo botão ou pelo Android) sempre leva ao início.
+  let pushed = false;
+  function enterScreen() {
+    if (!pushed) { try { history.pushState({ tc: 1 }, ""); pushed = true; } catch (e) { /* sem histórico */ } }
+  }
+  function goBack() {
+    if (pushed) history.back(); else toStart();
+  }
+  function toStart() {
+    pushed = false;
+    if (S) leaveGame(); else renderStart();
+  }
+  window.addEventListener("popstate", toStart);
+
+  // ---------- Pausar e continuar o desafio do dia ----------
+  function pauseKey() { return "tc-pause-" + todayKey(); }
+  function pausedGame() {
+    const p = store(pauseKey());
+    return p && p.day === todayKey() ? p : null;
+  }
+  function saveProgress() {
+    if (!S || S.training) return;
+    const now = performance.now();
+    store(pauseKey(), {
+      day: S.day, i: S.i, results: S.results, wrong: S.wrong, roundWrong: S.roundWrong || 0,
+      gameElapsed: now - S.gameStart, roundElapsed: now - S.roundStart,
+    });
+  }
+  function clearProgress() { try { localStorage.removeItem(pauseKey()); } catch (e) { /* ok */ } }
+  function leaveGame() {
+    saveProgress();
+    S = null;
+    renderStart();
+  }
+  // Se o app for fechado no meio, o progresso fica salvo
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveProgress(); });
+  window.addEventListener("pagehide", saveProgress);
 
   function startGame(training) {
     const seed = training ? "treino-" + Date.now() : dailySeed(todayKey());
@@ -241,6 +292,14 @@ tr.me td { font-weight: 700; color: var(--accent); }
       wrong: 0, roundStart: performance.now(), gameStart: performance.now(),
       uf: store("tc-uf") || "SP", num: challengeNumber(), day: todayKey(),
     };
+    const paused = training ? null : pausedGame();
+    if (paused) {
+      const now = performance.now();
+      Object.assign(S, {
+        i: paused.i, results: paused.results, wrong: paused.wrong, roundWrong: paused.roundWrong,
+        gameStart: now - paused.gameElapsed, roundStart: now - paused.roundElapsed,
+      });
+    }
     renderRound();
     startTick();
   }
@@ -253,7 +312,10 @@ tr.me td { font-weight: 700; color: var(--accent); }
     const dots = S.rounds.map((_, k) => `<span class="${k < S.i ? "done" : k === S.i ? "now" : ""}"></span>`).join("");
     app.replaceChildren(el(`
       <header class="top">
-        <span class="brand">${S.training ? "Treino" : "Desafio #" + S.num}</span>
+        <span class="left">
+          <button class="back" id="back" aria-label="${S.training ? "Sair do treino" : "Pausar e voltar ao início"}">←</button>
+          <span class="brand">${S.training ? "Treino" : "Desafio #" + S.num}</span>
+        </span>
         <span class="pill num" id="clock">0,0s</span>
       </header>
       <div class="round-dots" aria-label="Cliente ${S.i + 1} de 5">${dots}</div>
@@ -287,6 +349,7 @@ tr.me td { font-weight: 700; color: var(--accent); }
     app.querySelectorAll("[data-c]").forEach((b) => b.addEventListener("click", () => addPiece(Number(b.dataset.c))));
     document.getElementById("clear").addEventListener("click", () => { S.tray = {}; paintTray(); });
     document.getElementById("give").addEventListener("click", deliver);
+    document.getElementById("back").addEventListener("click", goBack);
     paintTray();
     paintClock();
   }
@@ -330,13 +393,15 @@ tr.me td { font-weight: 700; color: var(--accent); }
     S.results.push({ ...r, ms: now - S.roundStart, pieces, best, wrong: S.roundWrong || 0, tray: { ...S.tray } });
     S.roundWrong = 0; S.tray = {}; S.i++; S.roundStart = now;
     if (S.i >= S.rounds.length) return finish();
+    saveProgress();
     renderRound();
   }
 
   function finish() {
     stopTick();
     const res = { num: S.num, day: S.day, uf: S.uf, training: S.training, results: S.results, score: scoreOf(S.results) };
-    if (!S.training) store("tc-day-" + S.day, res);
+    if (!S.training) { store("tc-day-" + S.day, res); clearProgress(); }
+    S = null;
     renderResult(res);
   }
 
@@ -356,7 +421,10 @@ tr.me td { font-weight: 700; color: var(--accent); }
     }).join("");
     const text = shareText(res);
     app.replaceChildren(el(`
-      <header class="top"><span class="brand">Troco Certo</span><span class="pill num">${res.training ? "Treino" : "Desafio #" + res.num}</span></header>
+      <header class="top">
+        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">Troco Certo</span></span>
+        <span class="pill num">${res.training ? "Treino" : "Desafio #" + res.num}</span>
+      </header>
       <section class="hero">
         <p class="eyebrow">${res.training ? "Resultado do treino" : "Seu resultado de hoje"}</p>
         <div class="score">${secs(sc.total)}</div>
@@ -389,12 +457,12 @@ tr.me td { font-weight: 700; color: var(--accent); }
       ${res.training ? "" : `<p class="muted num" id="next"></p>`}
       <div class="row">
         <button class="btn ghost" id="train">Treinar mais</button>
-        ${res.training ? `<button class="btn" id="home">Voltar ao início</button>` : ""}
+        <button class="btn" id="home">Voltar ao início</button>
       </div>
     `));
-    document.getElementById("train").addEventListener("click", () => startGame(true));
-    const home = document.getElementById("home");
-    if (home) home.addEventListener("click", boot);
+    document.getElementById("train").addEventListener("click", () => { enterScreen(); startGame(true); });
+    document.getElementById("home").addEventListener("click", goBack);
+    document.getElementById("back").addEventListener("click", goBack);
     const copy = document.getElementById("copy");
     if (copy) copy.addEventListener("click", () => {
       const done = () => { document.getElementById("copied").textContent = "Resultado copiado. Cole no grupo!"; };
@@ -494,7 +562,9 @@ tr.me td { font-weight: 700; color: var(--accent); }
 
   function boot() {
     const played = store("tc-day-" + todayKey());
-    if (played) renderResult(played); else renderStart();
+    renderStart();
+    // Quem já jogou hoje vê o resultado, mas o voltar leva ao início
+    if (played) { enterScreen(); renderResult(played); }
   }
   boot();
 })();
