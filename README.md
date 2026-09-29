@@ -58,7 +58,15 @@ Os itens que não existem em emoji são desenhados em SVG no mesmo arquivo.
 
 ## Música e sons
 
-A música de fundo e os efeitos ficam em `public/sons/`. Eles são compostos em código, no estilo de videogame antigo (chiptune), por `tools/gerar-audio.mjs`. Para mudar e gerar de novo:
+A música e os efeitos ficam em `public/sons/`. Eles são compostos em código por `tools/gerar-audio.mjs`, com marimba, cavaquinho (Karplus-Strong) e ondas de videogame.
+
+- **3 músicas:** calma no menu e na lojinha, animada nas partidas e rápida no ⚡ Relâmpago. No Relâmpago, a música acelera nos últimos 10 segundos. A troca entre elas é suave.
+- **A música abaixa sozinha** enquanto a Moedinha ou um cliente falam, e o volume padrão é baixo.
+- **Erro gentil:** um "hm-hm?" curioso, sem cara de bronca.
+- **Notas e moedas:** as notas fazem som de papel. Cada moeda tem o seu tom, e a menor é a mais aguda.
+- **Sons para os momentos especiais:** conquista, sequência 🔥, cada cliente especial e o tique-taque do fim do Relâmpago.
+
+Para mudar e gerar de novo:
 
 ```bash
 npm install

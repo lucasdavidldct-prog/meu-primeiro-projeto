@@ -657,7 +657,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     win: () => { [523, 659, 784, 1047].forEach((f, k) => beep(f, 0.2, "square", k * 0.12, 0.06)); },
   };
   // Sons gravados em public/sons (gerados por tools/gerar-audio.mjs)
-  const SOUND_FILES = { tap: "toque", ok: "caixa", bad: "erro", door: "porta", win: "vitoria", music: "musica" };
+  const SOUND_FILES = { tap: "toque", note: "nota", ok: "caixa", bad: "erro", door: "porta", win: "vitoria",
+    achieve: "conquista", streak: "sequencia", famoso: "famoso", aniversario: "festa", apressado: "pressa", desconfiado: "hmm", tick: "tique",
+    "music-menu": "musica-menu", "music-jogo": "musica-jogo", "music-relampago": "musica-relampago" };
   const buffers = {};
   function audioCtx() {
     try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
@@ -670,39 +672,69 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       fetch(`sons/${file}.mp3`)
         .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(file))))
         .then((data) => ctx.decodeAudioData(data))
-        .then((buf) => { buffers[key] = buf; if (key === "music") syncMusic(); })
+        .then((buf) => { buffers[key] = buf; if (key.startsWith("music")) syncMusic(); })
         .catch(() => { /* sem o arquivo: usa os bipes */ });
     }
   }
-  function play(key, vol = 1) {
+  function play(key, vol = 1, rate = 1) {
     if (!soundOn()) return;
     const ctx = audioCtx();
     if (!ctx || !buffers[key]) return beeps[key] && beeps[key]();
     if (ctx.state === "suspended") ctx.resume();
     const src = ctx.createBufferSource(), g = ctx.createGain();
-    g.gain.value = vol; src.buffer = buffers[key];
+    g.gain.value = vol; src.buffer = buffers[key]; src.playbackRate.value = rate;
     src.connect(g).connect(ctx.destination); src.start();
   }
+  // Cada moeda tem o seu tom (a menor é a mais aguda), com uma variação pequena para não cansar
+  const COIN_RATE = { 5: 1.32, 10: 1.22, 25: 1.12, 50: 1.03, 100: 0.94 };
+  const wobble = () => 0.97 + Math.random() * 0.06;
   const sfx = {
-    tap: () => play("tap", 0.5), ok: () => play("ok", 0.9), bad: () => play("bad", 0.8),
+    tap: () => play("tap", 0.5, wobble()), ok: () => play("ok", 0.9), bad: () => play("bad", 0.8),
     door: () => play("door", 0.6), win: () => play("win", 0.9),
+    piece: (c) => (c >= 200 ? play("note", 0.8, wobble()) : play("tap", 0.5, (COIN_RATE[c] || 1) * wobble())),
+    achieve: () => play("achieve", 0.9), streak: () => play("streak", 0.7),
+    special: (kind) => play(kind, kind === "aniversario" ? 0.5 : 0.7),
+    tick: (urgent) => play("tick", urgent ? 0.8 : 0.5, urgent ? 1.3 : 1),
   };
 
-  // Música de fundo em loop
+  // Música de fundo em loop: uma calma no menu e na lojinha, uma animada na partida
+  // e uma rápida no relâmpago (que acelera nos últimos 10 segundos).
   const musicOn = () => store("tc-music") !== "off";
-  let musicSrc = null, unlocked = false;
+  const MUSIC_VOL = { menu: 0.2, jogo: 0.2, relampago: 0.14 }, DUCK = 0.3; // ao falar, a música cai para 30%
+  let musicSrc = null, musicGain = null, musicKey = null, unlocked = false, ducked = false, duckTimer = null;
+  const musicKind = () => (!app.classList.contains("game") ? "menu" : S && S.flash ? "relampago" : "jogo");
+  const musicLevel = (kind) => MUSIC_VOL[kind] * (ducked ? DUCK : 1);
   function syncMusic() {
     const ctx = audioCtx();
-    const want = musicOn() && unlocked && buffers.music && document.visibilityState !== "hidden";
-    if (want && !musicSrc && ctx) {
-      if (ctx.state === "suspended") ctx.resume();
-      const g = ctx.createGain(); g.gain.value = 0.3;
-      musicSrc = ctx.createBufferSource(); musicSrc.buffer = buffers.music; musicSrc.loop = true;
-      musicSrc.connect(g).connect(ctx.destination); musicSrc.start();
-    } else if (!want && musicSrc) {
-      try { musicSrc.stop(); } catch (e) { /* já parou */ }
+    if (!ctx) return;
+    const kind = musicKind(), key = "music-" + kind;
+    const want = musicOn() && unlocked && buffers[key] && document.visibilityState !== "hidden";
+    if (musicSrc && (!want || musicKey !== key)) {
+      // Troca suave: a música que sai some aos poucos
+      const old = musicSrc;
+      musicGain.gain.setTargetAtTime(0, ctx.currentTime, 0.15);
+      setTimeout(() => { try { old.stop(); } catch (e) { /* já parou */ } }, 800);
       musicSrc = null;
     }
+    if (want && !musicSrc) {
+      if (ctx.state === "suspended") ctx.resume();
+      musicGain = ctx.createGain();
+      musicGain.gain.setValueAtTime(0, ctx.currentTime);
+      musicGain.gain.setTargetAtTime(musicLevel(kind), ctx.currentTime, 0.3);
+      musicSrc = ctx.createBufferSource(); musicSrc.buffer = buffers[key]; musicSrc.loop = true;
+      musicSrc.connect(musicGain).connect(ctx.destination); musicSrc.start();
+      musicKey = key;
+    }
+  }
+  // Abaixa a música enquanto a Moedinha ou o cliente falam
+  function duck(ms) {
+    ducked = ms > 0;
+    clearTimeout(duckTimer);
+    if (musicGain && musicSrc && actx) musicGain.gain.setTargetAtTime(musicLevel(musicKey.slice(6)), actx.currentTime, 0.12);
+    if (ducked) duckTimer = setTimeout(() => duck(0), ms);
+  }
+  function setMusicRate(r) {
+    if (musicSrc && Math.abs(musicSrc.playbackRate.value - r) > 0.001) musicSrc.playbackRate.setValueAtTime(r, actx.currentTime);
   }
   // O navegador só deixa tocar som depois do primeiro toque
   document.addEventListener("pointerdown", () => {
@@ -753,16 +785,21 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const t = clean(text);
     if (!t) return;
     try {
-      if (window.AndroidVoz) return window.AndroidVoz.speak(t);
+      // Tempo estimado da fala (o leitor do Android não avisa quando termina)
+      const talkMs = Math.min(15000, 900 + t.length * 75);
+      if (window.AndroidVoz) { duck(talkMs); return window.AndroidVoz.speak(t); }
       if (!("speechSynthesis" in window)) return;
       if (!unlocked) { pendingSpeech = t; return; }
       speechSynthesis.cancel();
+      duck(talkMs);
       const u = new SpeechSynthesisUtterance(t);
       u.lang = "pt-BR"; u.rate = 0.95; u.pitch = 1.15;
+      u.onend = () => duck(0);
       speechSynthesis.speak(u);
     } catch (e) { /* sem voz */ }
   }
   function hush() {
+    duck(0);
     try { if (window.AndroidVoz) window.AndroidVoz.stop(); else if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) { /* ok */ }
   }
   document.addEventListener("pointerdown", () => { if (pendingSpeech) { const t = pendingSpeech; pendingSpeech = null; setTimeout(() => speak(t), 50); } }, { capture: true });
@@ -970,6 +1007,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   // ---------- Estado ----------
   const app = document.getElementById("app");
   let S = null;       // partida em andamento
+  // Troca de tela troca a música
+  new MutationObserver(() => syncMusic()).observe(app, { attributes: true, attributeFilter: ["class"] });
   let tick = null;
 
   function el(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content; }
@@ -1244,6 +1283,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       bumpStats((st) => { st.bought++; });
       const fresh = checkAchievements();
       sfx.ok();
+      if (fresh.length) setTimeout(sfx.achieve, 700);
       renderShop(`Oba! ${it.name} é seu! 🎉` + (fresh.length ? ` E você ganhou a conquista ${fresh[0].icon} ${fresh[0].name} (+${fresh[0].reward} 🪙)!` : ""));
       confetti(document.getElementById("shop"));
       return;
@@ -1495,6 +1535,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     document.getElementById("shop").setAttribute("aria-label", `Cliente ${S.i + 1} de 5`);
     const intro = c.special ? SPECIALS[c.special].hello : decorComment(c);
     S.intro = intro;
+    if (c.special) setTimeout(() => { if (S && S.rounds[S.i] === r) sfx.special(c.special); }, 250);
     setCustomer("normal", (intro ? intro + " " : "") + askText(c, r), "", "enter");
     const talk = (intro ? intro + " " : "") + askSpeech(c, r);
     document.getElementById("say").dataset.speak = talk;
@@ -1509,7 +1550,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     paintTray(); flash("", "");
   }
 
-  function addPiece(c) { if (S.busy) return; sfx.tap(); S.tray[c] = (S.tray[c] || 0) + 1; S.lastAdded = c; paintTray(); }
+  function addPiece(c) { if (S.busy) return; sfx.piece(c); S.tray[c] = (S.tray[c] || 0) + 1; S.lastAdded = c; paintTray(); }
   function removePiece(c) { if (S.busy) return; sfx.tap(); S.lastAdded = null; S.tray[c]--; if (S.tray[c] <= 0) delete S.tray[c]; paintTray(); }
 
   function paintTray() {
@@ -1645,6 +1686,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     setTimeout(() => backupSave(true), 1500);
     S = null;
     sfx.win();
+    // Depois da fanfarra: fogo da sequência e brilho das conquistas
+    let later = 1500;
+    if (res.streak) { setTimeout(sfx.streak, later); later += 1200; }
+    if (res.achievements.length) setTimeout(sfx.achieve, later);
     renderResult(res);
   }
 
@@ -1951,8 +1996,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     if (!c || !S) return;
     if (S.flash) {
       const left = flashLeft();
-      c.textContent = "⚡ " + Math.max(0, Math.ceil(left / 1000)) + "s";
+      const sec = Math.max(0, Math.ceil(left / 1000));
+      c.textContent = "⚡ " + sec + "s";
       c.classList.toggle("hurry", left < 10000);
+      // Últimos 10 segundos: música mais rápida e tique-taque (mais forte nos 3 finais)
+      setMusicRate(left < 10000 ? 1.15 : 1);
+      if (left < 10000 && sec > 0 && sec !== S.lastTick) { S.lastTick = sec; sfx.tick(sec <= 3); }
       if (left <= 0 && !S.busy) finish();
       return;
     }
