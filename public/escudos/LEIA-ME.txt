@@ -1,0 +1,3 @@
+Coloque aqui imagens próprias de escudo, uma por clube, com o nome <SIGLA>.png
+(por exemplo CAM.png para o Atlético Mineiro). Se a imagem existir, o jogo usa
+ela no lugar do escudo gerado. Formato recomendado: PNG quadrado, fundo transparente.

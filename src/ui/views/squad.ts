@@ -1,0 +1,50 @@
+import { inPos } from '../../engine/cards';
+import { FORM_IDS } from '../../engine/positions';
+import { clamp } from '../../engine/rng';
+import { cardByUid, teamInfo } from '../../engine/state';
+import { MENT, STYLES, STYLE_IDS } from '../../engine/tactics';
+import { cardHTML, pips } from '../card';
+import { app } from '../ctx';
+import { esc } from '../dom';
+
+export function viewSquad(): string {
+  const S = app.S, sel = app.sel;
+  const T = teamInfo(S), { xi, chem, slots, r } = T;
+  const bar = (l: string, v: number) => `<div class="bar">${l}<i><b style="width:${clamp((v - 45) / 50 * 100, 4, 100)}%"></b></i><span>${Math.round(v)}</span></div>`;
+  let pitch = `<div class="pitch"><svg class="lines" viewBox="0 0 100 128" preserveAspectRatio="none" fill="none" stroke="rgba(255,255,255,.28)" stroke-width=".5"><rect x="3" y="3" width="94" height="122"/><path d="M3 64h94"/><circle cx="50" cy="64" r="11"/><rect x="24" y="3" width="52" height="18"/><rect x="37" y="3" width="26" height="7"/><rect x="24" y="107" width="52" height="18"/><rect x="37" y="118" width="26" height="7"/></svg>`;
+  slots.forEach((s, i) => {
+    const P = xi[i], top = 8 + (100 - s.y) * .84;
+    const selc = sel && sel.kind === 'xi' && sel.i === i
+      ? ` style="outline:2px solid var(--gold);outline-offset:3px;border-radius:6px;left:${s.x}%;top:${top}%"`
+      : ` style="left:${s.x}%;top:${top}%"`;
+    if (P) {
+      const oop = !inPos(P, s.p);
+      pitch += `<button class="slot" data-act="slot" data-i="${i}"${selc} aria-label="${s.p}: ${esc(P.name)}">${cardHTML(P)}<span class="lbl ${oop ? 'oop' : ''}">${s.p} ${pips(chem.per[i])}</span></button>`;
+    } else pitch += `<button class="slot empty" data-act="slot" data-i="${i}"${selc}><span class="ph">${s.p}</span></button>`;
+  });
+  pitch += '</div>';
+  const bench = S.squad.bench.map((u, i) => {
+    const P = u ? cardByUid(S, u) : null;
+    return P ? `<button class="slot" data-act="bslot" data-i="${i}">${cardHTML(P)}<span class="lbl">RES ${P.pos}</span></button>`
+      : `<button class="slot empty" data-act="bslot" data-i="${i}"><span class="ph">+</span></button>`;
+  }).join('');
+  return `
+  <div class="summary">
+    <div class="stat"><small>Geral</small><b>${T.ovr}</b></div>
+    <div class="stat"><small>Química</small><b>${chem.total}<span class="muted" style="font-size:16px">/33</span></b></div>
+    <div class="stat"><small>Formação</small><b style="font-size:22px">${S.squad.form}</b></div>
+  </div>
+  <div class="bars">${bar('ATA', r.att)}${bar('MEI', r.mid)}${bar('DEF', r.def)}${bar('GOL', r.gk)}</div>
+  ${pitch}
+  <p class="small muted" style="margin:6px 0 0">Toque num jogador para trocar. Losangos verdes = química (0–3). Posição em amarelo = fora de posição.</p>
+  <h3>Reservas</h3><div class="bench">${bench}</div>
+  <div class="row" style="margin-top:6px"><button class="btn" data-act="auto">Escalar melhor time</button></div>
+  <h3>Formação</h3>
+  <div class="chips">${FORM_IDS.map(f => `<button class="chip" data-act="form" data-f="${f}" aria-pressed="${f === S.squad.form}">${f}</button>`).join('')}</div>
+  <h3>Estilo de jogo</h3>
+  <div class="chips">${STYLE_IDS.map(k => `<button class="chip" data-act="style" data-s="${k}" aria-pressed="${k === S.tac.style}">${STYLES[k].n}</button>`).join('')}</div>
+  <div class="style-desc">${STYLES[S.tac.style].d}</div>
+  <h3>Mentalidade</h3>
+  <div class="chips">${MENT.map((m, i) => `<button class="chip" data-act="ment" data-m="${i}" aria-pressed="${i === S.tac.ment}">${m}</button>`).join('')}</div>
+  <p class="small muted">Mais ofensivo cria mais chances e também deixa mais espaço atrás. Dá para mudar tudo isso durante a partida.</p>`;
+}
