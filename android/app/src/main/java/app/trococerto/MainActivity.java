@@ -18,6 +18,12 @@ import android.webkit.WebViewClient;
 
 import androidx.webkit.WebViewAssetLoader;
 
+import com.google.android.play.core.integrity.IntegrityManager;
+import com.google.android.play.core.integrity.IntegrityManagerFactory;
+import com.google.android.play.core.integrity.IntegrityTokenRequest;
+
+import org.json.JSONObject;
+
 import java.util.Locale;
 
 // O app é só uma janela para o jogo, que vem dentro do APK (pasta assets).
@@ -27,6 +33,31 @@ public class MainActivity extends Activity {
     private WebView web;
     private TextToSpeech tts;
     private boolean ttsReady = false;
+
+    // Play Integrity: a página pede AndroidIntegridade.pedir(nonce) e recebe a resposta em
+    // window.__integridade(ok, token). O servidor confere o token com o Google.
+    public class Integridade {
+        @JavascriptInterface
+        public void pedir(String nonce) {
+            if (BuildConfig.CLOUD_PROJECT == 0L) { responder(false, "desligado"); return; }
+            try {
+                IntegrityManager manager = IntegrityManagerFactory.create(getApplicationContext());
+                manager.requestIntegrityToken(IntegrityTokenRequest.builder()
+                                .setNonce(nonce)
+                                .setCloudProjectNumber(BuildConfig.CLOUD_PROJECT)
+                                .build())
+                        .addOnSuccessListener(r -> responder(true, r.token()))
+                        .addOnFailureListener(e -> responder(false, "erro"));
+            } catch (Exception e) {
+                responder(false, "erro");
+            }
+        }
+    }
+
+    private void responder(boolean ok, String valor) {
+        String js = "window.__integridade && window.__integridade(" + ok + "," + JSONObject.quote(valor) + ")";
+        runOnUiThread(() -> web.evaluateJavascript(js, null));
+    }
 
     // Voz da Moedinha: a página chama AndroidVoz.speak("...") e o celular fala em português
     public class Voz {
@@ -65,6 +96,7 @@ public class MainActivity extends Activity {
         });
         // Só a página do próprio app (assets) é carregada nesta WebView; links externos abrem fora
         web.addJavascriptInterface(new Voz(), "AndroidVoz");
+        web.addJavascriptInterface(new Integridade(), "AndroidIntegridade");
 
         // Serve os arquivos do jogo num endereço https, para o armazenamento e o fetch funcionarem normalmente
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()

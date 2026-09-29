@@ -1,45 +1,66 @@
-// Servidor do Troco Certo: serve o jogo e guarda o ranking diário por estado.
+// Servidor do Troco Certo: serve o jogo, guarda o ranking diário por estado,
+// mede o tempo das partidas, oferece o painel do dono e guarda os códigos de recuperação.
 // Sem dependências: rode com `node server.js` (Node 18 ou mais novo).
 "use strict";
 
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const Regras = require("./public/regras.js");
+const Integridade = require("./integridade.js");
 
 const PORT = Number(process.env.PORT) || 3000;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "dados");
 const PUBLIC_DIR = path.join(__dirname, "public");
+const ADMIN_DIR = path.join(__dirname, "admin");
 const DATA_FILE = path.join(DATA_DIR, "resultados.jsonl");
+const BACKUP_FILE = path.join(DATA_DIR, "backups.jsonl");
 
 const MIN_UF_PLAYERS = 3;          // estado só entra no placar com pelo menos 3 jogadores
 const MIN_MS_PER_ROUND = 800;      // ninguém entrega troco em menos que isso
 const MIN_MS_PER_PIECE = 120;      // nem toca numa peça mais rápido que isso
 const MAX_MS_PER_ROUND = 30 * 60 * 1000;
-const RATE_LIMIT = 30;             // envios por IP por minuto
+const NET_TOLERANCE = 1500;        // folga para a demora da internet ao medir o tempo no servidor
 
 // ---------- Armazenamento ----------
-// Um resultado por linha (JSON Lines). Tudo fica em memória; o arquivo só recebe acréscimos.
-// dia -> Map(playerId -> resultado)
-const byDay = new Map();
+// Uma linha por registro (JSON Lines). Tudo fica em memória; o arquivo só recebe acréscimos.
+// Tipos: resultado (sem "type"), "remove" (painel do dono), "nick" (troca de apelido).
+const byDay = new Map();     // dia -> Map(playerId -> resultado)
+const removed = new Set();   // "dia|playerId" removidos pelo dono
+const backups = new Map();   // código -> { secretHash, data, at }
 
 function remember(entry) {
   if (!byDay.has(entry.day)) byDay.set(entry.day, new Map());
   byDay.get(entry.day).set(entry.playerId, entry);
 }
 
-function loadData() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) return;
-  for (const line of fs.readFileSync(DATA_FILE, "utf8").split("\n")) {
+function apply(rec) {
+  if (!rec.type) return remember(rec);
+  const key = `${rec.day}|${rec.playerId}`;
+  if (rec.type === "remove") { if (rec.undo) removed.delete(key); else removed.add(key); }
+  if (rec.type === "nick") { const e = byDay.get(rec.day)?.get(rec.playerId); if (e) e.nick = rec.nick; }
+  if (rec.type === "backup") backups.set(rec.code, { secretHash: rec.secretHash, data: rec.data, at: rec.at });
+}
+
+function readLines(file) {
+  if (!fs.existsSync(file)) return;
+  for (const line of fs.readFileSync(file, "utf8").split("\n")) {
     if (!line.trim()) continue;
-    try { remember(JSON.parse(line)); } catch { /* linha corrompida: ignora */ }
+    try { apply(JSON.parse(line)); } catch { /* linha corrompida: ignora */ }
   }
 }
 
-function save(entry) {
-  fs.appendFileSync(DATA_FILE, JSON.stringify(entry) + "\n");
-  remember(entry);
+function loadData() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  byDay.clear(); removed.clear(); backups.clear();
+  readLines(DATA_FILE);
+  readLines(BACKUP_FILE);
+}
+
+function save(rec, file = DATA_FILE) {
+  fs.appendFileSync(file, JSON.stringify(rec) + "\n");
+  apply(rec);
 }
 
 // ---------- Datas (horário de Brasília) ----------
@@ -51,12 +72,47 @@ function isPlayableDay(day) {
   const now = Date.now();
   return [-1, 0, 1].some((d) => dayKeyBrasilia(new Date(now + d * 86400000)) === day);
 }
+const validPlayer = (id) => typeof id === "string" && /^[A-Za-z0-9-]{8,64}$/.test(id);
+
+// ---------- Tempo medido no servidor ----------
+// O celular avisa quando cada cliente aparece (inicio), quando o troco é entregue (fim)
+// e quando o jogo é pausado/retomado. O servidor anota a hora em que recebeu cada aviso.
+// Na pontuação vale o MAIOR entre o tempo que o celular diz e o tempo medido aqui (menos
+// uma folga para a internet): quem tentar declarar um tempo menor do que levou não ganha nada.
+const timings = new Map(); // "dia|playerId" -> { [rodada]: { start, end, pausedMs, pauseAt } }
+
+function recordEvent(day, playerId, round, kind, now = Date.now()) {
+  const key = `${day}|${playerId}`;
+  if (!timings.has(key)) timings.set(key, {});
+  const t = timings.get(key);
+  const r = (t[round] = t[round] || { start: null, end: null, pausedMs: 0, pauseAt: null });
+  if (kind === "inicio" && r.start === null) r.start = now;
+  if (kind === "fim" && r.end === null && r.start !== null) {
+    if (r.pauseAt !== null) { r.pausedMs += now - r.pauseAt; r.pauseAt = null; }
+    r.end = now;
+  }
+  if (kind === "pausa" && r.start !== null && r.end === null && r.pauseAt === null) r.pauseAt = now;
+  if (kind === "volta" && r.pauseAt !== null) { r.pausedMs += now - r.pauseAt; r.pauseAt = null; }
+}
+
+function measuredMs(day, playerId, round) {
+  const r = timings.get(`${day}|${playerId}`)?.[round];
+  if (!r || r.start === null || r.end === null) return null;
+  return Math.max(0, r.end - r.start - r.pausedMs);
+}
+
+// Limpa medições de dias que já passaram
+setInterval(() => {
+  const keep = new Set([-1, 0, 1].map((d) => dayKeyBrasilia(new Date(Date.now() + d * 86400000))));
+  for (const k of timings.keys()) if (!keep.has(k.split("|")[0])) timings.delete(k);
+  for (const [n, v] of nonces) if (v.exp < Date.now()) nonces.delete(n);
+}, 3600000).unref();
 
 // ---------- Validação ----------
 function validateSubmission(body) {
   if (!body || typeof body !== "object") return { error: "Corpo inválido." };
-  const { day, uf, playerId, rounds } = body;
-  if (typeof playerId !== "string" || !/^[A-Za-z0-9-]{8,64}$/.test(playerId)) return { error: "Jogador inválido." };
+  const { day, uf, playerId, rounds, nick } = body;
+  if (!validPlayer(playerId)) return { error: "Jogador inválido." };
   if (!Regras.UFS.includes(uf)) return { error: "Estado inválido." };
   if (typeof day !== "string" || !isPlayableDay(day)) return { error: "Esse desafio não está mais aberto." };
 
@@ -64,6 +120,7 @@ function validateSubmission(body) {
   if (!Array.isArray(rounds) || rounds.length !== expected.length) return { error: "Número de clientes inválido." };
 
   const results = [];
+  let measuredAll = true;
   for (let i = 0; i < expected.length; i++) {
     const r = rounds[i] || {};
     if (!r.pieces || typeof r.pieces !== "object") return { error: `Cliente ${i + 1}: troco ausente.` };
@@ -78,17 +135,32 @@ function validateSubmission(body) {
     const ms = Number(r.ms);
     const floor = Math.max(MIN_MS_PER_ROUND, count * MIN_MS_PER_PIECE);
     if (!Number.isFinite(ms) || ms < floor || ms > MAX_MS_PER_ROUND) return { error: `Cliente ${i + 1}: tempo impossível.` };
-    results.push({ ms: Math.round(ms), pieces: count, best: Regras.minPieces(expected[i].change), wrong: r.wrong });
+    const measured = measuredMs(day, playerId, i);
+    if (measured === null) measuredAll = false;
+    // Vale o maior: o que o celular diz ou o que o servidor mediu (menos a folga da internet)
+    const effective = Math.round(measured === null ? ms : Math.max(ms, measured - NET_TOLERANCE));
+    results.push({ ms: effective, claimedMs: Math.round(ms), measuredMs: measured, pieces: count, best: Regras.minPieces(expected[i].change), wrong: r.wrong });
   }
 
   // A pontuação é sempre calculada aqui, nunca aceita do navegador
   const score = Regras.scoreOf(results).total;
-  return { entry: { day, uf, playerId, score, results, at: new Date().toISOString() } };
+  return {
+    entry: {
+      day, uf, playerId, score, results,
+      nick: Regras.validNick(nick) ? nick : null,
+      timed: measuredAll,
+      at: new Date().toISOString(),
+    },
+  };
 }
 
 // ---------- Ranking ----------
+function visiblePlayers(day) {
+  return [...(byDay.get(day) || new Map()).values()].filter((p) => !removed.has(`${p.day}|${p.playerId}`));
+}
+
 function ranking(day, uf, playerId) {
-  const players = [...(byDay.get(day) || new Map()).values()];
+  const players = visiblePlayers(day);
   const sorted = players.slice().sort((a, b) => a.score - b.score);
   const inUf = sorted.filter((p) => p.uf === uf);
 
@@ -102,6 +174,7 @@ function ranking(day, uf, playerId) {
     .sort((a, b) => (b.jogadores >= MIN_UF_PLAYERS) - (a.jogadores >= MIN_UF_PLAYERS) || a.media - b.media);
   estados.forEach((e, i) => { e.posicao = e.jogadores >= MIN_UF_PLAYERS ? i + 1 : null; });
 
+  const row = (p, i) => ({ posicao: i + 1, apelido: Regras.nickName(p.nick), uf: p.uf, score: p.score, voce: p.playerId === playerId });
   const me = playerId ? sorted.find((p) => p.playerId === playerId) : null;
   return {
     day,
@@ -111,24 +184,65 @@ function ranking(day, uf, playerId) {
     minJogadoresEstado: MIN_UF_PLAYERS,
     voce: me ? {
       score: me.score,
+      apelido: Regras.nickName(me.nick),
       posicaoBrasil: sorted.indexOf(me) + 1,
       posicaoUf: me.uf === uf ? inUf.indexOf(me) + 1 : null,
     } : null,
-    topUf: inUf.slice(0, 10).map((p, i) => ({ posicao: i + 1, score: p.score, voce: p.playerId === playerId })),
+    topBrasil: sorted.slice(0, 10).map(row),
+    topUf: inUf.slice(0, 10).map(row),
     estados,
   };
 }
 
-// ---------- HTTP ----------
-const hits = new Map(); // ip -> [timestamps]
-function rateLimited(ip) {
-  const now = Date.now();
-  const list = (hits.get(ip) || []).filter((t) => now - t < 60000);
-  list.push(now);
-  hits.set(ip, list);
-  return list.length > RATE_LIMIT;
+// ---------- Códigos de recuperação ----------
+// Guardam só dados do jogo (moedinhas, decoração, níveis, apelido): nada pessoal.
+const WORDS = ["pipa", "caju", "onca", "bola", "sapo", "lua", "sol", "trem", "bolo", "gato", "pato", "peao", "gude", "cocada",
+  "arara", "tatu", "boto", "mico", "jabuti", "coruja", "abelha", "estrela", "cometa", "foguete", "raio", "nuvem", "chuva",
+  "praia", "rio", "mar", "ilha", "serra", "milho", "pamonha", "pastel", "pipoca", "queijo", "doce", "suco", "manga", "uva",
+  "melancia", "banana", "coco", "tambor", "viola", "sanfona", "flauta", "barco", "jangada", "rede", "balao", "fita", "sino",
+  "livro", "lapis", "caderno", "mochila", "patins", "skate", "carrinho", "boneca", "urso", "dado"];
+const hashSecret = (s) => crypto.createHash("sha256").update(String(s)).digest("hex");
+
+function newCode() {
+  for (;;) {
+    const w = () => WORDS[crypto.randomInt(WORDS.length)];
+    const code = `${w()}-${w()}-${w()}-${crypto.randomInt(10, 100)}`;
+    if (!backups.has(code)) return code;
+  }
 }
-setInterval(() => { const now = Date.now(); for (const [ip, l] of hits) if (!l.some((t) => now - t < 60000)) hits.delete(ip); }, 60000).unref();
+
+const idOk = (x) => typeof x === "string" && x.length <= 40 && /^[a-zA-Z0-9-]+$/.test(x);
+function cleanBackup(d) {
+  if (!d || typeof d !== "object") return null;
+  const out = {};
+  out.bank = Number.isInteger(d.bank) && d.bank >= 0 && d.bank <= 1e6 ? d.bank : 0;
+  out.owned = Array.isArray(d.owned) ? d.owned.filter(idOk).slice(0, 300) : [];
+  out.deco = {};
+  if (d.deco && typeof d.deco === "object") for (const [k, v] of Object.entries(d.deco)) if (idOk(k) && idOk(v)) out.deco[k] = v;
+  out.levels = {};
+  if (d.levels && typeof d.levels === "object") for (const k of Regras.LEVEL_ORDER) if ([0, 1, 2, 3].includes(d.levels[k])) out.levels[k] = d.levels[k];
+  out.playerId = validPlayer(d.playerId) ? d.playerId : null;
+  out.nick = Regras.validNick(d.nick) ? d.nick : null;
+  out.uf = Regras.UFS.includes(d.uf) ? d.uf : null;
+  return out;
+}
+
+// ---------- Play Integrity: números de uso único ----------
+const nonces = new Map(); // nonce -> { playerId, exp }
+
+// ---------- HTTP ----------
+function limiter(max) {
+  const hits = new Map();
+  setInterval(() => { const now = Date.now(); for (const [ip, l] of hits) if (!l.some((t) => now - t < 60000)) hits.delete(ip); }, 60000).unref();
+  return (ip) => {
+    const now = Date.now();
+    const list = (hits.get(ip) || []).filter((t) => now - t < 60000);
+    list.push(now);
+    hits.set(ip, list);
+    return list.length > max;
+  };
+}
+const limitSubmit = limiter(30), limitEvents = limiter(300), limitRestore = limiter(10), limitAdmin = limiter(60);
 
 function sendJson(res, status, data) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
@@ -143,13 +257,15 @@ function readBody(req, limit = 10000) {
     req.on("error", reject);
   });
 }
+async function jsonBody(req, limit) {
+  try { return JSON.parse(await readBody(req, limit)); } catch { return null; }
+}
 
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".png": "image/png", ".svg": "image/svg+xml", ".json": "application/json", ".webmanifest": "application/manifest+json", ".woff2": "font/woff2", ".mp3": "audio/mpeg", ".txt": "text/plain; charset=utf-8" };
 
-function serveStatic(req, res, pathname) {
-  const rel = pathname === "/" ? "index.html" : decodeURIComponent(pathname).replace(/^\/+/, "");
-  const file = path.normalize(path.join(PUBLIC_DIR, rel));
-  if (!file.startsWith(PUBLIC_DIR + path.sep)) { res.writeHead(403); return res.end(); }
+function serveFile(res, dir, rel) {
+  const file = path.normalize(path.join(dir, rel));
+  if (!file.startsWith(dir + path.sep)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); return res.end("Não encontrado"); }
     res.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "application/octet-stream" });
@@ -157,41 +273,149 @@ function serveStatic(req, res, pathname) {
   });
 }
 
+// Painel do dono: só funciona com ADMIN_TOKEN definido no servidor
+function isAdmin(req) {
+  const token = process.env.ADMIN_TOKEN || "";
+  const given = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  if (token.length < 12 || !given) return false;
+  const a = Buffer.from(hashSecret(token)), b = Buffer.from(hashSecret(given));
+  return crypto.timingSafeEqual(a, b);
+}
+
 async function handle(req, res) {
   const url = new URL(req.url, "http://localhost");
   const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress;
+  const p = url.pathname;
 
-  if (url.pathname.startsWith("/api/")) {
+  if (p.startsWith("/api/") && !p.startsWith("/api/admin/")) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
   }
 
-  if (url.pathname === "/api/saude") return sendJson(res, 200, { ok: true, hoje: dayKeyBrasilia() });
+  if (p === "/api/saude") return sendJson(res, 200, { ok: true, hoje: dayKeyBrasilia(), integridade: Integridade.mode() });
 
-  if (url.pathname === "/api/resultado" && req.method === "POST") {
-    if (rateLimited(ip)) return sendJson(res, 429, { error: "Muitos envios. Tente de novo em um minuto." });
-    let body;
-    try { body = JSON.parse(await readBody(req)); } catch { return sendJson(res, 400, { error: "Corpo inválido." }); }
+  // Avisos de tempo da partida (inicio, fim, pausa, volta)
+  if (p === "/api/evento" && req.method === "POST") {
+    if (limitEvents(ip)) return sendJson(res, 429, { error: "Muitos avisos." });
+    const b = await jsonBody(req, 2000);
+    if (!b || !validPlayer(b.playerId) || !isPlayableDay(b.day) || !Number.isInteger(b.round) || b.round < 0 || b.round > 4
+      || !["inicio", "fim", "pausa", "volta"].includes(b.tipo)) return sendJson(res, 400, { error: "Aviso inválido." });
+    recordEvent(b.day, b.playerId, b.round, b.tipo);
+    return sendJson(res, 200, { ok: true });
+  }
+
+  // Número de uso único para o Play Integrity
+  if (p === "/api/nonce" && req.method === "POST") {
+    if (limitSubmit(ip)) return sendJson(res, 429, { error: "Muitos pedidos." });
+    const b = await jsonBody(req, 1000);
+    if (!b || !validPlayer(b.playerId)) return sendJson(res, 400, { error: "Jogador inválido." });
+    const nonce = crypto.randomBytes(24).toString("base64url");
+    nonces.set(nonce, { playerId: b.playerId, exp: Date.now() + 10 * 60000 });
+    return sendJson(res, 200, { nonce });
+  }
+
+  if (p === "/api/resultado" && req.method === "POST") {
+    if (limitSubmit(ip)) return sendJson(res, 429, { error: "Muitos envios. Tente de novo em um minuto." });
+    const body = await jsonBody(req);
+    if (!body) return sendJson(res, 400, { error: "Corpo inválido." });
     const { error, entry } = validateSubmission(body);
     if (error) return sendJson(res, 400, { error });
     const existing = byDay.get(entry.day)?.get(entry.playerId);
     if (existing) return sendJson(res, 409, { error: "Você já jogou o desafio de hoje.", ranking: ranking(entry.day, existing.uf, entry.playerId) });
+
+    // Play Integrity (desligado até o app estar na Play Store)
+    const mode = Integridade.mode();
+    entry.integrity = "desligado";
+    if (mode !== "off") {
+      const ig = body.integrity || {};
+      const n = nonces.get(ig.nonce);
+      nonces.delete(ig.nonce);
+      const verdict = n && n.playerId === entry.playerId && n.exp > Date.now()
+        ? await Integridade.verify(ig.token, ig.nonce)
+        : { ok: false, reason: "nonce" };
+      entry.integrity = verdict.ok ? "ok" : `falhou: ${verdict.reason}`;
+      if (!verdict.ok && mode === "require") return sendJson(res, 403, { error: "Não conseguimos confirmar que o jogo é original. Baixe pela Play Store." });
+    }
     save(entry);
     return sendJson(res, 201, { ranking: ranking(entry.day, entry.uf, entry.playerId) });
   }
 
-  if (url.pathname === "/api/ranking" && req.method === "GET") {
+  // Troca de apelido (também no resultado de hoje, se já tiver jogado)
+  if (p === "/api/apelido" && req.method === "POST") {
+    if (limitSubmit(ip)) return sendJson(res, 429, { error: "Muitos pedidos." });
+    const b = await jsonBody(req, 1000);
+    if (!b || !validPlayer(b.playerId) || !Regras.validNick(b.nick) || !isPlayableDay(b.day)) return sendJson(res, 400, { error: "Apelido inválido." });
+    if (byDay.get(b.day)?.get(b.playerId)) save({ type: "nick", day: b.day, playerId: b.playerId, nick: b.nick });
+    return sendJson(res, 200, { ok: true, apelido: Regras.nickName(b.nick) });
+  }
+
+  if (p === "/api/ranking" && req.method === "GET") {
     const day = url.searchParams.get("day") || dayKeyBrasilia();
     const uf = url.searchParams.get("uf") || "SP";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Regras.UFS.includes(uf)) return sendJson(res, 400, { error: "Parâmetros inválidos." });
     return sendJson(res, 200, ranking(day, uf, url.searchParams.get("playerId")));
   }
 
-  if (url.pathname.startsWith("/api/")) return sendJson(res, 404, { error: "Rota não encontrada." });
+  // Código de recuperação: criar ou atualizar
+  if (p === "/api/backup" && req.method === "POST") {
+    if (limitSubmit(ip)) return sendJson(res, 429, { error: "Muitos pedidos." });
+    const b = await jsonBody(req, 12000);
+    const data = b && cleanBackup(b.data);
+    if (!data) return sendJson(res, 400, { error: "Dados inválidos." });
+    if (b.code) {
+      const cur = backups.get(b.code);
+      if (!cur || cur.secretHash !== hashSecret(b.secret)) return sendJson(res, 403, { error: "Código não confere." });
+      save({ type: "backup", code: b.code, secretHash: cur.secretHash, data, at: new Date().toISOString() }, BACKUP_FILE);
+      return sendJson(res, 200, { code: b.code, secret: b.secret });
+    }
+    const code = newCode(), secret = crypto.randomBytes(18).toString("base64url");
+    save({ type: "backup", code, secretHash: hashSecret(secret), data, at: new Date().toISOString() }, BACKUP_FILE);
+    return sendJson(res, 201, { code, secret });
+  }
+
+  // Código de recuperação: restaurar (limite baixo de tentativas contra quem tenta adivinhar)
+  if (p.startsWith("/api/backup/") && req.method === "GET") {
+    if (limitRestore(ip)) return sendJson(res, 429, { error: "Muitas tentativas. Espere um minuto." });
+    const code = decodeURIComponent(p.slice("/api/backup/".length)).trim().toLowerCase();
+    const cur = backups.get(code);
+    if (!cur) return sendJson(res, 404, { error: "Código não encontrado. Confira as palavras e o número." });
+    return sendJson(res, 200, { data: cur.data });
+  }
+
+  // ---------- Painel do dono ----------
+  if (p.startsWith("/api/admin/")) {
+    if (limitAdmin(ip)) return sendJson(res, 429, { error: "Muitos pedidos." });
+    if (!process.env.ADMIN_TOKEN) return sendJson(res, 503, { error: "Painel desligado: defina ADMIN_TOKEN no servidor." });
+    if (!isAdmin(req)) return sendJson(res, 401, { error: "Senha do painel incorreta." });
+    if (p === "/api/admin/dia" && req.method === "GET") {
+      const day = url.searchParams.get("day") || dayKeyBrasilia();
+      const list = [...(byDay.get(day) || new Map()).values()].sort((a, b) => a.score - b.score).map((e) => ({
+        playerId: e.playerId, apelido: Regras.nickName(e.nick), uf: e.uf, score: e.score, at: e.at,
+        erros: e.results.reduce((a, r) => a + r.wrong, 0),
+        declarado: e.results.reduce((a, r) => a + (r.claimedMs ?? r.ms), 0),
+        medido: e.results.every((r) => typeof r.measuredMs === "number") ? e.results.reduce((a, r) => a + r.measuredMs, 0) : null,
+        rodadas: e.results.map((r) => ({ declarado: r.claimedMs ?? r.ms, medido: r.measuredMs ?? null })),
+        integridade: e.integrity || "desligado",
+        removido: removed.has(`${e.day}|${e.playerId}`),
+      }));
+      return sendJson(res, 200, { day, total: list.length, resultados: list });
+    }
+    if (p === "/api/admin/remover" && req.method === "POST") {
+      const b = await jsonBody(req, 1000);
+      if (!b || !validPlayer(b.playerId) || !/^\d{4}-\d{2}-\d{2}$/.test(b.day) || !byDay.get(b.day)?.get(b.playerId)) return sendJson(res, 400, { error: "Resultado não encontrado." });
+      save({ type: "remove", day: b.day, playerId: b.playerId, undo: !!b.desfazer, at: new Date().toISOString() });
+      return sendJson(res, 200, { ok: true, removido: !b.desfazer });
+    }
+    return sendJson(res, 404, { error: "Rota não encontrada." });
+  }
+
+  if (p.startsWith("/api/")) return sendJson(res, 404, { error: "Rota não encontrada." });
   if (req.method !== "GET" && req.method !== "HEAD") { res.writeHead(405); return res.end(); }
-  serveStatic(req, res, url.pathname);
+  if (p === "/admin" || p === "/admin/") return serveFile(res, ADMIN_DIR, "index.html");
+  const rel = p === "/" ? "index.html" : decodeURIComponent(p).replace(/^\/+/, "");
+  serveFile(res, PUBLIC_DIR, rel);
 }
 
 function createServer() {
@@ -205,4 +429,4 @@ if (require.main === module) {
   createServer().listen(PORT, () => console.log(`Troco Certo rodando em http://localhost:${PORT}`));
 }
 
-module.exports = { createServer, validateSubmission, ranking, dayKeyBrasilia };
+module.exports = { createServer, validateSubmission, ranking, dayKeyBrasilia, recordEvent, measuredMs };

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Painel do Troco Certo</title>
+<style>
+/* Painel do dono: tabela simples do dia, com destaque no que parece suspeito. */
+:root { --bg: #f4f6fb; --card: #fff; --ink: #1f2b52; --muted: #5a6690; --line: #dde3f0; --bad: #d64545; --warn: #b7791f; --good: #16924b; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+h1 { margin: 0; font-size: 1.4rem; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+label { display: grid; gap: 4px; font-weight: 600; font-size: 0.85rem; }
+input, button { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); }
+button { background: var(--ink); color: #fff; border: 0; cursor: pointer; }
+button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button.danger { background: var(--bad); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+tr.off td { opacity: .45; text-decoration: line-through; }
+tr.off td:last-child { opacity: 1; text-decoration: none; }
+.flag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+.flag.bad { background: #fde2e2; color: var(--bad); }
+.flag.warn { background: #fff1d6; color: var(--warn); }
+.flag.ok { background: #dcf5e6; color: var(--good); }
+.muted { color: var(--muted); }
+#msg { min-height: 1.4em; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Painel do Troco Certo</h1>
+  <section class="card">
+    <form class="row" id="f">
+      <label for="token">Senha do painel (ADMIN_TOKEN)<input id="token" type="password" autocomplete="current-password" required></label>
+      <label for="day">Dia<input id="day" type="date" required></label>
+      <button>Carregar</button>
+    </form>
+    <p id="msg" class="muted"></p>
+  </section>
+  <section class="card">
+    <p class="muted">Sinais de alerta: <span class="flag bad">rápido demais</span> tempo abaixo de 60% da mediana do dia ·
+      <span class="flag warn">sem medição</span> o servidor não acompanhou a partida ·
+      <span class="flag bad">integridade</span> o Google não confirmou que é o app original.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Apelido</th><th>UF</th><th>Tempo</th><th>Declarado</th><th>Medido</th><th>Erros</th><th>Alertas</th><th>Enviado</th><th></th></tr></thead>
+      <tbody id="rows"><tr><td colspan="10" class="muted">Digite a senha e carregue um dia.</td></tr></tbody>
+    </table></div>
+  </section>
+</main>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const s = (ms) => ms == null ? "—" : (ms / 1000).toFixed(1).replace(".", ",") + "s";
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  try { $("token").value = sessionStorage.getItem("tc-admin") || ""; } catch (e) {}
+  // Dia de hoje em Brasília (UTC-3)
+  $("day").value = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
+
+  async function api(path, opts = {}) {
+    const r = await fetch(path, { ...opts, headers: { Authorization: "Bearer " + $("token").value, "Content-Type": "application/json" } });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || "Erro " + r.status);
+    return data;
+  }
+
+  async function load() {
+    $("msg").textContent = "Carregando…";
+    try {
+      try { sessionStorage.setItem("tc-admin", $("token").value); } catch (e) {}
+      const d = await api("/api/admin/dia?day=" + $("day").value);
+      const valid = d.resultados.filter((r) => !r.removido).map((r) => r.score).sort((a, b) => a - b);
+      const median = valid.length ? valid[Math.floor(valid.length / 2)] : 0;
+      $("rows").innerHTML = d.resultados.map((r, i) => {
+        const flags = [];
+        if (median && r.score < median * 0.6 && valid.length >= 5) flags.push('<span class="flag bad">rápido demais</span>');
+        if (r.medido == null) flags.push('<span class="flag warn">sem medição</span>');
+        if (r.integridade.startsWith("falhou")) flags.push(`<span class="flag bad">integridade: ${esc(r.integridade.slice(8))}</span>`);
+        if (r.integridade === "ok") flags.push('<span class="flag ok">app original</span>');
+        return `<tr class="${r.removido ? "off" : ""}">
+          <td>${i + 1}</td><td>${esc(r.apelido)}</td><td>${esc(r.uf)}</td><td><strong>${s(r.score)}</strong></td>
+          <td>${s(r.declarado)}</td><td>${s(r.medido)}</td><td>${r.erros}</td><td>${flags.join(" ") || '<span class="muted">—</span>'}</td>
+          <td class="muted">${new Date(r.at).toLocaleTimeString("pt-BR")}</td>
+          <td><button class="${r.removido ? "ghost" : "danger"}" data-id="${esc(r.playerId)}" data-undo="${r.removido}">${r.removido ? "Devolver" : "Remover"}</button></td>
+        </tr>`;
+      }).join("") || '<tr><td colspan="10" class="muted">Ninguém jogou nesse dia.</td></tr>';
+      $("msg").textContent = `${d.total} resultado(s) em ${d.day}.`;
+    } catch (e) { $("msg").textContent = e.message; }
+  }
+
+  $("f").addEventListener("submit", (e) => { e.preventDefault(); load(); });
+  $("rows").addEventListener("click", async (e) => {
+    const b = e.target.closest("button[data-id]");
+    if (!b) return;
+    try {
+      await api("/api/admin/remover", { method: "POST", body: JSON.stringify({ day: $("day").value, playerId: b.dataset.id, desfazer: b.dataset.undo === "true" }) });
+      load();
+    } catch (err) { $("msg").textContent = err.message; }
+  });
+  if ($("token").value) load();
+})();
+</script>
+</body>
+</html>

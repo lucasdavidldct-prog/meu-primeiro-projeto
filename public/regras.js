@@ -26,6 +26,25 @@
   function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
+  // Apelidos do ranking: só combinações destas listas (nada de nome de verdade nem palavrão).
+  // Os adjetivos não mudam com masculino/feminino ("Onça Veloz", "Tatu Veloz").
+  const APELIDO_NOMES = ["🐆 Onça", "🦜 Arara", "🐦 Tucano", "🦫 Capivara", "🦔 Tatu", "🐬 Boto", "🐒 Mico", "🐢 Jabuti", "🐺 Lobo-guará",
+    "🐜 Tamanduá", "🦩 Flamingo", "🐸 Perereca", "🦉 Coruja", "🐝 Abelha", "🦋 Borboleta", "🐊 Jacaré",
+    "🧀 Pão de Queijo", "🍫 Brigadeiro", "🍿 Pipoca", "🥟 Pastel", "🌽 Pamonha", "🥥 Cocada",
+    "☄️ Cometa", "🚀 Foguete", "🪁 Pipa", "🌟 Estrela", "⚡ Raio", "🌈 Arco-íris"];
+  const APELIDO_ADJ = ["Veloz", "Feliz", "Genial", "Incrível", "Ágil", "Valente", "Gentil", "Sagaz",
+    "Brilhante", "Elegante", "Imbatível", "Sorridente", "Radiante", "Craque", "Nota 10", "do Troco"];
+  function validNick(n) {
+    return !!n && Number.isInteger(n.n) && n.n >= 0 && n.n < APELIDO_NOMES.length
+      && Number.isInteger(n.a) && n.a >= 0 && n.a < APELIDO_ADJ.length
+      && Number.isInteger(n.num) && n.num >= 1 && n.num <= 99;
+  }
+  function nickName(n) { return validNick(n) ? `${APELIDO_NOMES[n.n]} ${APELIDO_ADJ[n.a]} ${n.num}` : "Jogador"; }
+  function randomNick() {
+    const r = (k) => Math.floor(Math.random() * k);
+    return { n: r(APELIDO_NOMES.length), a: r(APELIDO_ADJ.length), num: 1 + r(99) };
+  }
+
   // Níveis (fora do ranking). "step" é o menor passo do preço, em centavos.
   const LEVELS = {
     iniciante: {
@@ -102,5 +121,5 @@
     return { raw, wrong, extra, total: raw + wrong * WRONG_PENALTY + extra * EXTRA_PENALTY };
   }
 
-  return { UFS, VALORES, LEVELS, LEVEL_ORDER, WRONG_PENALTY, EXTRA_PENALTY, makeRounds, dailySeed, dayKey, msToNextDay, challengeNumber, minPieces, scoreOf };
+  return { UFS, VALORES, LEVELS, LEVEL_ORDER, validNick, nickName, randomNick, WRONG_PENALTY, EXTRA_PENALTY, makeRounds, dailySeed, dayKey, msToNextDay, challengeNumber, minPieces, scoreOf };
 });

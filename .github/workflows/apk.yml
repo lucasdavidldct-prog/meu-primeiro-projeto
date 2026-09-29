@@ -16,6 +16,8 @@ jobs:
       # Endereço do servidor no Render. Para trocar sem mexer no código, crie a variável
       # TROCO_API_URL em Settings > Secrets and variables > Actions > Variables.
       TROCO_API_URL: ${{ vars.TROCO_API_URL || 'https://troco-certo.onrender.com/' }}
+      # Número do projeto do Google Cloud para o Play Integrity (vazio = desligado)
+      PLAY_CLOUD_PROJECT: ${{ vars.PLAY_CLOUD_PROJECT || '0' }}
     steps:
       - uses: actions/checkout@v4
 

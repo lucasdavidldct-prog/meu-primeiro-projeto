@@ -13,6 +13,12 @@ android {
         // Cada build do GitHub ganha um número maior, para o celular aceitar a atualização
         versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger())
         versionName '0.1.0'
+        // Número do projeto do Google Cloud para o Play Integrity (0 = desligado)
+        buildConfigField 'long', 'CLOUD_PROJECT', (System.getenv('PLAY_CLOUD_PROJECT') ?: '0') + 'L'
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     // Chave SÓ PARA TESTES: permite instalar versões novas por cima da antiga.
@@ -45,4 +51,5 @@ android {
 
 dependencies {
     implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'com.google.android.play:integrity:1.3.0'
 }

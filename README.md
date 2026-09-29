@@ -62,17 +62,46 @@ A Moedinha é desenhada em `tools/gerar-icone.py`, que gera o ícone do Android 
 | Arquivo | O que faz |
 |---|---|
 | `public/index.html` | O jogo. |
-| `public/regras.js` | As regras (desafio do dia, pontuação). Usado pelo jogo **e** pelo servidor. |
-| `server.js` | Serve o jogo e a API do ranking. Guarda os resultados em `dados/resultados.jsonl`. |
+| `public/regras.js` | As regras (desafio do dia, pontuação, apelidos). Usado pelo jogo **e** pelo servidor. |
+| `server.js` | Serve o jogo, a API do ranking, o painel do dono e os códigos de recuperação. Guarda tudo em `dados/`. |
+| `integridade.js` | Verificação do Play Integrity (desligada até a publicação). |
+| `admin/index.html` | Painel do dono, em `/admin`. |
 
-**Contra trapaça:** o navegador manda só as notas e moedas usadas em cada cliente e o tempo. O servidor refaz o desafio do dia, confere se cada troco bate, recusa tempos impossíveis (rápido demais para um humano) e calcula a pontuação ele mesmo. Cada jogador (identificado por um código salvo no navegador) só entra uma vez por dia.
+**Sem login e sem nome.** Cada aparelho ganha um código aleatório. No ranking aparece só um **apelido sorteado** de listas prontas (ex.: "🐆 Onça Veloz 7"); o servidor recusa qualquer outra combinação. A criança troca o apelido no 🎲.
+
+**Contra trapaça:**
+- O servidor refaz os 5 clientes do dia, confere cada troco e calcula a pontuação ele mesmo.
+- **Tempo medido no servidor:** o jogo avisa quando cada cliente aparece, quando o troco é entregue e quando pausa. Vale o **maior** entre o tempo que o celular diz e o tempo medido (com 1,5 s de folga para a internet). Declarar um tempo menor não adianta.
+- Um resultado por jogador por dia; limites de pedidos por minuto.
+- **Play Integrity** (quando ligado): prova que o resultado veio do app original da Play Store num celular de verdade.
+- **Painel do dono** para remover resultados suspeitos.
 
 **Placar dos estados:** média de tempo dos jogadores do estado. Um estado só entra no placar com pelo menos 3 jogadores.
 
-API:
-- `POST /api/resultado` com `{ day, uf, playerId, rounds: [{ pieces: { "1000": 1, "25": 2 }, ms, wrong }] }`
+API principal:
+- `POST /api/resultado`: `{ day, uf, playerId, nick, rounds: [{ pieces, ms, wrong }], integrity? }`
+- `POST /api/evento`: `{ day, playerId, round, tipo: inicio|fim|pausa|volta }`
 - `GET /api/ranking?day=AAAA-MM-DD&uf=SP&playerId=...`
-- `GET /api/saude`
+- `POST /api/apelido`, `POST /api/nonce`, `POST /api/backup`, `GET /api/backup/:codigo`, `GET /api/saude`
+
+## Painel do dono
+
+Abra `https://SEU-SERVIDOR/admin` e digite a senha (`ADMIN_TOKEN`). No Render ela é gerada sozinha: veja em **Environment**. O painel lista os resultados do dia com tempo declarado × medido, erros e alertas (rápido demais, sem medição, integridade), e permite **remover** ou **devolver** um resultado.
+
+## Código de recuperação
+
+Na Área dos pais, "Criar código de recuperação" gera algo como `pipa-caju-sapo-42`. Ele guarda moedinhas, decoração, níveis, apelido e estado (nada pessoal) e é atualizado sozinho depois de cada partida. No celular novo, "Já tem um código?" restaura tudo. Só o aparelho que criou o código consegue atualizá-lo; tentativas de adivinhar são limitadas a 10 por minuto.
+
+## Play Integrity (ligar na publicação)
+
+Tudo já está no código; falta a configuração, que depende da conta na Play Store:
+
+1. No **Google Cloud**, crie um projeto e ative a **Play Integrity API**. Anote o **número do projeto**.
+2. Na **Play Console**, em *Integridade do app*, vincule esse projeto.
+3. No Google Cloud, crie uma **conta de serviço**, gere uma chave JSON.
+4. No GitHub, em *Settings > Secrets and variables > Actions > Variables*, crie `PLAY_CLOUD_PROJECT` com o número do projeto (o próximo APK já pede o token).
+5. No Render, adicione `GOOGLE_SERVICE_ACCOUNT` com o conteúdo do JSON e mude `INTEGRITY_MODE` para `log`. Olhe o painel por alguns dias: resultados legítimos devem aparecer como "app original".
+6. Quando estiver tudo certo, mude `INTEGRITY_MODE` para `require`: resultados sem prova do Google passam a ser recusados.
 
 ## Colocar no ar (Render, plano grátis)
 
@@ -84,7 +113,7 @@ Limites do plano grátis:
 - O servidor dorme depois de 15 minutos sem uso. O primeiro acesso depois disso demora cerca de 1 minuto.
 - O disco é apagado quando o servidor reinicia ou recebe código novo, e o ranking some junto. Serve para testar com amigos. Para valer, use um VPS ou um serviço com disco (`Dockerfile` pronto, com volume em `/data`).
 
-Variáveis de ambiente: `PORT` (padrão 3000) e `DATA_DIR` (padrão `./dados`).
+Variáveis de ambiente: `PORT` (padrão 3000), `DATA_DIR` (padrão `./dados`), `ADMIN_TOKEN` (senha do painel, mínimo 12 caracteres), `INTEGRITY_MODE` (`off`, `log` ou `require`), `GOOGLE_SERVICE_ACCOUNT` (JSON da conta de serviço) e `PLAY_PACKAGE` (padrão `app.trococerto`).
 
 ## App Android (APK)
 

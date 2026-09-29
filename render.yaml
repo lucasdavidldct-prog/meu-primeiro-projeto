@@ -3,6 +3,14 @@ services:
     name: troco-certo
     runtime: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install --omit=dev
     startCommand: node server.js
     healthCheckPath: /api/saude
+    envVars:
+      # Senha do painel do dono (/admin). O Render gera uma senha forte;
+      # veja em Environment no painel do Render.
+      - key: ADMIN_TOKEN
+        generateValue: true
+      # Play Integrity: off até o app estar na Play Store (depois: log, e por fim require)
+      - key: INTEGRITY_MODE
+        value: "off"

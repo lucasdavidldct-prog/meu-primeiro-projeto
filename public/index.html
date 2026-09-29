@@ -240,6 +240,12 @@ select { font: inherit; font-weight: 800; padding: 12px 14px; border-radius: 14p
 .hear { font-size: 0.8rem; opacity: 0.6; margin-left: 4px; }
 .parent-card label.field { margin-top: 4px; }
 
+.nickbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg); border-radius: 14px; padding: 8px 12px; }
+.nickbar .nick-dice { width: 44px; height: 44px; font-size: 1.3rem; flex: none; }
+.toplist small { color: var(--muted); font-weight: 700; }
+.code { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; letter-spacing: .02em; background: var(--bg); border-radius: 12px; padding: 8px 12px; text-align: center; word-break: break-word; }
+.parent-card input[type="text"] { font: inherit; padding: 12px; border-radius: 12px; border: 2px solid var(--line); width: 100%; }
+
 /* Resultado */
 .celebrate { background: var(--surface); border-radius: 24px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; box-shadow: 0 4px 0 var(--line); }
 .stars { font-size: 2.6rem; letter-spacing: 4px; line-height: 1; }
@@ -892,6 +898,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     app.classList.remove("game");
     stopTick();
     const uf = store("tc-uf");
+    const backup = store("tc-backup");
     app.replaceChildren(el(`
       <header class="top">
         <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">👨‍👩‍👧 Área dos pais</span></span>
@@ -904,9 +911,28 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         </label>
         ${msg ? `<p class="flash good">${msg}</p>` : ""}
       </section>
+      <section class="card parent-card">
+        <h2>Apelido no ranking</h2>
+        <p>O ranking nunca mostra nomes: só um apelido sorteado de uma lista pronta.</p>
+        <p class="nickbar"><strong id="nickName">${nickName(myNick())}</strong><button class="toggle nick-dice" id="nickDice" aria-label="Sortear outro apelido">🎲</button></p>
+      </section>
+      <section class="card parent-card">
+        <h2>Trocar de celular</h2>
+        ${backup && backup.secret
+          ? `<p>Código de recuperação deste celular. <strong>Anote num lugar seguro.</strong> Ele é atualizado sozinho depois de cada partida.</p>
+             <p class="code">${backup.code}</p>
+             <button class="btn ghost small" id="bkSave">Salvar agora</button>`
+          : `<p>Crie um código para levar moedinhas, decoração, níveis e apelido para outro celular.${backup && backup.code ? ` Este celular foi restaurado com <strong>${backup.code}</strong>.` : ""}</p>
+             <button class="btn small" id="bkNew">Criar código de recuperação</button>`}
+        <label class="field" for="bkCode">Já tem um código?
+          <input type="text" id="bkCode" placeholder="ex.: pipa-caju-sapo-42" autocomplete="off" autocapitalize="none">
+        </label>
+        <button class="btn ghost small" id="bkRestore">Restaurar</button>
+        <p class="flash" id="bkMsg" aria-live="polite"></p>
+      </section>
       <section class="card">
         <h2>Privacidade</h2>
-        <p>O jogo não pede nome, e-mail nem fotos. Para o ranking, envia apenas o resultado do desafio do dia, o estado escolhido e um código aleatório gerado no aparelho. Moedinhas e decoração ficam só no celular.</p>
+        <p>O jogo não pede nome, e-mail nem fotos. Para o ranking, envia apenas o resultado do desafio do dia, o estado escolhido, o apelido sorteado e um código aleatório gerado no aparelho. Moedinhas e decoração ficam no celular; só vão para o servidor se você criar um código de recuperação.</p>
       </section>
       <section class="card">
         <h2>Como a criança joga</h2>
@@ -914,6 +940,29 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       </section>
     `));
     document.getElementById("back").addEventListener("click", goBack);
+    document.getElementById("nickDice").addEventListener("click", async () => {
+      await rerollNick(store("tc-day-" + todayKey()) ? todayKey() : null);
+      document.getElementById("nickName").textContent = nickName(myNick());
+    });
+    const bkMsg = (t, kind = "good") => { const m = document.getElementById("bkMsg"); m.textContent = t; m.className = "flash " + kind; };
+    const onClick = (id, fn) => { const b = document.getElementById(id); if (b) b.addEventListener("click", fn); };
+    onClick("bkNew", async () => {
+      bkMsg("Criando…");
+      const code = await backupSave(false);
+      if (code) renderParents(`Código criado: ${code}`); else bkMsg("Sem conexão com o servidor. Tente de novo com internet.", "bad");
+    });
+    onClick("bkSave", async () => {
+      bkMsg("Salvando…");
+      bkMsg((await backupSave(false)) ? "Salvo!" : "Sem conexão com o servidor. Tente de novo com internet.");
+    });
+    let confirmRestore = false;
+    onClick("bkRestore", async () => {
+      const code = document.getElementById("bkCode").value;
+      if (!/^[a-zA-Z]+-[a-zA-Z]+-[a-zA-Z]+-\d{2}$/.test(code.trim())) return bkMsg("O código tem 3 palavras e um número, separados por traço.", "bad");
+      if (!confirmRestore) { confirmRestore = true; return bkMsg("Isso troca as moedinhas e a decoração deste celular pelas do código. Toque em Restaurar de novo para confirmar.", "bad"); }
+      try { await backupRestore(code); renderParents("Pronto! Tudo restaurado."); }
+      catch (e) { confirmRestore = false; bkMsg(e instanceof TypeError ? "Sem conexão com o servidor." : e.message, "bad"); }
+    });
     document.getElementById("uf").addEventListener("change", (e) => {
       if (!e.target.value) return;
       store("tc-uf", e.target.value);
@@ -1054,13 +1103,17 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   }
   function clearProgress() { try { localStorage.removeItem(pauseKey()); } catch (e) { /* ok */ } }
   function leaveGame() {
+    if (S && !S.busy) ping("pausa", S.i);
     saveProgress();
     app.classList.remove("busy");
     S = null;
     renderStart();
   }
   // Se o app for fechado no meio, o progresso fica salvo
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveProgress(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") { saveProgress(); if (S && !S.busy) ping("pausa", S.i); }
+    else if (S && !S.busy) ping("volta", S.i);
+  });
   window.addEventListener("pagehide", saveProgress);
 
   // level = null para o desafio do dia, ou "iniciante" / "intermediario" / "avancado"
@@ -1082,6 +1135,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     }
     if (S.i >= S.rounds.length) return finish();
     renderRound();
+    if (paused) ping("volta", S.i);
     startTick();
   }
 
@@ -1165,6 +1219,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   // Um cliente novo chega ao caixa
   function showCustomer() {
+    ping("inicio", S.i);
     const r = S.rounds[S.i], c = makeCustomer(S.seed, S.i, S.rounds[S.i].price);
     document.querySelectorAll("#dots span").forEach((d, k) => { d.className = k < S.i ? "done" : k === S.i ? "now" : ""; });
     document.getElementById("shop").setAttribute("aria-label", `Cliente ${S.i + 1} de 5`);
@@ -1235,6 +1290,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const t = performance.now();
     const pieces = trayCount(), best = minPieces(r.change);
     S.results.push({ ...r, ms: t - S.roundStart, pieces, best, wrong: S.roundWrong || 0, tray: { ...S.tray } });
+    ping("fim", S.i);
     S.roundWrong = 0;
     // O relógio para enquanto o cliente comemora e vai embora
     S.busy = true; S.pausedAt = t;
@@ -1274,6 +1330,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     }
     res.coins = coinsFor(res);
     setBank(bank() + res.coins);
+    setTimeout(() => backupSave(true), 1500);
     S = null;
     sfx.win();
     renderResult(res);
@@ -1395,6 +1452,77 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     return { status: r.status, data };
   }
 
+  // Apelido sorteado das listas fixas (o servidor só aceita combinações delas)
+  const { nickName, randomNick, validNick } = window.Regras;
+  function myNick() {
+    let n = store("tc-nick");
+    if (!validNick(n)) { n = randomNick(); store("tc-nick", n); }
+    return n;
+  }
+  async function rerollNick(day) {
+    const n = randomNick();
+    store("tc-nick", n);
+    sfx.tap();
+    speak(`Agora você é ${nickName(n)}!`);
+    if (day) { try { await api("api/apelido", { method: "POST", body: JSON.stringify({ day, playerId: playerId(), nick: n }) }); } catch (e) { /* sem internet */ } }
+    backupSave(true);
+    return n;
+  }
+
+  // Avisos de tempo para o servidor (só no desafio do dia). Sem internet, o jogo segue normal.
+  function ping(tipo, round) {
+    if (!S || S.training) return;
+    const url = (window.TROCO_API || "") + "api/evento";
+    const body = JSON.stringify({ day: S.day, playerId: playerId(), round, tipo });
+    try {
+      if (tipo === "pausa" && navigator.sendBeacon) { navigator.sendBeacon(url, new Blob([body], { type: "text/plain" })); return; }
+      fetch(url, { method: "POST", body, keepalive: true, headers: { "Content-Type": "text/plain" } }).catch(() => {});
+    } catch (e) { /* ok */ }
+  }
+
+  // Play Integrity: só no app Android publicado; nos outros casos segue sem
+  function getIntegrity() {
+    return new Promise(async (resolve) => {
+      if (!window.AndroidIntegridade) return resolve(null);
+      try {
+        const { status, data } = await api("api/nonce", { method: "POST", body: JSON.stringify({ playerId: playerId() }) });
+        if (status !== 200) return resolve(null);
+        const t = setTimeout(() => resolve(null), 8000);
+        window.__integridade = (ok, token) => { clearTimeout(t); resolve(ok ? { nonce: data.nonce, token } : null); };
+        window.AndroidIntegridade.pedir(data.nonce);
+      } catch (e) { resolve(null); }
+    });
+  }
+
+  // Código de recuperação (moedinhas, decoração, níveis e apelido)
+  function backupData() {
+    const levels = {};
+    for (const k of LEVEL_ORDER) levels[k] = bestOf(k);
+    return { bank: bank(), owned: [...owned()], deco: deco(), levels, playerId: playerId(), nick: myNick(), uf: store("tc-uf") || null };
+  }
+  async function backupSave(silent) {
+    const b = store("tc-backup");
+    if (silent && !(b && b.secret)) return null;
+    try {
+      const body = b && b.secret ? { code: b.code, secret: b.secret, data: backupData() } : { data: backupData() };
+      const { status, data } = await api("api/backup", { method: "POST", body: JSON.stringify(body) });
+      if (status === 200 || status === 201) { store("tc-backup", { code: data.code, secret: data.secret, at: Date.now() }); return data.code; }
+      if (status === 403 && !silent) { store("tc-backup", null); return backupSave(false); }
+    } catch (e) { /* sem internet */ }
+    return null;
+  }
+  async function backupRestore(code) {
+    const { status, data } = await api("api/backup/" + encodeURIComponent(code.trim().toLowerCase()));
+    if (status !== 200) throw new Error(data.error || "Não deu certo. Confira o código.");
+    const d = data.data;
+    store("tc-bank", d.bank); store("tc-owned", d.owned); store("tc-deco", d.deco);
+    for (const [k, v] of Object.entries(d.levels || {})) store("tc-level-" + k, v);
+    if (d.playerId) store("tc-player", d.playerId);
+    if (d.nick) store("tc-nick", d.nick);
+    if (d.uf) store("tc-uf", d.uf);
+    store("tc-backup", { code: code.trim().toLowerCase(), secret: null, at: Date.now() });
+  }
+
   async function syncRanking(res) {
     const box = document.getElementById("rank");
     res.uf = res.uf || store("tc-uf");
@@ -1405,10 +1533,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     try {
       let ranking;
       if (!res.sent) {
-        const body = { day: res.day, uf: res.uf, playerId: playerId(), rounds: res.results.map((r) => ({ pieces: r.tray || {}, ms: r.ms, wrong: r.wrong })) };
+        const body = { day: res.day, uf: res.uf, playerId: playerId(), nick: myNick(), rounds: res.results.map((r) => ({ pieces: r.tray || {}, ms: r.ms, wrong: r.wrong })) };
+        const integrity = await getIntegrity();
+        if (integrity) body.integrity = integrity;
         const { status, data } = await api("api/resultado", { method: "POST", body: JSON.stringify(body) });
         if (status === 201 || status === 409) { res.sent = true; store("tc-day-" + res.day, res); ranking = data.ranking; }
-        else if (status === 400) { res.sent = true; store("tc-day-" + res.day, res); throw new Error(data.error || "Resultado recusado."); }
+        else if (status === 400 || status === 403) { res.sent = true; store("tc-day-" + res.day, res); throw new Error(data.error || "Resultado recusado."); }
         else throw new Error("offline");
       }
       if (!ranking) {
@@ -1417,7 +1547,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         if (status !== 200) throw new Error("offline");
         ranking = data;
       }
-      if (document.body.contains(box)) paintRanking(box, ranking, res.uf);
+      if (document.body.contains(box)) paintRanking(box, ranking, res.uf, res);
     } catch (e) {
       if (!document.body.contains(box)) return;
       const msg = e.message && e.message !== "offline" && !(e instanceof TypeError)
@@ -1427,27 +1557,36 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     }
   }
 
-  function paintRanking(box, r, uf) {
+  function paintRanking(box, r, uf, res) {
     const ord = (n) => n + "º";
+    const medal = (n) => ["🥇", "🥈", "🥉"][n - 1] || ord(n);
     const you = r.voce
       ? `<p><strong>Você:</strong> ${r.voce.posicaoUf ? ord(r.voce.posicaoUf) + " de " + r.totalUf + " em " + uf + " · " : ""}${ord(r.voce.posicaoBrasil)} de ${r.totalBrasil} no Brasil</p>`
       : `<p class="muted">${r.totalBrasil} pessoa(s) jogaram hoje.</p>`;
+    const nickBar = `<p class="nickbar"><span>Seu apelido: <strong id="nickName">${nickName(myNick())}</strong></span>
+      <button class="toggle nick-dice" id="nickDice" aria-label="Sortear outro apelido">🎲</button></p>`;
     const mine = r.estados.find((e) => e.uf === uf);
     const top = r.estados.slice(0, 10);
     if (mine && !top.includes(mine)) top.push(mine);
     const rows = top.map((e) => `<tr${e.uf === uf ? ' class="me"' : ""}>
         <td>${e.posicao ? ord(e.posicao) : "—"}</td><td>${e.uf}</td><td>${e.jogadores}</td><td>${fmtTime(e.media)}</td></tr>`).join("");
-    const tops = r.topUf.map((p) => `<li${p.voce ? ' class="me"' : ""}><span>${ord(p.posicao)}</span><span>${fmtTime(p.score)}${p.voce ? " (você)" : ""}</span></li>`).join("");
+    const list = (arr, showUf) => arr.map((p) => `<li${p.voce ? ' class="me"' : ""}><span>${medal(p.posicao)} ${p.apelido}${showUf ? ` <small>(${p.uf})</small>` : ""}</span><span>${fmtTime(p.score)}</span></li>`).join("");
     box.innerHTML = `
       <h2>🏆 Ranking de hoje</h2>
       ${you}
+      ${nickBar}
+      ${r.topBrasil && r.topBrasil.length ? `<p class="eyebrow">Top 10 do Brasil</p><ol class="toplist">${list(r.topBrasil, true)}</ol>` : ""}
+      ${r.topUf.length ? `<p class="eyebrow">Top 10 de ${uf}</p><ol class="toplist">${list(r.topUf, false)}</ol>` : ""}
       <p class="eyebrow">Placar dos estados (média de tempo)</p>
       <div class="table-wrap"><table>
         <thead><tr><th>Pos.</th><th>UF</th><th>Jogadores</th><th>Média</th></tr></thead>
         <tbody>${rows || `<tr><td colspan="4" class="muted">Ninguém jogou ainda.</td></tr>`}</tbody>
       </table></div>
-      <p class="muted" style="font-size:.85rem">Um estado entra no placar com pelo menos ${r.minJogadoresEstado} jogadores.</p>
-      ${tops ? `<p class="eyebrow">Mais rápidos de ${uf}</p><ol class="toplist">${tops}</ol>` : ""}`;
+      <p class="muted" style="font-size:.85rem">Um estado entra no placar com pelo menos ${r.minJogadoresEstado} jogadores.</p>`;
+    document.getElementById("nickDice").addEventListener("click", async () => {
+      await rerollNick(r.day);
+      if (res) syncRanking(res); else document.getElementById("nickName").textContent = nickName(myNick());
+    });
   }
 
   function startCountdown(res) {
