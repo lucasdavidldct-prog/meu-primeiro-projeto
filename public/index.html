@@ -257,6 +257,33 @@ select { font: inherit; font-weight: 800; padding: 12px 14px; border-radius: 14p
 .nick-big.pop { animation: chipPop 0.35s; }
 .big-dice { font-size: 1.6rem; }
 
+.sp-chip { background: var(--sun); color: var(--ink); border-radius: 999px; padding: 1px 7px; font-size: 0.68rem; margin-left: 4px; letter-spacing: 0; text-transform: none; }
+.tag-new { background: var(--pink); color: #fff; font-size: 0.72rem; font-weight: 800; border-radius: 999px; padding: 3px 8px; flex: none; }
+
+.rank-line { font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; color: var(--accent-dark); margin: 0; min-height: 1.4em; }
+.score-unit { font-size: 1.3rem; }
+.unlock.center { text-align: center; }
+.ach-new { background: #fff7d6; box-shadow: 0 4px 0 #f0d98a; }
+.ach-new .unlock { margin: 0; }
+.flash-count { text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; }
+.flash-count b { display: inline-block; font-size: 1.4rem; color: var(--accent-dark); }
+.flash-count b.bump { animation: sumBump .3s; }
+#clock.hurry { background: var(--bad); color: #fff; animation: blink .5s infinite; }
+.streak { background: #fff0e0; }
+
+/* Álbum de conquistas */
+.album { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.ach { border: 0; border-radius: 18px; background: var(--surface); box-shadow: 0 4px 0 var(--line); padding: 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 0; }
+.ach .ach-icon { font-size: 2.2rem; line-height: 1; filter: grayscale(1); opacity: .45; }
+.ach.done .ach-icon { filter: none; opacity: 1; }
+.ach.done { background: #fff7d6; box-shadow: 0 4px 0 #f0d98a; }
+.ach-name { font-family: var(--font-display); font-weight: 800; font-size: 1.02rem; line-height: 1.1; }
+.ach-desc { font-size: 0.78rem; color: var(--muted); font-weight: 700; line-height: 1.2; }
+.ach-ok { font-weight: 800; color: var(--accent-dark); font-size: 0.85rem; }
+.bar { width: 100%; height: 8px; border-radius: 4px; background: var(--bg); overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.flash-card { background: #efe6ff; box-shadow: 0 5px 0 #c9b3f5; }
+
 /* Resultado */
 .celebrate { background: var(--surface); border-radius: 24px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; box-shadow: 0 4px 0 var(--line); }
 .stars { font-size: 2.6rem; letter-spacing: 4px; line-height: 1; }
@@ -407,7 +434,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   "use strict";
 
   // ---------- Utilidades ----------
-  const { UFS, LEVELS, LEVEL_ORDER, makeRounds, dailySeed, dayKey, msToNextDay, minPieces, scoreOf, WRONG_PENALTY } = window.Regras;
+  const { UFS, LEVELS, LEVEL_ORDER, DAILY, DAILY_ORDER, makeDaily, makeRounds, dailySeed, dayKey, msToNextDay, minPieces, scoreOf, WRONG_PENALTY } = window.Regras;
 
   // Denominações em centavos (sem a nota de 200: o troco máximo é menor que isso)
   const DENOMS = [
@@ -547,8 +574,22 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       shirt: pick(SHIRTS), glasses: group === "vovo" || pick([0, 0, 0, 0, 1]) === 1,
       freckles: pick([0, 0, 0, 1]) === 1,
       item: productFor(price, pick),
+      // 1 em cada 3 clientes é especial
+      special: pick([null, null, null, null, null, null, null, null, "apressado", "famoso", "aniversario", "desconfiado"]),
     };
   }
+
+  // O que cada cliente especial diz, quanto vale e quando
+  const SPECIALS = {
+    apressado: { chip: "⏱️ apressado", hello: "Rápido, tô com pressa!", thanks: "Ufa, foi rapidinho! Valeu! 🏃",
+      bonus: (r, ms) => (ms <= (S.easy ? 15000 : 10000) ? 3 : 0), why: "rapidinho" },
+    famoso: { chip: "⭐ famoso", hello: "Sou famoso! Capricha no troco, hein? 😎", thanks: "Troco perfeito! Vou contar pros fãs! 🤩",
+      bonus: (r) => (isPerfect(r) ? 5 : 0), why: "troco perfeito" },
+    aniversario: { chip: "🎂 aniversário", hello: "Hoje é meu aniversário! 🎉", thanks: "Oba! Melhor presente! 🥳",
+      bonus: () => 3, why: "presente" },
+    desconfiado: { chip: "🧐 desconfiado", hello: "Vou conferir o troco, hein! 🧐", thanks: "Conferi: tá certinho! 👍",
+      bonus: (r) => (isPerfect(r) ? 3 : 0), why: "troco perfeito" },
+  };
   function customerSvg(c, mood = "normal", anim = "") {
     const hair = c.hair;
     const back = {
@@ -577,7 +618,13 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const mouth = mood === "happy" ? `<path d="M46 74 Q60 92 74 74 Z" fill="#1f2b52"/><path d="M52 83 Q60 88 68 83" stroke="#ff8fa9" stroke-width="4" fill="none"/>`
       : mood === "sad" ? `<path d="M50 82 Q60 74 70 82" stroke="#1f2b52" stroke-width="4" fill="none" stroke-linecap="round"/>`
       : `<path d="M50 76 Q60 84 70 76" stroke="#1f2b52" stroke-width="4" fill="none" stroke-linecap="round"/>`;
-    return `<svg class="customer ${anim}" viewBox="0 0 120 140" aria-hidden="true">
+    const extra = {
+      famoso: `<rect x="37" y="53" width="20" height="13" rx="5" fill="#1f2b52"/><rect x="63" y="53" width="20" height="13" rx="5" fill="#1f2b52"/><path d="M57 58 L63 58" stroke="#1f2b52" stroke-width="3"/><path d="M41 56 L47 56" stroke="#fff" stroke-width="2" opacity=".6"/><path d="M60 110 l3 7 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1 z" fill="#ffd23f" stroke="#c99a00"/>`,
+      aniversario: `<path d="M44 30 L60 -2 L76 30 Z" fill="#ff6b9a"/><path d="M50 18 L70 18 M47 25 L73 25" stroke="#ffd23f" stroke-width="3"/><circle cx="60" cy="-1" r="5" fill="#ffd23f"/>`,
+      apressado: `<path d="M92 34 Q96 42 92 46 Q88 42 92 34 Z" fill="#4fb3ff"/><path d="M100 46 Q103 52 100 55 Q97 52 100 46 Z" fill="#4fb3ff"/>`,
+      desconfiado: `<circle cx="72" cy="60" r="9" fill="rgba(255,255,255,.3)" stroke="#c99a00" stroke-width="2.5"/><path d="M81 63 Q86 80 82 96" stroke="#c99a00" stroke-width="1.5" fill="none"/><path d="M40 49 L55 51" stroke="#1f2b52" stroke-width="3.5" stroke-linecap="round"/>`,
+    }[c.special] || "";
+    return `<svg class="customer ${anim}" viewBox="0 -8 120 148" aria-hidden="true">
       ${back}
       <path d="M18 140 Q18 98 60 98 Q102 98 102 140 Z" fill="${c.shirt}"/>
       <circle cx="26" cy="62" r="7" fill="${c.skin}"/><circle cx="94" cy="62" r="7" fill="${c.skin}"/>
@@ -585,6 +632,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       ${top}${brows}${eyes}${glasses}${freckles}
       <circle cx="40" cy="72" r="5" fill="#ff6b9a" opacity=".4"/><circle cx="80" cy="72" r="5" fill="#ff6b9a" opacity=".4"/>
       ${mouth}
+      ${extra}
     </svg>`;
   }
 
@@ -827,12 +875,76 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   // Moedinhas ganhas numa partida
   function coinsFor(res) {
+    const extras = (res.bonus || 0) + (res.streakBonus || 0);
+    if (res.flash) return res.results.length * 2 + extras;
     const perRound = res.results.reduce((a, r) => a + 2 + (isPerfect(r) ? 2 : 0), 0);
-    return perRound + starsOf(res.results) * 3 + (res.firstToday ? 10 : 0);
+    return perRound + starsOf(res.results) * 3 + (res.firstToday ? 10 : 0) + extras;
+  }
+
+  // ---------- Estatísticas, sequência de dias 🔥 e conquistas 🏅 ----------
+  const stats = () => ({ served: 0, perfect: 0, run: 0, bestRun: 0, vovos: 0, specials: 0, games: 0, bought: 0, flashBest: 0, streakBest: 0, ...(store("tc-stats") || {}) });
+  function bumpStats(fn) { const st = stats(); fn(st); store("tc-stats", st); return st; }
+  function trackServe(r, c) {
+    bumpStats((st) => {
+      st.served++;
+      if (isPerfect(r)) { st.perfect++; st.run++; st.bestRun = Math.max(st.bestRun, st.run); } else st.run = 0;
+      if (c.group === "vovo") st.vovos++;
+      if (c.special) st.specials++;
+    });
+  }
+  const yesterdayKey = () => dayKey(new Date(Date.now() - 86400000));
+  function streakNow() {
+    const k = store("tc-streak") || {};
+    return k.last === todayKey() || k.last === yesterdayKey() ? k.count : 0;
+  }
+  // Conta o dia de hoje na sequência (só uma vez por dia). Devolve a sequência nova, ou null se hoje já contou.
+  function advanceStreak() {
+    const k = store("tc-streak") || {}, today = todayKey();
+    if (k.last === today) return null;
+    const count = k.last === yesterdayKey() ? k.count + 1 : 1;
+    store("tc-streak", { last: today, count });
+    bumpStats((st) => { st.streakBest = Math.max(st.streakBest, count); });
+    return count;
+  }
+
+  const ACHIEVEMENTS = [
+    { id: "c1", icon: "🪙", name: "Primeiro troco", desc: "Atenda o seu primeiro cliente", prog: (s) => [s.served, 1], reward: 5 },
+    { id: "c100", icon: "🧑‍🤝‍🧑", name: "100 clientes", desc: "Atenda 100 clientes", prog: (s) => [s.served, 100], reward: 30 },
+    { id: "c500", icon: "🏪", name: "Dono do mercadinho", desc: "Atenda 500 clientes", prog: (s) => [s.served, 500], reward: 80 },
+    { id: "p10", icon: "✨", name: "Troco caprichado", desc: "Dê 10 trocos perfeitos", prog: (s) => [s.perfect, 10], reward: 15 },
+    { id: "r5", icon: "🔥", name: "Mão quente", desc: "5 trocos perfeitos seguidos", prog: (s) => [s.bestRun, 5], reward: 20 },
+    { id: "r15", icon: "💎", name: "Imparável", desc: "15 trocos perfeitos seguidos", prog: (s) => [s.bestRun, 15], reward: 50 },
+    { id: "v10", icon: "👵", name: "Amigo dos vovós", desc: "Atenda 10 vovós e vovôs", prog: (s) => [s.vovos, 10], reward: 20 },
+    { id: "s5", icon: "⭐", name: "Clientes especiais", desc: "Atenda 5 clientes especiais", prog: (s) => [s.specials, 5], reward: 20 },
+    { id: "d3", icon: "📅", name: "3 dias seguidos", desc: "Jogue o desafio 3 dias seguidos", prog: (s) => [s.streakBest, 3], reward: 20 },
+    { id: "d7", icon: "🗓️", name: "Uma semana!", desc: "Jogue o desafio 7 dias seguidos", prog: (s) => [s.streakBest, 7], reward: 60 },
+    { id: "leao", icon: "🦁", name: "Rei do troco", desc: "Termine o nível Avançado", prog: () => [bestOf("avancado") > 0 ? 1 : 0, 1], reward: 40 },
+    { id: "3e", icon: "🌟", name: "Tudo com 3 estrelas", desc: "3 estrelas nos 3 níveis", prog: () => [LEVEL_ORDER.filter((k) => bestOf(k) === 3).length, 3], reward: 60 },
+    { id: "f10", icon: "⚡", name: "Relâmpago", desc: "Atenda 10 clientes no modo relâmpago", prog: (s) => [s.flashBest, 10], reward: 25 },
+    { id: "f20", icon: "🌩️", name: "Super relâmpago", desc: "Atenda 20 clientes no modo relâmpago", prog: (s) => [s.flashBest, 20], reward: 60 },
+    { id: "b1", icon: "🛍️", name: "Primeira compra", desc: "Compre algo na lojinha", prog: (s) => [s.bought, 1], reward: 5 },
+    { id: "b15", icon: "🧺", name: "Colecionador", desc: "Compre 15 itens na lojinha", prog: (s) => [s.bought, 15], reward: 50 },
+  ];
+  // Confere conquistas novas, paga as moedinhas e devolve a lista das novas
+  function checkAchievements() {
+    const got = new Set(store("tc-ach") || []), st = stats(), fresh = [];
+    for (const a of ACHIEVEMENTS) {
+      const [cur, target] = a.prog(st);
+      if (cur >= target && !got.has(a.id)) { got.add(a.id); fresh.push(a); }
+    }
+    if (fresh.length) {
+      store("tc-ach", [...got]);
+      setBank(bank() + fresh.reduce((t, a) => t + a.reward, 0));
+    }
+    return fresh;
   }
 
   const brandHtml = () => `<span class="brand">${mascot("happy", "")}Troco Certo</span>`;
   const isPerfect = (r) => r.wrong === 0 && r.pieces === r.best;
+  function starsFor(res) {
+    if (res.flash) return res.results.length >= 12 ? 3 : res.results.length >= 7 ? 2 : 1;
+    return starsOf(res.results);
+  }
   function starsOf(results) {
     const p = results.filter(isPerfect).length;
     return p === 5 ? 3 : p >= 3 ? 2 : 1;
@@ -846,6 +958,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   }
 
   const todayKey = () => dayKey();
+  // Recorde de hoje em cada dificuldade ("dificil" também lê o formato antigo, de antes das dificuldades)
+  const dayKeyOf = (day, dif) => `tc-day-${day}-${dif}`;
+  function dayRes(dif, day = todayKey()) {
+    return store(dayKeyOf(day, dif)) || (dif === "dificil" ? store("tc-day-" + day) : null);
+  }
+  const anyDayRes = (day = todayKey()) => DAILY_ORDER.map((d) => dayRes(d, day)).filter(Boolean);
   const ddmm = (day) => day.slice(8, 10) + "/" + day.slice(5, 7); // "2026-09-29" -> "29/09"
 
 
@@ -861,15 +979,20 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function renderStart() {
     app.classList.remove("game");
     stopTick();
-    const played = store("tc-day-" + todayKey());
-    const paused = pausedGame();
-    const main = paused ? "Continuar" : played ? "Desafio do dia" : "Desafio do dia";
-    const mainSub = paused ? `você parou no cliente ${paused.i + 1}` : played ? `seu recorde hoje: ${fmtTime(played.score.total)} · bora bater?` : "vale pro ranking";
+    const lastDif = store("tc-lastdif") || "facil";
+    const played = dayRes(lastDif) || anyDayRes()[0] || null;
+    const paused = DAILY_ORDER.some((d) => pausedGame(d));
+    const main = "Desafio do dia";
+    const mainSub = paused ? "você tem um desafio pela metade" : played ? "🐣 🦊 🦁 · bora bater seu recorde?" : "🐣 🦊 🦁 · vale pro ranking";
+    const streak = streakNow(), playedToday = (store("tc-streak") || {}).last === todayKey();
     const greet = greeted ? "O que vamos fazer agora?"
+      : streak && !playedToday ? `Oi! Você está com ${streak} ${streak === 1 ? "dia" : "dias seguidos"}! Jogue o desafio do dia no botão verde pra não perder a sequência!`
       : `Oi! Eu sou a Moedinha! No botão verde, ${played ? "tente bater o seu recorde de hoje" : "tem o desafio do dia"}. No amarelo, você escolhe o nível. E no branco, decora a sua lojinha!`;
     greeted = true;
     app.replaceChildren(el(`
-      <header class="top">${brandHtml()}<span class="pill bank" aria-label="Suas moedinhas">🪙 ${bank()}</span></header>
+      <header class="top">${brandHtml()}<span class="left">
+        ${streakNow() ? `<span class="pill streak" aria-label="${streakNow()} dias seguidos">🔥 ${streakNow()}</span>` : ""}
+        <span class="pill bank" aria-label="Suas moedinhas">🪙 ${bank()}</span></span></header>
       <section class="hero">
         <div class="talk">
           ${mascot("happy", "mascot bob")}
@@ -880,21 +1003,20 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         <button class="btn" id="go"><span class="big">${`<svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#fff" opacity=".25"/><path d="M15 11 L30 20 L15 29 Z" fill="#fff"/></svg>`}</span><span class="txt">${main}<small>${mainSub}</small></span></button>
         <button class="btn sun" id="levels"><span class="big">🎮</span><span class="txt">Níveis<small>🐣 🦊 🦁</small></span></button>
         <button class="btn ghost" id="shopBtn"><span class="big">🏪</span><span class="txt">Minha lojinha<small>🪙 ${bank()} moedinhas</small></span></button>
-        ${played ? `<button class="btn ghost" id="rankBtn"><span class="big">🏆</span><span class="txt">Ranking de hoje<small>seu melhor: ${fmtTime(played.score.total)}</small></span></button>` : ""}
+        <button class="btn ghost" id="albumBtn"><span class="big">🏅</span><span class="txt">Conquistas<small>${(store("tc-ach") || []).length} de ${ACHIEVEMENTS.length}</small></span></button>
+        ${played ? `<button class="btn ghost" id="rankBtn"><span class="big">🏆</span><span class="txt">Ranking de hoje<small>${DAILY[played.dif || "dificil"].emoji} seu melhor: ${fmtTime(played.score.total)}</small></span></button>` : ""}
       </nav>
       ${togglesHtml()}
       <button class="parents" id="parents"><span class="fill"></span>👨‍👩‍👧 Área dos pais (segure)</button>
     `));
     bindToggles();
     speak(greet);
-    document.getElementById("go").addEventListener("click", () => {
-      enterScreen();
-      startGame(null);
-    });
+    document.getElementById("go").addEventListener("click", () => { enterScreen(); renderDailyPick(); });
     const rankBtn = document.getElementById("rankBtn");
-    if (rankBtn) rankBtn.addEventListener("click", () => { enterScreen(); renderResult({ ...played, fromMenu: true }); });
+    if (rankBtn) rankBtn.addEventListener("click", () => { enterScreen(); renderResult({ ...played, dif: played.dif || "dificil", fromMenu: true }); });
     document.getElementById("levels").addEventListener("click", () => { enterScreen(); renderLevels(); });
     document.getElementById("shopBtn").addEventListener("click", () => { enterScreen(); renderShop(); });
+    document.getElementById("albumBtn").addEventListener("click", () => { enterScreen(); renderAlbum(); });
     bindHold(document.getElementById("parents"), () => { enterScreen(); renderParents(); });
   }
 
@@ -905,6 +1027,35 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     btn.addEventListener("pointerdown", () => { btn.classList.add("holding"); timer = setTimeout(() => { stop(); open(); }, 2000); });
     ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => btn.addEventListener(ev, stop));
     btn.addEventListener("keydown", (e) => { if (e.key === "Enter") open(); });
+  }
+
+  // ---------- Álbum de conquistas ----------
+  function renderAlbum() {
+    app.classList.remove("game");
+    stopTick();
+    const got = new Set(store("tc-ach") || []), st = stats();
+    const line = `Você já tem ${got.size} de ${ACHIEVEMENTS.length} conquistas! Cada uma dá moedinhas.`;
+    app.replaceChildren(el(`
+      <header class="top">
+        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🏅 Conquistas</span></span>
+        <span class="pill">${got.size}/${ACHIEVEMENTS.length}</span>
+      </header>
+      <div class="talk">${mascot("happy", "mascot bob")}<p class="bubble" data-speak="${line}">${line} <span class="hear">🔈</span></p></div>
+      <div class="album">${ACHIEVEMENTS.map((a) => {
+        const [cur, target] = a.prog(st), done = got.has(a.id);
+        const pct = Math.min(100, Math.round((Math.min(cur, target) / target) * 100));
+        return `<button class="ach${done ? " done" : ""}" data-speak="${a.name}. ${a.desc}.${done ? " Conseguiu!" : ""}">
+          <span class="ach-icon">${a.icon}</span>
+          <span class="ach-name">${a.name}</span>
+          <span class="ach-desc">${a.desc}</span>
+          ${done ? `<span class="ach-ok">✔ +${a.reward} 🪙</span>`
+            : `<span class="bar"><span style="width:${pct}%"></span></span><span class="ach-desc">${Math.min(cur, target)} / ${target} · 🪙 ${a.reward}</span>`}
+        </button>`;
+      }).join("")}</div>
+    `));
+    speak(line);
+    document.getElementById("back").addEventListener("click", goBack);
+    app.querySelectorAll(".ach").forEach((b) => b.addEventListener("click", () => { sfx.tap(); speak(b.dataset.speak); }));
   }
 
   // ---------- Boas-vindas: estado e apelido, só na primeira vez ----------
@@ -1002,7 +1153,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     `));
     document.getElementById("back").addEventListener("click", goBack);
     document.getElementById("nickDice").addEventListener("click", async () => {
-      await rerollNick(store("tc-day-" + todayKey()) ? todayKey() : null);
+      await rerollNick(anyDayRes().length ? todayKey() : null);
       document.getElementById("nickName").textContent = nickName(myNick());
     });
     const bkMsg = (t, kind = "good") => { const m = document.getElementById("bkMsg"); m.textContent = t; m.className = "flash " + kind; };
@@ -1088,8 +1239,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       setBank(bank() - it.price);
       store("tc-owned", [...owned(), it.id]);
       store("tc-deco", { ...d, [shopTab]: it.id });
+      bumpStats((st) => { st.bought++; });
+      const fresh = checkAchievements();
       sfx.ok();
-      renderShop(`Oba! ${it.name} é seu! 🎉`);
+      renderShop(`Oba! ${it.name} é seu! 🎉` + (fresh.length ? ` E você ganhou a conquista ${fresh[0].icon} ${fresh[0].name} (+${fresh[0].reward} 🪙)!` : ""));
       confetti(document.getElementById("shop"));
       return;
     }
@@ -1122,13 +1275,19 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
             <small>${open ? L.desc : `Termine o ${LEVELS[LEVEL_ORDER[i - 1]].name} pra liberar`}</small></span>
           <span class="lv-stars" aria-label="Recorde: ${bestOf(k)} de 3 estrelas">${starsHtml(bestOf(k))}</span>
         </button>`;
-      }).join("")}</div>
+      }).join("")}
+        <button class="level flash-card" data-flash="1">
+          <span class="lv-emoji">⚡</span>
+          <span class="lv-body"><strong>Relâmpago</strong><small>Quantos clientes você atende em 60 segundos?${Number(store("tc-flash-best")) ? ` Recorde: ${store("tc-flash-best")}` : ""}</small></span>
+        </button>
+      </div>
       ${togglesHtml()}
     `));
     bindToggles();
+    document.querySelector("[data-flash]").addEventListener("click", () => { sfx.tap(); speak("Relâmpago! Atenda o máximo de clientes em 60 segundos. Valendo!"); startGame("relampago"); });
     document.getElementById("back").addEventListener("click", goBack);
     speak("Escolha um nível! O pintinho é o mais fácil, a raposa é médio e o leão é o mais difícil.");
-    app.querySelectorAll(".level:not(.locked)").forEach((b) => b.addEventListener("click", () => { sfx.tap(); startGame(b.dataset.lv); }));
+    app.querySelectorAll(".level[data-lv]:not(.locked)").forEach((b) => b.addEventListener("click", () => { sfx.tap(); startGame(b.dataset.lv); }));
     app.querySelectorAll(".level.locked").forEach((b) => { b.disabled = false; b.addEventListener("click", () => { sfx.bad(); speak("Esse ainda está trancado. Termine o nível anterior pra abrir!"); }); });
   }
 
@@ -1149,20 +1308,20 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   window.addEventListener("popstate", toStart);
 
   // ---------- Pausar e continuar o desafio do dia ----------
-  function pauseKey() { return "tc-pause-" + todayKey(); }
-  function pausedGame() {
-    const p = store(pauseKey());
+  function pauseKey(dif) { return `tc-pause-${todayKey()}-${dif}`; }
+  function pausedGame(dif) {
+    const p = store(pauseKey(dif));
     return p && p.day === todayKey() ? p : null;
   }
   function saveProgress() {
     if (!S || S.training) return;
     const t = now();
-    store(pauseKey(), {
+    store(pauseKey(S.dif), {
       day: S.day, attempt: S.attempt, i: S.busy ? S.i + 1 : S.i, results: S.results, wrong: S.wrong, roundWrong: S.roundWrong || 0,
       gameElapsed: t - S.gameStart, roundElapsed: S.busy ? 0 : t - S.roundStart,
     });
   }
-  function clearProgress() { try { localStorage.removeItem(pauseKey()); } catch (e) { /* ok */ } }
+  function clearProgress(dif) { try { localStorage.removeItem(pauseKey(dif)); } catch (e) { /* ok */ } }
   function leaveGame() {
     if (S && !S.busy) ping("pausa", S.i);
     saveProgress();
@@ -1177,21 +1336,27 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   });
   window.addEventListener("pagehide", saveProgress);
 
-  // level = null para o desafio do dia, ou "iniciante" / "intermediario" / "avancado"
-  function startGame(level) {
+  // level: "iniciante" / "intermediario" / "avancado" / "relampago", ou null para o desafio do dia (com dif)
+  function startGame(level, dif = "facil") {
+    const flashMode = level === "relampago";
     const training = !!level;
-    const seed = training ? `nivel-${level}-${Date.now()}` : dailySeed(todayKey());
+    const seed = training ? `nivel-${level}-${Date.now()}` : dailySeed(todayKey(), dif);
+    const tiers = flashMode ? LEVELS.intermediario.tiers : training ? LEVELS[level].tiers : DAILY[dif].tiers;
     S = {
-      training, level, seed, rounds: makeRounds(seed, training ? LEVELS[level].tiers : undefined), i: 0, tray: {}, results: [],
+      training, level, flash: flashMode, dif: training ? null : dif, seed, tiers,
+      rounds: makeRounds(seed, tiers), i: 0, tray: {}, results: [], bonus: 0, bonusList: [],
+      easy: level === "iniciante" || (!training && dif === "facil"),
       wrong: 0, roundStart: performance.now(), gameStart: performance.now(),
       uf: store("tc-uf") || null, day: todayKey(),
       attempt: training ? null : Math.random().toString(36).slice(2, 10) + Date.now().toString(36),
     };
-    const paused = training ? null : pausedGame();
+    if (!training) store("tc-lastdif", dif);
+    const paused = training ? null : pausedGame(dif);
     if (paused) {
       const now = performance.now();
       Object.assign(S, {
         i: paused.i, results: paused.results, wrong: paused.wrong, roundWrong: paused.roundWrong, attempt: paused.attempt || S.attempt,
+        bonus: paused.bonus || 0, bonusList: paused.bonusList || [],
         gameStart: now - paused.gameElapsed, roundStart: now - paused.roundElapsed,
       });
     }
@@ -1201,9 +1366,46 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     startTick();
   }
 
+  // ---------- Escolha da dificuldade do desafio do dia ----------
+  function renderDailyPick() {
+    app.classList.remove("game");
+    stopTick();
+    const firstEver = !store("tc-stats");
+    const line = "Escolha o desafio de hoje! O pintinho é fácil, a raposa é médio e o leão é difícil. Cada um tem o seu ranking.";
+    app.replaceChildren(el(`
+      <header class="top">
+        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">📅 Desafio do dia</span></span>
+        <span class="pill num">${ddmm(todayKey())}</span>
+      </header>
+      <div class="talk">${mascot("happy", "mascot bob")}<p class="bubble" data-speak="${line}">Escolha o desafio de hoje! Cada um tem o seu ranking. <span class="hear">🔈</span></p></div>
+      <div class="levels">${DAILY_ORDER.map((d) => {
+        const D = DAILY[d], best = dayRes(d), paused = pausedGame(d);
+        const sub = paused ? `▶ continuar do cliente ${paused.i + 1}` : best ? `seu recorde hoje: ${fmtTime(best.score.total)}` : { facil: "preços redondos e dicas", medio: "centavos e notas até R$ 50", dificil: "valores até R$ 200" }[d];
+        return `<button class="level" data-daily="${d}" data-lv="${{ facil: "iniciante", medio: "intermediario", dificil: "avancado" }[d]}">
+          <span class="lv-emoji">${D.emoji}</span>
+          <span class="lv-body"><strong>${D.name}</strong><small>${sub}</small></span>
+          ${firstEver && d === "facil" ? `<span class="tag-new">comece aqui</span>` : best ? `<span class="lv-stars">${starsHtml(starsOf(best.results))}</span>` : ""}
+        </button>`;
+      }).join("")}</div>
+    `));
+    speak(line);
+    document.getElementById("back").addEventListener("click", goBack);
+    app.querySelectorAll("[data-daily]").forEach((b) => b.addEventListener("click", () => { sfx.tap(); startGame(null, b.dataset.daily); }));
+  }
+
   function traySum() { return Object.entries(S.tray).reduce((a, [c, n]) => a + Number(c) * n, 0); }
   function trayCount() { return Object.values(S.tray).reduce((a, n) => a + n, 0); }
 
+  function decorComment(c) {
+    const d = deco(), opts = [];
+    const pet = findItem("bichinho", d.bichinho), br = findItem("estado", d.estado), toy = findItem("antigo", d.antigo);
+    if (pet.text) opts.push("Que bichinho fofo no balcão! 😍");
+    if (br.text) opts.push(`Olha só: ${br.name.toLowerCase()}! Que demais! 😋`);
+    if (toy.text) opts.push(c.group === "vovo" ? `Nossa, ${toy.name.toLowerCase()}! Eu brincava disso! 🥹` : `Que legal, ${toy.name.toLowerCase()}! 🤩`);
+    if (d.parede !== "p-creme" || d.enfeite !== "e-nada") opts.push("Que loja bonita! ✨");
+    if (!opts.length || Math.random() > 0.35) return "";
+    return opts[Math.floor(Math.random() * opts.length)];
+  }
   function askText(c, r) { return `Quero ${c.item}! Toma ${brl(r.paid)}.`; }
   // Falado: inclui o preço, que quem não lê só vê no visor
   function askSpeech(c, r) { return `Quero ${c.item}. Custa ${falaValor(r.price)}. Toma ${falaValor(r.paid)}.`; }
@@ -1213,7 +1415,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     document.getElementById("cust").innerHTML = customerSvg(c, mood, anim);
     const say = document.getElementById("say");
     say.className = "say " + kind;
-    say.innerHTML = `<span class="who">${c.name} · cliente ${S.i + 1} de 5</span>${text}`;
+    const who = S.flash ? `${c.name} · cliente ${S.i + 1}` : `${c.name} · cliente ${S.i + 1} de 5`;
+    say.innerHTML = `<span class="who">${who}${c.special ? ` <span class="sp-chip">${SPECIALS[c.special].chip}</span>` : ""}</span>${text}`;
   }
 
   const retrigger = (node, cls) => { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); };
@@ -1225,14 +1428,15 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       <header class="top">
         <span class="left">
           <button class="back" id="back" aria-label="${S.training ? "Sair do nível" : "Pausar e voltar ao início"}">←</button>
-          <span class="brand">${S.training ? LEVELS[S.level].emoji + " " + LEVELS[S.level].name : "Desafio do dia"}</span>
+          <span class="brand">${S.flash ? "⚡ Relâmpago" : S.training ? LEVELS[S.level].emoji + " " + LEVELS[S.level].name : DAILY[S.dif].emoji + " Desafio do dia"}</span>
         </span>
         <span class="left">
           <button class="back" id="sound" aria-label="Ligar ou desligar o som">${soundOn() ? "🔊" : "🔇"}</button>
           <span class="pill num" id="clock">0,0s</span>
         </span>
       </header>
-      <div class="round-dots" id="dots">${S.rounds.map(() => "<span></span>").join("")}</div>
+      ${S.flash ? `<div class="flash-count" id="fcount">⚡ <b>0</b> clientes atendidos</div>`
+        : `<div class="round-dots" id="dots">${S.rounds.map(() => "<span></span>").join("")}</div>`}
       <section class="shop" id="shop">
         ${decorLayers()}
         <div id="cust"></div>
@@ -1284,10 +1488,15 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     ping("inicio", S.i);
     const r = S.rounds[S.i], c = makeCustomer(S.seed, S.i, S.rounds[S.i].price);
     document.querySelectorAll("#dots span").forEach((d, k) => { d.className = k < S.i ? "done" : k === S.i ? "now" : ""; });
+    const fc = document.querySelector("#fcount b");
+    if (fc) { fc.textContent = S.results.length; retrigger(fc, "bump"); }
     document.getElementById("shop").setAttribute("aria-label", `Cliente ${S.i + 1} de 5`);
-    setCustomer("normal", askText(c, r), "", "enter");
-    document.getElementById("say").dataset.speak = askSpeech(c, r);
-    setTimeout(() => { if (S && S.rounds[S.i] === r) speak(askSpeech(c, r)); }, 500);
+    const intro = c.special ? SPECIALS[c.special].hello : decorComment(c);
+    S.intro = intro;
+    setCustomer("normal", (intro ? intro + " " : "") + askText(c, r), "", "enter");
+    const talk = (intro ? intro + " " : "") + askSpeech(c, r);
+    document.getElementById("say").dataset.speak = talk;
+    setTimeout(() => { if (S && S.rounds[S.i] === r) speak(talk); }, 500);
     retrigger(document.getElementById("say"), "pop");
     document.getElementById("lcdTotal").textContent = brl(r.price);
     document.getElementById("lcdPaid").textContent = brl(r.paid);
@@ -1337,10 +1546,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       retrigger(document.getElementById("register"), "shake");
       lcdVal.textContent = "ERRO!";
       lcdLn.className = "ln q"; retrigger(lcdLn, "bad");
-      flash(S.level === "iniciante" ? `Dica: o troco é ${brl(r.change)} 😉 (+5s)` : "Tente de novo! (+5s)", "bad");
+      flash(S.easy ? `Dica: o troco é ${brl(r.change)} 😉` : S.flash ? "Tente de novo! (-3s)" : "Tente de novo! (+5s)", "bad");
       const sadLine = sum > r.change ? "Hmm... você me deu troco a mais! 🤔" : "Hmm... acho que faltou troco! 🤔";
       setCustomer("sad", sadLine, "bad", "nope");
-      speak(S.level === "iniciante" ? `${sadLine} Dica: o troco é ${falaValor(r.change)}.` : sadLine);
+      speak(S.easy ? `${sadLine} Dica: o troco é ${falaValor(r.change)}.` : sadLine);
       const cur = S, round = S.i, token = (S.token = (S.token || 0) + 1);
       setTimeout(() => {
         if (S !== cur || S.i !== round || S.token !== token || S.busy) return;
@@ -1354,51 +1563,75 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     S.results.push({ ...r, ms: t - S.roundStart, pieces, best, wrong: S.roundWrong || 0, tray: { ...S.tray } });
     ping("fim", S.i);
     S.roundWrong = 0;
-    // O relógio para enquanto o cliente comemora e vai embora
-    S.busy = true; S.pausedAt = t;
+    // O relógio para enquanto o cliente comemora e vai embora (no relâmpago não para, e a troca é mais rápida)
+    S.busy = true; S.pausedAt = S.flash ? null : t;
+    const fast = S.flash;
     app.classList.add("busy");
     sfx.ok(); buzz(40);
     lcdVal.textContent = brl(r.change) + " ✓";
     lcdLn.className = "ln q ok";
     flash("", "");
-    setCustomer("happy", "Valeu! Troco certinho! 😄", "good", "bump");
-    speak("Valeu!");
+    const cust = makeCustomer(S.seed, S.i, r.price), last = S.results[S.results.length - 1];
+    const sp = cust.special && SPECIALS[cust.special];
+    const extraCoins = sp ? sp.bonus(last, last.ms) : 0;
+    if (extraCoins) { S.bonus += extraCoins; S.bonusList.push(`${sp.chip.split(" ")[0]} +${extraCoins}`); }
+    trackServe(last, cust, extraCoins);
+    const thanks = sp ? sp.thanks : "Valeu! Troco certinho! 😄";
+    setCustomer("happy", thanks + (extraCoins ? ` (+${extraCoins} 🪙)` : ""), "good", "bump");
+    speak(extraCoins ? `${thanks} Mais ${extraCoins} moedinhas!` : sp ? thanks : "Valeu!");
     confetti(document.getElementById("shop"));
+    if (cust.special === "aniversario") setTimeout(() => confetti(document.getElementById("shop")), 250);
     const cur = S;
-    setTimeout(() => { if (S === cur) document.querySelector(".customer").classList.add("leave"); }, 800);
+    setTimeout(() => { if (S === cur) document.querySelector(".customer").classList.add("leave"); }, fast ? 350 : 800);
     setTimeout(() => {
       if (S !== cur) return;
       app.classList.remove("busy");
       const resume = performance.now();
-      S.gameStart += resume - S.pausedAt;
+      if (S.pausedAt) S.gameStart += resume - S.pausedAt;
       S.pausedAt = null; S.busy = false;
+      if (S.flash && S.i + 1 >= S.rounds.length) S.rounds.push(...makeRounds(`${S.seed}-${S.rounds.length}`, S.tiers));
       S.i++; S.roundStart = resume;
+      if (S.flash && flashLeft() <= 0) return finish();
       if (S.i >= S.rounds.length) return finish();
       saveProgress();
       sfx.door();
       showCustomer();
-    }, 1200);
+    }, fast ? 650 : 1200);
   }
 
   function finish() {
     stopTick();
-    const res = { day: S.day, uf: S.uf, training: S.training, level: S.level, attempt: S.attempt, results: S.results, score: scoreOf(S.results) };
+    const res = { day: S.day, dif: S.dif, uf: S.uf, training: S.training, level: S.level, attempt: S.attempt, results: S.results, score: scoreOf(S.results), bonus: S.bonus, bonusList: S.bonusList };
     if (!S.training) {
-      // Pode jogar de novo: no ranking vale o melhor tempo do dia
-      const prev = store("tc-day-" + S.day);
+      // Pode jogar de novo: no ranking vale o melhor tempo do dia (em cada dificuldade)
+      const prev = dayRes(S.dif, S.day);
       res.firstToday = !prev;
       res.isBest = !prev || res.score.total < prev.score.total;
       res.prevBest = prev ? prev.score.total : null;
-      if (res.isBest) store("tc-day-" + S.day, res);
+      if (res.isBest) store(dayKeyOf(S.day, S.dif), res);
       else {
         // Não bateu o recorde: esta partida não vai para o ranking. Se o recorde
         // ainda não chegou ao servidor (estava sem internet), envia o recorde.
         res.sent = true;
         if (!prev.sent) setTimeout(() => syncRanking({ ...prev, isBest: true }), 300);
       }
-      clearProgress();
+      clearProgress(S.dif);
     }
-    if (S.level) {
+    if (!S.training) {
+      const streak = advanceStreak();
+      if (streak) { res.streak = streak; res.streakBonus = Math.min(streak, 7) * 2; }
+    }
+    if (S.flash) {
+      res.flash = true;
+      const prevFlash = Number(store("tc-flash-best")) || 0;
+      res.flashCount = S.results.length;
+      res.isBest = res.flashCount > prevFlash;
+      res.prevBest = prevFlash;
+      if (res.isBest) store("tc-flash-best", res.flashCount);
+      bumpStats((st) => { st.flashBest = Math.max(st.flashBest, res.flashCount); });
+    }
+    bumpStats((st) => { st.games++; });
+    if (S.level && !S.flash) {
       const next = LEVEL_ORDER[LEVEL_ORDER.indexOf(S.level) + 1];
       const wasOpen = next ? isOpen(next) : true;
       store("tc-level-" + S.level, Math.max(bestOf(S.level), starsOf(S.results)));
@@ -1406,6 +1639,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     }
     res.coins = coinsFor(res);
     setBank(bank() + res.coins);
+    res.achievements = checkAchievements();
     setTimeout(() => backupSave(true), 1500);
     S = null;
     sfx.win();
@@ -1415,11 +1649,11 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function squares(results) { return results.map((r) => (r.wrong === 0 && r.pieces === r.best) ? "🟩" : "🟨").join(""); }
 
   function shareText(res) {
-    return `Troco Certo ${ddmm(res.day)}${res.uf ? ` (${res.uf})` : ""}\n${squares(res.results)}\n⏱️ ${fmtTime(res.score.total)}\nVocê é bom de troco?`;
+    return `Troco Certo ${ddmm(res.day)} ${DAILY[res.dif || "dificil"].emoji}${res.uf ? ` (${res.uf})` : ""}\n${squares(res.results)}\n⏱️ ${fmtTime(res.score.total)}\nVocê é bom de troco?`;
   }
 
   function nextLevel(res) {
-    if (!res.level) return null;
+    if (!res.level || res.flash) return null;
     const next = LEVEL_ORDER[LEVEL_ORDER.indexOf(res.level) + 1];
     return next && isOpen(next) ? next : null;
   }
@@ -1428,79 +1662,86 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     app.classList.remove("game");
     const sc = res.score;
     const perfect = res.results.filter(isPerfect).length;
-    const stars = starsOf(res.results);
-    const cheer = stars === 3 ? "Incrível! Troco perfeito!" : stars === 2 ? "Mandou bem!" : "Boa! Treine e fique ainda melhor!";
+    const stars = starsFor(res);
+    const fresh = !res.fromMenu;
+    const cheer = res.flash
+      ? (stars === 3 ? "Que rapidez!" : stars === 2 ? "Mandou bem!" : "Boa! Tente de novo!")
+      : stars === 3 ? "Incrível! Troco perfeito!" : stars === 2 ? "Mandou bem!" : "Boa! Treine e fique ainda melhor!";
     const rows = res.results.map((r, k) => {
       const ok = isPerfect(r);
       return `<tr><td>${k + 1}</td><td>${brl(r.price)}</td><td>${brl(r.paid)}</td><td>${brl(r.change)}</td>
         <td class="${ok ? "ok" : "meh"}">${r.pieces}/${r.best}${r.wrong ? " · " + r.wrong + "✗" : ""}</td><td>${secs(r.ms)}</td></tr>`;
     }).join("");
-    const text = shareText(res);
+    const daily = !res.training;
+    const text = daily ? shareText(res) : "";
+    const pill = res.flash ? "⚡ Relâmpago" : res.level ? LEVELS[res.level].emoji + " " + LEVELS[res.level].name : DAILY[res.dif || "dificil"].emoji + " " + ddmm(res.day);
+    const chips = [];
+    if (res.flash) chips.push(`<span class="stat">✅ ${perfect} perfeitos</span>`);
+    else chips.push(`<span class="stat">✅ ${perfect} de ${res.results.length} perfeitos</span>`);
+    if (res.coins && fresh) chips.push(`<span class="stat earned-stat">🪙 +${res.coins} moedinhas</span>`);
+    if (fresh && res.bonusList && res.bonusList.length) chips.push(`<span class="stat earned-stat">✨ clientes especiais: ${res.bonusList.join(" ")}</span>`);
+    if (fresh && res.streak) chips.push(`<span class="stat earned-stat">🔥 ${res.streak} ${res.streak === 1 ? "dia" : "dias seguidos"}! +${res.streakBonus}</span>`);
+    if (fresh && res.isBest && res.prevBest) chips.push(`<span class="stat earned-stat">🏅 Novo recorde!</span>`);
+    if (fresh && !res.isBest && res.prevBest && (daily || res.flash)) chips.push(`<span class="stat">🏅 Seu recorde: ${res.flash ? res.prevBest + " clientes" : fmtTime(res.prevBest)}</span>`);
+    if (!res.flash && sc.wrong) chips.push(`<span class="stat">❌ ${sc.wrong} ${sc.wrong === 1 ? "erro" : "erros"}</span>`);
+    const achHtml = fresh && res.achievements && res.achievements.length
+      ? `<section class="card ach-new">${res.achievements.map((a) => `<p class="unlock">🏅 Conquista: ${a.icon} ${a.name}! <small>+${a.reward} 🪙</small></p>`).join("")}</section>` : "";
     app.replaceChildren(el(`
       <header class="top">
         <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button>${brandHtml()}</span>
-        <span class="pill num">${res.level ? LEVELS[res.level].emoji + " " + LEVELS[res.level].name : ddmm(res.day)}</span>
+        <span class="pill num">${pill}</span>
       </header>
       <section class="celebrate">
         ${mascot(stars === 3 ? "wow" : "happy", "mascot bob")}
         <h1>${cheer}</h1>
         <div class="stars" aria-label="${stars} de 3 estrelas">${"⭐".repeat(stars)}<span class="off">${"⭐".repeat(3 - stars)}</span></div>
-        <div class="score">${fmtTime(sc.total)}</div>
-        <div class="stats">
-          <span class="stat">✅ ${perfect} de 5 perfeitos</span>
-          ${res.coins && !res.fromMenu ? `<span class="stat earned-stat">🪙 +${res.coins} moedinhas</span>` : ""}
-          ${!res.level && !res.fromMenu && res.isBest && res.prevBest ? `<span class="stat earned-stat">🏅 Novo recorde!</span>` : ""}
-          ${!res.level && !res.fromMenu && !res.isBest && res.prevBest ? `<span class="stat">🏅 Seu recorde: ${fmtTime(res.prevBest)}</span>` : ""}
-          ${sc.wrong ? `<span class="stat">❌ ${sc.wrong} ${sc.wrong === 1 ? "erro" : "erros"} (+${sc.wrong * 5}s)</span>` : ""}
-          ${sc.extra ? `<span class="stat">🪙 ${sc.extra} ${sc.extra === 1 ? "peça" : "peças"} a mais (+${sc.extra * 2}s)</span>` : ""}
-        </div>
+        <div class="score">${res.flash ? `⚡ ${res.results.length} <small class="score-unit">clientes</small>` : fmtTime(sc.total)}</div>
+        ${daily ? `<p class="rank-line" id="rankLine">🏆 Buscando sua posição…</p>` : ""}
+        <div class="stats">${chips.join("")}</div>
       </section>
-      ${res.level ? `
-      <section class="card daily">
-        <h2>${LEVELS[res.level].emoji} Nível ${LEVELS[res.level].name}</h2>
-        <p>Seu recorde neste nível: <span class="lv-stars">${starsHtml(bestOf(res.level))}</span></p>
-        ${res.unlocked ? `<p class="unlock">🔓 Você liberou o nível ${LEVELS[res.unlocked].emoji} ${LEVELS[res.unlocked].name}!</p>` : ""}
-        <p>Os níveis não contam pro ranking. Jogue quantas vezes quiser!</p>
-      </section>` : `
-      <section class="card daily">
-        <h2>📅 Como funciona o desafio do dia</h2>
-        <p>Todo mundo do Brasil recebe os <strong>mesmos 5 clientes</strong> no dia. Jogue quantas vezes quiser: no ranking fica o <strong>seu melhor tempo</strong>.</p>
-        <p>Um desafio novo chega em:</p>
-        <div class="countdown" id="next">--:--:--</div>
-        <p>Até lá, tente bater o seu recorde ou jogue os níveis!</p>
+      ${achHtml}
+      ${res.unlocked ? `<p class="unlock center">🔓 Você liberou o nível ${LEVELS[res.unlocked].emoji} ${LEVELS[res.unlocked].name}!</p>` : ""}
+      ${nextLevel(res) ? `<button class="btn" id="nextLv">▶ Próximo: ${LEVELS[nextLevel(res)].emoji} ${LEVELS[nextLevel(res)].name}</button>` : ""}
+      <div class="row">
+        <button class="btn sun" id="again">🔁 De novo</button>
+        <button class="btn ghost" id="home">🏠 Início</button>
+      </div>
+      <button class="btn ghost" id="shopBtn">🏪 Gastar na lojinha<small>você tem 🪙 ${bank()} moedinhas</small></button>
+      ${daily ? `
+      <section class="card" id="rank" aria-live="polite">
+        <h2>🏆 Ranking de hoje ${DAILY[res.dif || "dificil"].emoji}</h2>
+        <p class="muted">Buscando o ranking…</p>
       </section>
-      <section class="card">
-        <h2>📣 Mostre pros amigos</h2>
+      <details class="card">
+        <summary>📣 Mostre pros amigos</summary>
         <textarea class="share-text" id="sharetxt" rows="4" readonly>${text}</textarea>
         <div class="row">
           <button class="btn small" id="copy">Copiar</button>
           <a class="btn ghost small" href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">WhatsApp</a>
         </div>
         <p class="flash good" id="copied" aria-live="polite"></p>
-      </section>
-      <section class="card" id="rank" aria-live="polite">
-        <h2>🏆 Ranking de hoje</h2>
-        <p class="muted">Buscando o ranking…</p>
-      </section>`}
+      </details>
+      <details class="card">
+        <summary>📅 Como funciona o desafio</summary>
+        <p>Todo mundo do Brasil recebe os <strong>mesmos 5 clientes</strong> no dia, em cada dificuldade. Jogue quantas vezes quiser: no ranking fica o <strong>seu melhor tempo</strong>.</p>
+        <p>Um desafio novo chega em: <strong class="countdown" id="next">--:--:--</strong></p>
+      </details>` : res.level && !res.flash ? `
+      <details class="card">
+        <summary>${LEVELS[res.level].emoji} Seu recorde no nível: ${starsHtml(bestOf(res.level))}</summary>
+        <p>Os níveis não contam pro ranking. Jogue quantas vezes quiser!</p>
+      </details>` : ""}
       <details class="card">
         <summary>🧾 Ver cliente por cliente</summary>
         <div class="table-wrap"><table>
           <thead><tr><th>#</th><th>Compra</th><th>Pagou</th><th>Troco</th><th>Peças</th><th>Tempo</th></tr></thead>
-          <tbody>${rows}</tbody>
+          <tbody>${rows || `<tr><td colspan="6" class="muted">Nenhum cliente atendido.</td></tr>`}</tbody>
         </table></div>
         <p class="muted" style="font-size:.85rem">Peças: quantas você usou / o mínimo possível.</p>
       </details>
-      ${nextLevel(res) ? `<button class="btn" id="nextLv">▶ Próximo: ${LEVELS[nextLevel(res)].emoji} ${LEVELS[nextLevel(res)].name}</button>` : ""}
-      <button class="btn ghost" id="shopBtn">🏪 Gastar na lojinha<small>você tem 🪙 ${bank()} moedinhas</small></button>
-      <div class="row">
-        <button class="btn sun" id="again">🔁 De novo</button>
-        <button class="btn ghost" id="home">🏠 Início</button>
-      </div>
     `));
     const on = (id, fn) => { const b = document.getElementById(id); if (b) b.addEventListener("click", fn); };
     on("nextLv", () => startGame(nextLevel(res)));
-    on("again", () => startGame(res.level || null));
-    on("levels", () => { enterScreen(); renderLevels(); });
+    on("again", () => startGame(res.flash ? "relampago" : res.level || null, res.dif || "dificil"));
     on("shopBtn", () => { enterScreen(); renderShop(); });
     document.getElementById("home").addEventListener("click", goBack);
     document.getElementById("back").addEventListener("click", goBack);
@@ -1510,11 +1751,16 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       const fallback = () => { const t = document.getElementById("sharetxt"); t.focus(); t.select(); document.getElementById("copied").textContent = "Texto selecionado. Copie e cole no grupo."; };
       try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
     });
-    if (!res.training) { startCountdown(res); syncRanking(res); }
-    if (res.coins && !res.spoken && !res.fromMenu) {
+    if (daily) { startCountdown(res); syncRanking(res); }
+    if (fresh && !res.spoken) {
       res.spoken = true;
-      const rec = !res.level && res.isBest && res.prevBest ? " Novo recorde!" : "";
-      setTimeout(() => speak(`${cheer}${rec} Você ganhou ${res.coins} moedinhas!`), 900);
+      const parts = [cheer];
+      if (res.flash) parts.push(`Você atendeu ${res.results.length} clientes!`);
+      if (res.isBest && res.prevBest) parts.push("Novo recorde!");
+      if (res.streak > 1) parts.push(`${res.streak} dias seguidos!`);
+      if (res.coins) parts.push(`Você ganhou ${res.coins} moedinhas!`);
+      if (res.achievements && res.achievements.length) parts.push(`E ganhou a conquista ${res.achievements[0].name}!`);
+      setTimeout(() => speak(parts.join(" ")), 900);
     }
   }
 
@@ -1609,22 +1855,24 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const box = document.getElementById("rank");
     res.uf = res.uf || store("tc-uf");
     if (!res.uf) {
+      const line = document.getElementById("rankLine");
+      if (line) line.textContent = "";
       if (box) box.innerHTML = `<h2>🏆 Ranking de hoje</h2><p class="note-box">Peça pra um adulto escolher o seu estado na <strong>Área dos pais</strong> 👨‍👩‍👧 pra entrar no ranking.</p>`;
       return;
     }
     try {
       let ranking;
       if (!res.sent) {
-        const body = { day: res.day, uf: res.uf, playerId: playerId(), nick: myNick(), tentativa: res.attempt, rounds: res.results.map((r) => ({ pieces: r.tray || {}, ms: r.ms, wrong: r.wrong })) };
+        const body = { day: res.day, dif: res.dif || "dificil", uf: res.uf, playerId: playerId(), nick: myNick(), tentativa: res.attempt, rounds: res.results.map((r) => ({ pieces: r.tray || {}, ms: r.ms, wrong: r.wrong })) };
         const integrity = await getIntegrity();
         if (integrity) body.integrity = integrity;
         const { status, data } = await api("api/resultado", { method: "POST", body: JSON.stringify(body) });
-        if (status === 201 || status === 200 || status === 409) { res.sent = true; if (res.isBest) store("tc-day-" + res.day, res); ranking = data.ranking; }
-        else if (status === 400 || status === 403) { res.sent = true; if (res.isBest) store("tc-day-" + res.day, res); throw new Error(data.error || "Resultado recusado."); }
+        if (status === 201 || status === 200 || status === 409) { res.sent = true; if (res.isBest) store(dayKeyOf(res.day, res.dif || "dificil"), res); ranking = data.ranking; }
+        else if (status === 400 || status === 403) { res.sent = true; if (res.isBest) store(dayKeyOf(res.day, res.dif || "dificil"), res); throw new Error(data.error || "Resultado recusado."); }
         else throw new Error("offline");
       }
       if (!ranking) {
-        const q = new URLSearchParams({ day: res.day, uf: res.uf, playerId: playerId() });
+        const q = new URLSearchParams({ day: res.day, uf: res.uf, dif: res.dif || "dificil", playerId: playerId() });
         const { status, data } = await api("api/ranking?" + q);
         if (status !== 200) throw new Error("offline");
         ranking = data;
@@ -1632,6 +1880,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       if (document.body.contains(box)) paintRanking(box, ranking, res.uf, res);
     } catch (e) {
       if (!document.body.contains(box)) return;
+      const line = document.getElementById("rankLine");
+      if (line) line.textContent = "";
       const msg = e.message && e.message !== "offline" && !(e instanceof TypeError)
         ? "Seu resultado não entrou no ranking. Motivo: " + e.message
         : "Sem conexão com o servidor do ranking. Seu resultado fica guardado aqui e é enviado na próxima vez que você abrir o jogo com internet.";
@@ -1641,6 +1891,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   function paintRanking(box, r, uf, res) {
     const ord = (n) => n + "º";
+    const line = document.getElementById("rankLine");
+    if (line && r.voce) {
+      const pos = r.voce.posicaoBrasil;
+      line.innerHTML = `${["🥇", "🥈", "🥉"][pos - 1] || "🏆"} Você está em <strong>${ord(pos)} lugar</strong> no Brasil!`;
+      if (res && !res.fromMenu && !res.rankSpoken) { res.rankSpoken = true; setTimeout(() => speak(`Você está em ${pos}º lugar no Brasil!`), 4200); }
+    } else if (line) line.textContent = "";
     const medal = (n) => ["🥇", "🥈", "🥉"][n - 1] || ord(n);
     const you = r.voce
       ? `<p><strong>Você:</strong> ${r.voce.posicaoUf ? ord(r.voce.posicaoUf) + " de " + r.totalUf + " em " + uf + " · " : ""}${ord(r.voce.posicaoBrasil)} de ${r.totalBrasil} no Brasil</p>`
@@ -1659,12 +1915,14 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       ${nickBar}
       ${r.topBrasil && r.topBrasil.length ? `<p class="eyebrow">Top 10 do Brasil</p><ol class="toplist">${list(r.topBrasil, true)}</ol>` : ""}
       ${r.topUf.length ? `<p class="eyebrow">Top 10 de ${uf}</p><ol class="toplist">${list(r.topUf, false)}</ol>` : ""}
-      <p class="eyebrow">Placar dos estados (média de tempo)</p>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Pos.</th><th>UF</th><th>Jogadores</th><th>Média</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="4" class="muted">Ninguém jogou ainda.</td></tr>`}</tbody>
-      </table></div>
-      <p class="muted" style="font-size:.85rem">Um estado entra no placar com pelo menos ${r.minJogadoresEstado} jogadores.</p>`;
+      <details>
+        <summary class="eyebrow">Placar dos estados</summary>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Pos.</th><th>UF</th><th>Jogadores</th><th>Média</th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="4" class="muted">Ninguém jogou ainda.</td></tr>`}</tbody>
+        </table></div>
+        <p class="muted" style="font-size:.85rem">Um estado entra no placar com pelo menos ${r.minJogadoresEstado} jogadores.</p>
+      </details>`;
     document.getElementById("nickDice").addEventListener("click", async () => {
       await rerollNick(r.day);
       if (res) syncRanking(res); else document.getElementById("nickName").textContent = nickName(myNick());
@@ -1684,9 +1942,20 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   }
 
   // ---------- Relógio ----------
+  const FLASH_MS = 60000, FLASH_PENALTY = 3000;
+  const flashLeft = () => FLASH_MS - (now() - S.gameStart) - S.wrong * FLASH_PENALTY;
   function paintClock() {
     const c = document.getElementById("clock");
     if (!c || !S) return;
+    if (S.flash) {
+      const left = flashLeft();
+      c.textContent = "⚡ " + Math.max(0, Math.ceil(left / 1000)) + "s";
+      c.classList.toggle("hurry", left < 10000);
+      if (left <= 0 && !S.busy) finish();
+      return;
+    }
+    // No fácil o relógio não aparece (o tempo continua contando para o ranking)
+    if (S.easy) { c.textContent = "🐣"; return; }
     const penalty = S.wrong * WRONG_PENALTY;
     c.textContent = secs(now() - S.gameStart + penalty);
   }
@@ -1705,10 +1974,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     migrateItems();
     if (!store("tc-onboarded")) { if (!Object.keys(buffers).length) loadSounds(); return renderWelcome(1); }
     if (!Object.keys(buffers).length) loadSounds();
-    const played = store("tc-day-" + todayKey());
     renderStart();
-    // Resultado de hoje que ainda não chegou ao servidor: tenta enviar em segundo plano
-    if (played && !played.sent) syncRanking(played);
+    // Recordes de hoje que ainda não chegaram ao servidor: tenta enviar em segundo plano
+    for (const r of anyDayRes()) if (!r.sent) syncRanking({ ...r, dif: r.dif || "dificil" });
   }
   boot();
 })();

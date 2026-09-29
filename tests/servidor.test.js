@@ -289,3 +289,19 @@ test("com INTEGRITY_MODE=require, resultado sem prova do Google é recusado", as
   assert.match(dia.resultados.find((r) => r.playerId === "jogador-log").integridade, /^falhou/);
   delete process.env.INTEGRITY_MODE;
 });
+
+// ---------- Dificuldades do desafio do dia ----------
+test("cada dificuldade do desafio tem seus clientes e seu ranking", async () => {
+  const facil = Regras.makeDaily(today, "facil").map((r) => ({ pieces: greedy(r.change), ms: 3000, wrong: 0 }));
+  // troco do fácil não serve no difícil (clientes diferentes)
+  const wrongDif = await post({ day: today, uf: "BA", playerId: "jogador-dif-1", dif: "dificil", rounds: facil });
+  assert.strictEqual(wrongDif.status, 400);
+  const ok = await post({ day: today, uf: "BA", playerId: "jogador-dif-1", dif: "facil", rounds: facil });
+  assert.strictEqual(ok.status, 201);
+  assert.strictEqual(ok.data.ranking.dif, "facil");
+  assert.strictEqual(ok.data.ranking.totalBrasil, 1); // só quem jogou o fácil
+  const dificil = await fetch(`${base}/api/ranking?day=${today}&uf=BA&dif=dificil&playerId=jogador-dif-1`).then((x) => x.json());
+  assert.strictEqual(dificil.voce, null);
+  const bad = await post({ day: today, uf: "BA", playerId: "jogador-dif-1", dif: "impossivel", rounds: facil });
+  assert.strictEqual(bad.status, 400);
+});

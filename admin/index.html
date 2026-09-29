@@ -49,8 +49,8 @@ tr.off td:last-child { opacity: 1; text-decoration: none; }
       <span class="flag warn">sem medição</span> o servidor não acompanhou a partida ·
       <span class="flag bad">integridade</span> o Google não confirmou que é o app original.</p>
     <div class="table-wrap"><table>
-      <thead><tr><th>#</th><th>Apelido</th><th>UF</th><th>Tempo</th><th>Declarado</th><th>Medido</th><th>Erros</th><th>Alertas</th><th>Enviado</th><th></th></tr></thead>
-      <tbody id="rows"><tr><td colspan="10" class="muted">Digite a senha e carregue um dia.</td></tr></tbody>
+      <thead><tr><th>#</th><th>Nível</th><th>Apelido</th><th>UF</th><th>Tempo</th><th>Declarado</th><th>Medido</th><th>Erros</th><th>Alertas</th><th>Enviado</th><th></th></tr></thead>
+      <tbody id="rows"><tr><td colspan="11" class="muted">Digite a senha e carregue um dia.</td></tr></tbody>
     </table></div>
   </section>
 </main>
@@ -84,12 +84,12 @@ tr.off td:last-child { opacity: 1; text-decoration: none; }
         if (r.integridade.startsWith("falhou")) flags.push(`<span class="flag bad">integridade: ${esc(r.integridade.slice(8))}</span>`);
         if (r.integridade === "ok") flags.push('<span class="flag ok">app original</span>');
         return `<tr class="${r.removido ? "off" : ""}">
-          <td>${i + 1}</td><td>${esc(r.apelido)}</td><td>${esc(r.uf)}</td><td><strong>${s(r.score)}</strong></td>
+          <td>${i + 1}</td><td>${{ facil: "🐣", medio: "🦊", dificil: "🦁" }[r.dif] || "🦁"}</td><td>${esc(r.apelido)}</td><td>${esc(r.uf)}</td><td><strong>${s(r.score)}</strong></td>
           <td>${s(r.declarado)}</td><td>${s(r.medido)}</td><td>${r.erros}</td><td>${flags.join(" ") || '<span class="muted">—</span>'}</td>
           <td class="muted">${new Date(r.at).toLocaleTimeString("pt-BR")}</td>
-          <td><button class="${r.removido ? "ghost" : "danger"}" data-id="${esc(r.playerId)}" data-undo="${r.removido}">${r.removido ? "Devolver" : "Remover"}</button></td>
+          <td><button class="${r.removido ? "ghost" : "danger"}" data-id="${esc(r.playerId)}" data-dif="${esc(r.dif)}" data-undo="${r.removido}">${r.removido ? "Devolver" : "Remover"}</button></td>
         </tr>`;
-      }).join("") || '<tr><td colspan="10" class="muted">Ninguém jogou nesse dia.</td></tr>';
+      }).join("") || '<tr><td colspan="11" class="muted">Ninguém jogou nesse dia.</td></tr>';
       $("msg").textContent = `${d.total} resultado(s) em ${d.day}.`;
     } catch (e) { $("msg").textContent = e.message; }
   }
@@ -99,7 +99,7 @@ tr.off td:last-child { opacity: 1; text-decoration: none; }
     const b = e.target.closest("button[data-id]");
     if (!b) return;
     try {
-      await api("/api/admin/remover", { method: "POST", body: JSON.stringify({ day: $("day").value, playerId: b.dataset.id, desfazer: b.dataset.undo === "true" }) });
+      await api("/api/admin/remover", { method: "POST", body: JSON.stringify({ day: $("day").value, dif: b.dataset.dif, playerId: b.dataset.id, desfazer: b.dataset.undo === "true" }) });
       load();
     } catch (err) { $("msg").textContent = err.message; }
   });

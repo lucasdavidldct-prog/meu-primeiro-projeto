@@ -18,6 +18,18 @@ npm test           # roda os testes do servidor
 - O resultado sai em quadradinhos (🟩 perfeito, 🟨 com erro ou peça a mais) para compartilhar no WhatsApp.
 - "Treinar" gera clientes aleatórios e não conta para o ranking.
 
+## Desafio do dia em 3 dificuldades
+
+🐣 Fácil, 🦊 Médio e 🦁 Difícil: cada um com os mesmos 5 clientes para todo o Brasil e o seu próprio ranking (o difícil é o desafio original). No fácil não aparece relógio (o tempo continua contando) e há dica após erro.
+
+## Para voltar todo dia
+
+- **Sequência 🔥:** cada dia jogando o desafio aumenta a sequência e dá moedinhas extras (até +14).
+- **Conquistas 🏅:** 16 conquistas (100 clientes, 5 perfeitos seguidos, amigo dos vovós, uma semana seguida…), cada uma com moedinhas.
+- **Clientes especiais:** apressado ⏱️, famoso ⭐, aniversariante 🎂 e desconfiado 🧐 aparecem em 1 de cada 3 clientes e dão bônus.
+- **Comentários:** os clientes elogiam a decoração da lojinha.
+- **⚡ Relâmpago:** quantos clientes você atende em 60 segundos (recorde no aparelho).
+
 ## Níveis
 
 Fora do ranking, a criança joga quantas vezes quiser em 3 níveis. Terminar um nível libera o próximo, e o recorde de estrelas fica salvo no aparelho.

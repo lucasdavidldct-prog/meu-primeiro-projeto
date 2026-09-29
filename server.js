@@ -31,16 +31,22 @@ const removed = new Set();   // "dia|playerId" removidos pelo dono
 const backups = new Map();   // código -> { secretHash, data, at }
 let store = null;
 
+const difOf = (x) => (x && Regras.DAILY[x.dif] ? x.dif : "dificil");
+const pkey = (dif, playerId) => `${dif}|${playerId}`;
+const getEntry = (day, dif, playerId) => byDay.get(day)?.get(pkey(dif, playerId));
+
 function remember(entry) {
+  entry.dif = difOf(entry);
   if (!byDay.has(entry.day)) byDay.set(entry.day, new Map());
-  byDay.get(entry.day).set(entry.playerId, entry);
+  byDay.get(entry.day).set(pkey(entry.dif, entry.playerId), entry);
 }
 
 function apply(rec) {
   if (!rec.type) return remember(rec);
-  const key = `${rec.day}|${rec.playerId}`;
+  const key = `${rec.day}|${difOf(rec)}|${rec.playerId}`;
   if (rec.type === "remove") { if (rec.undo) removed.delete(key); else removed.add(key); }
-  if (rec.type === "nick") { const e = byDay.get(rec.day)?.get(rec.playerId); if (e) e.nick = rec.nick; }
+  // Apelido vale para o jogador em todas as dificuldades do dia
+  if (rec.type === "nick") for (const d of Regras.DAILY_ORDER) { const e = getEntry(rec.day, d, rec.playerId); if (e) e.nick = rec.nick; }
 }
 
 async function loadData() {
@@ -111,12 +117,14 @@ setInterval(() => {
 function validateSubmission(body) {
   if (!body || typeof body !== "object") return { error: "Corpo inválido." };
   const { day, uf, playerId, rounds, nick, tentativa } = body;
+  const dif = body.dif === undefined ? "dificil" : body.dif;
+  if (!Regras.DAILY[dif]) return { error: "Dificuldade inválida." };
   if (!validPlayer(playerId)) return { error: "Jogador inválido." };
   if (!Regras.UFS.includes(uf)) return { error: "Estado inválido." };
   if (typeof day !== "string" || !isPlayableDay(day)) return { error: "Esse desafio não está mais aberto." };
   if (!validAttempt(tentativa)) return { error: "Partida inválida." };
 
-  const expected = Regras.makeRounds(Regras.dailySeed(day));
+  const expected = Regras.makeDaily(day, dif);
   if (!Array.isArray(rounds) || rounds.length !== expected.length) return { error: "Número de clientes inválido." };
 
   const results = [];
@@ -146,7 +154,7 @@ function validateSubmission(body) {
   const score = Regras.scoreOf(results).total;
   return {
     entry: {
-      day, uf, playerId, score, results,
+      day, dif, uf, playerId, score, results,
       nick: Regras.validNick(nick) ? nick : null,
       timed: measuredAll,
       at: new Date().toISOString(),
@@ -155,12 +163,13 @@ function validateSubmission(body) {
 }
 
 // ---------- Ranking ----------
-function visiblePlayers(day) {
-  return [...(byDay.get(day) || new Map()).values()].filter((p) => !removed.has(`${p.day}|${p.playerId}`));
+const isRemoved = (e) => removed.has(`${e.day}|${e.dif}|${e.playerId}`);
+function visiblePlayers(day, dif) {
+  return [...(byDay.get(day) || new Map()).values()].filter((p) => p.dif === dif && !isRemoved(p));
 }
 
-function ranking(day, uf, playerId) {
-  const players = visiblePlayers(day);
+function ranking(day, uf, playerId, dif = "dificil") {
+  const players = visiblePlayers(day, dif);
   const sorted = players.slice().sort((a, b) => a.score - b.score);
   const inUf = sorted.filter((p) => p.uf === uf);
 
@@ -178,6 +187,7 @@ function ranking(day, uf, playerId) {
   const me = playerId ? sorted.find((p) => p.playerId === playerId) : null;
   return {
     day,
+    dif,
     uf,
     totalBrasil: sorted.length,
     totalUf: inUf.length,
@@ -323,9 +333,9 @@ async function handle(req, res) {
     const { error, entry } = validateSubmission(body);
     if (error) return sendJson(res, 400, { error });
     // Pode jogar o desafio do dia quantas vezes quiser: no ranking fica o melhor tempo
-    const existing = byDay.get(entry.day)?.get(entry.playerId);
-    if (existing && removed.has(`${entry.day}|${entry.playerId}`)) return sendJson(res, 409, { error: "Seu resultado de hoje foi retirado do ranking." });
-    if (existing && entry.score >= existing.score) return sendJson(res, 200, { melhorou: false, ranking: ranking(entry.day, existing.uf, entry.playerId) });
+    const existing = getEntry(entry.day, entry.dif, entry.playerId);
+    if (existing && isRemoved(existing)) return sendJson(res, 409, { error: "Seu resultado de hoje foi retirado do ranking." });
+    if (existing && entry.score >= existing.score) return sendJson(res, 200, { melhorou: false, ranking: ranking(entry.day, existing.uf, entry.playerId, entry.dif) });
     if (existing) entry.tentativas = (existing.tentativas || 1) + 1;
 
     // Play Integrity (desligado até o app estar na Play Store)
@@ -342,7 +352,7 @@ async function handle(req, res) {
       if (!verdict.ok && mode === "require") return sendJson(res, 403, { error: "Não conseguimos confirmar que o jogo é original. Baixe pela Play Store." });
     }
     await save(entry);
-    return sendJson(res, 201, { melhorou: true, ranking: ranking(entry.day, entry.uf, entry.playerId) });
+    return sendJson(res, 201, { melhorou: true, ranking: ranking(entry.day, entry.uf, entry.playerId, entry.dif) });
   }
 
   // Troca de apelido (também no resultado de hoje, se já tiver jogado)
@@ -350,15 +360,16 @@ async function handle(req, res) {
     if (limitSubmit(ip)) return sendJson(res, 429, { error: "Muitos pedidos." });
     const b = await jsonBody(req, 1000);
     if (!b || !validPlayer(b.playerId) || !Regras.validNick(b.nick) || !isPlayableDay(b.day)) return sendJson(res, 400, { error: "Apelido inválido." });
-    if (byDay.get(b.day)?.get(b.playerId)) await save({ type: "nick", day: b.day, playerId: b.playerId, nick: b.nick });
+    if (Regras.DAILY_ORDER.some((d) => getEntry(b.day, d, b.playerId))) await save({ type: "nick", day: b.day, playerId: b.playerId, nick: b.nick });
     return sendJson(res, 200, { ok: true, apelido: Regras.nickName(b.nick) });
   }
 
   if (p === "/api/ranking" && req.method === "GET") {
     const day = url.searchParams.get("day") || dayKeyBrasilia();
     const uf = url.searchParams.get("uf") || "SP";
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Regras.UFS.includes(uf)) return sendJson(res, 400, { error: "Parâmetros inválidos." });
-    return sendJson(res, 200, ranking(day, uf, url.searchParams.get("playerId")));
+    const dif = url.searchParams.get("dif") || "dificil";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Regras.UFS.includes(uf) || !Regras.DAILY[dif]) return sendJson(res, 400, { error: "Parâmetros inválidos." });
+    return sendJson(res, 200, ranking(day, uf, url.searchParams.get("playerId"), dif));
   }
 
   // Código de recuperação: criar ou atualizar
@@ -394,21 +405,22 @@ async function handle(req, res) {
     if (!isAdmin(req)) return sendJson(res, 401, { error: "Senha do painel incorreta." });
     if (p === "/api/admin/dia" && req.method === "GET") {
       const day = url.searchParams.get("day") || dayKeyBrasilia();
-      const list = [...(byDay.get(day) || new Map()).values()].sort((a, b) => a.score - b.score).map((e) => ({
-        playerId: e.playerId, apelido: Regras.nickName(e.nick), uf: e.uf, score: e.score, at: e.at,
+      const list = [...(byDay.get(day) || new Map()).values()].sort((a, b) => a.dif.localeCompare(b.dif) || a.score - b.score).map((e) => ({
+        playerId: e.playerId, dif: e.dif, apelido: Regras.nickName(e.nick), uf: e.uf, score: e.score, at: e.at,
         erros: e.results.reduce((a, r) => a + r.wrong, 0),
         declarado: e.results.reduce((a, r) => a + (r.claimedMs ?? r.ms), 0),
         medido: e.results.every((r) => typeof r.measuredMs === "number") ? e.results.reduce((a, r) => a + r.measuredMs, 0) : null,
         rodadas: e.results.map((r) => ({ declarado: r.claimedMs ?? r.ms, medido: r.measuredMs ?? null })),
         integridade: e.integrity || "desligado",
-        removido: removed.has(`${e.day}|${e.playerId}`),
+        removido: isRemoved(e),
       }));
       return sendJson(res, 200, { day, total: list.length, resultados: list });
     }
     if (p === "/api/admin/remover" && req.method === "POST") {
       const b = await jsonBody(req, 1000);
-      if (!b || !validPlayer(b.playerId) || !/^\d{4}-\d{2}-\d{2}$/.test(b.day) || !byDay.get(b.day)?.get(b.playerId)) return sendJson(res, 400, { error: "Resultado não encontrado." });
-      await save({ type: "remove", day: b.day, playerId: b.playerId, undo: !!b.desfazer, at: new Date().toISOString() });
+      const dif = Regras.DAILY[b && b.dif] ? b.dif : "dificil";
+      if (!b || !validPlayer(b.playerId) || !/^\d{4}-\d{2}-\d{2}$/.test(b.day) || !getEntry(b.day, dif, b.playerId)) return sendJson(res, 400, { error: "Resultado não encontrado." });
+      await save({ type: "remove", day: b.day, dif, playerId: b.playerId, undo: !!b.desfazer, at: new Date().toISOString() });
       return sendJson(res, 200, { ok: true, removido: !b.desfazer });
     }
     return sendJson(res, 404, { error: "Rota não encontrada." });

@@ -95,7 +95,16 @@
     });
   }
 
-  const dailySeed = (day) => "troco-" + day;
+  // Desafio do dia em 3 dificuldades, cada uma com seu ranking.
+  // "dificil" usa a semente original (continua igual ao desafio que já existia).
+  const DAILY = {
+    facil: { name: "Fácil", emoji: "🐣", tiers: LEVELS.iniciante.tiers },
+    medio: { name: "Médio", emoji: "🦊", tiers: LEVELS.intermediario.tiers },
+    dificil: { name: "Difícil", emoji: "🦁", tiers: TIERS },
+  };
+  const DAILY_ORDER = ["facil", "medio", "dificil"];
+  const dailySeed = (day, dif = "dificil") => (dif === "dificil" ? "troco-" + day : `troco-${day}-${dif}`);
+  const makeDaily = (day, dif = "dificil") => makeRounds(dailySeed(day, dif), DAILY[dif].tiers);
 
   // O dia do desafio vira à meia-noite de Brasília para todo o Brasil.
   // Brasília é UTC-3 fixo desde o fim do horário de verão (2019).
@@ -121,5 +130,5 @@
     return { raw, wrong, extra, total: raw + wrong * WRONG_PENALTY + extra * EXTRA_PENALTY };
   }
 
-  return { UFS, VALORES, LEVELS, LEVEL_ORDER, validNick, nickName, randomNick, WRONG_PENALTY, EXTRA_PENALTY, makeRounds, dailySeed, dayKey, msToNextDay, challengeNumber, minPieces, scoreOf };
+  return { UFS, VALORES, LEVELS, LEVEL_ORDER, DAILY, DAILY_ORDER, makeDaily, validNick, nickName, randomNick, WRONG_PENALTY, EXTRA_PENALTY, makeRounds, dailySeed, dayKey, msToNextDay, challengeNumber, minPieces, scoreOf };
 });
