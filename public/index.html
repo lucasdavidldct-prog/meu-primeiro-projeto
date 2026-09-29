@@ -284,6 +284,39 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 .drawer.open .coins { background: rgba(0,0,0,0.18); border-radius: 12px; padding: 6px; }
 .busy .drawer, .busy .keys, .busy .tray-items { pointer-events: none; }
 
+/* Tela de jogo: tudo cabe na altura do celular, sem rolar.
+   A loja encolhe ou cresce; caixa e gaveta têm altura fixa. */
+.app.game { height: 100vh; height: 100dvh; padding-block: 8px; gap: 8px; }
+.app.game header.top .brand { font-size: 1.2rem; }
+.app.game .back { width: 40px; height: 40px; font-size: 1.15rem; }
+.app.game .round-dots span { height: 8px; }
+.app.game .shop { flex: 1 1 120px; min-height: 96px; max-height: 190px; height: auto; }
+.app.game .customer { height: calc(100% - 14px); width: auto; aspect-ratio: 120 / 140; bottom: 10px; left: 10px; }
+.app.game .say { top: 8px; padding: 6px 10px; font-size: 0.88rem; width: calc(100% - 44% - 20px); }
+.app.game .shop .counter { height: 22px; }
+.app.game .shop .shelf { display: none; }
+.app.game .register { padding: 8px; gap: 8px; margin-top: -14px; flex: none; }
+.app.game .lcd { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; font-size: 1.3rem; padding: 6px 12px; }
+.app.game .lcd .ln.q { grid-column: 1 / -1; }
+.app.game .tray { min-height: 0; padding: 8px 10px; gap: 6px; }
+.app.game .tray-sum { font-size: 1.35rem; }
+.app.game .tray-items { min-height: 30px; }
+.app.game .chip { padding: 4px 8px; font-size: 0.85rem; }
+.app.game .flash { min-height: 0; font-size: 0.85rem; }
+.app.game .flash:empty { display: none; }
+.app.game .key { padding: 10px; font-size: 1.05rem; }
+.app.game .drawer.open { padding: 7px; gap: 7px; flex: none; }
+.app.game .notes { gap: 6px; padding: 5px; }
+.app.game .note { aspect-ratio: 2.3 / 1; }
+.app.game .note .v { font-size: 1.25rem; top: 4px; }
+.app.game .note .a { bottom: 4px; }
+.app.game .coins { gap: 6px; padding: 5px; }
+.app.game .coin[data-c="100"] { max-width: 58px; }
+.app.game .coin[data-c="25"] { max-width: 55px; }
+.app.game .coin[data-c="50"] { max-width: 52px; }
+.app.game .coin[data-c="5"] { max-width: 50px; }
+.app.game .coin[data-c="10"] { max-width: 47px; }
+
 @media (prefers-reduced-motion: reduce) {
   .customer.enter, .customer.bump, .customer.nope, .say.pop, .lcd.flick, .register.shake, .chip.pop, .tray-sum.bump { animation: none; }
   .customer.leave { animation: none; opacity: 0; }
@@ -403,31 +436,68 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   // Clientes: bonequinhos montados a partir de uma "semente" (mesmos clientes para todo mundo no dia)
   const SKINS = ["#f9d3b4", "#eab58f", "#c98b5f", "#8d5a3b", "#5e3b25"];
   const HAIRS = ["#2b1d14", "#6b3e1f", "#e0b04a", "#c1502e", "#1a1a1a"];
-  const SHIRTS = ["#ff6b9a", "#4fb3ff", "#ffc93c", "#22b35e", "#9b6bff", "#ff8a3d"];
-  const NAMES = ["Ana", "Léo", "Bia", "Davi", "Malu", "Théo", "Lara", "Caio", "Nina", "Gabi", "Rafa", "Duda"];
-  const ITEMS = [
-    ["um sorvete 🍦", "um pirulito 🍭", "um suco 🧃", "uns biscoitos 🍪"],
-    ["um caderno 📒", "uns chocolates 🍫", "uns gizes de cera 🖍️", "uns cupcakes 🧁"],
-    ["uma bola ⚽", "um ursinho 🧸", "um jogo 🎲", "um ioiô de luz 🪀"],
-    ["um skate 🛹", "uma pipa gigante 🪁", "um quebra-cabeça 🧩", "uma mochila 🎒"],
-    ["uma bicicleta 🚲", "um patinete 🛴", "uma barraca ⛺", "um violão 🎸"],
+  const SHIRTS = ["#ff6b9a", "#4fb3ff", "#ffc93c", "#22b35e", "#9b6bff", "#ff8a3d", "#2ec4b6", "#e63946"];
+  // Clientes: cada grupo tem os seus nomes e penteados, pra "Léo" não aparecer de maria-chiquinha
+  const PEOPLE = {
+    menino: { names: ["Léo", "Davi", "Théo", "Caio", "Rafa", "Gael", "Enzo", "Miguel", "Arthur", "Heitor", "Bento", "Noah", "Joaquim", "Pedro", "Lucas"], styles: ["curto", "bone", "black"] },
+    menina: { names: ["Ana", "Bia", "Malu", "Lara", "Nina", "Gabi", "Duda", "Alice", "Helena", "Laura", "Cecília", "Maitê", "Luna", "Sofia", "Lívia"], styles: ["chiquinha", "longo", "black", "coque"] },
+    vovo: { names: ["Vó Cida", "Vó Nena", "Vô Zé", "Vô Tião", "Vó Lurdes", "Vô Juca"], styles: ["vovo"] },
+  };
+  // Produtos com faixa de preço realista (em centavos). O produto é escolhido pelo preço da compra.
+  const PRODUCTS = [
+    ["umas balas 🍬", 10, 300], ["um pirulito 🍭", 50, 300], ["um chiclete", 25, 250], ["uma água 💧", 150, 500],
+    ["um pão de queijo 🧀", 200, 700], ["uns pãezinhos 🍞", 100, 900], ["um suco 🧃", 200, 800], ["uma banana 🍌", 50, 300],
+    ["umas maçãs 🍎", 300, 1200], ["uns biscoitos 🍪", 250, 900], ["um picolé 🍡", 200, 900], ["um sorvete 🍦", 500, 2000],
+    ["um chocolate 🍫", 300, 1500], ["um refrigerante 🥤", 400, 1200], ["uma pipoca 🍿", 500, 1800], ["um leite 🥛", 400, 900],
+    ["uns ovos 🥚", 900, 2500], ["uma pipa 🪁", 300, 2500], ["um ioiô 🪀", 500, 2500], ["umas figurinhas 🃏", 500, 3000],
+    ["um caderno 📒", 800, 3500], ["uns gizes de cera 🖍️", 500, 2000], ["uns balões 🎈", 500, 2000], ["uns cupcakes 🧁", 800, 3000],
+    ["um sanduíche 🥪", 800, 3000], ["uma melancia 🍉", 1000, 3000], ["umas uvas 🍇", 600, 2000], ["uns morangos 🍓", 600, 2000],
+    ["um hambúrguer 🍔", 1500, 4500], ["um livro 📚", 2000, 8000], ["um carrinho 🚗", 1500, 7000], ["um quebra-cabeça 🧩", 2000, 9000],
+    ["um boné 🧢", 2000, 7000], ["uma camiseta 👕", 3000, 9000], ["uns óculos de sol 🕶️", 2000, 9000], ["um guarda-chuva ☂️", 2500, 6500],
+    ["uma pizza 🍕", 3000, 9000], ["um bolo 🎂", 3000, 10000], ["uma bola ⚽", 3000, 12000], ["um ursinho 🧸", 3000, 12000],
+    ["uma boneca 🪆", 4000, 15000], ["um jogo de tabuleiro 🎲", 4000, 15000], ["uma ração pro cachorro 🦴", 3000, 12000], ["um peixinho 🐠", 500, 2500],
+    ["uma mochila 🎒", 6000, 20000], ["um fone de ouvido 🎧", 5000, 20000], ["um relógio ⌚", 6000, 20000], ["um tênis 👟", 12000, 20000],
+    ["um skate 🛹", 10000, 20000], ["um patinete 🛴", 15000, 20000], ["um violão infantil 🎸", 15000, 20000], ["uma barraca ⛺", 15000, 20000],
   ];
-  function makeCustomer(seedStr, round) {
+  function productFor(price, pick) {
+    let fits = PRODUCTS.filter(([, lo, hi]) => price >= lo && price <= hi);
+    if (!fits.length) fits = [PRODUCTS.reduce((best, p) => (Math.abs(p[2] - price) < Math.abs(best[2] - price) ? p : best))];
+    return pick(fits)[0];
+  }
+  function makeCustomer(seedStr, round, price) {
     let h = 2166136261;
     for (const ch of seedStr + "#" + round) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
     const pick = (arr) => { h = Math.imul(h ^ (h >>> 13), 0x5bd1e995) >>> 0; return arr[h % arr.length]; };
+    const group = pick(["menino", "menino", "menina", "menina", "vovo"]);
+    const P = PEOPLE[group];
     return {
-      skin: pick(SKINS), hair: pick(HAIRS), shirt: pick(SHIRTS), style: pick([0, 1, 2, 3]),
-      name: pick(NAMES), item: pick(ITEMS[Math.min(round, ITEMS.length - 1)]),
+      group, name: pick(P.names), style: pick(P.styles), skin: pick(SKINS),
+      hair: group === "vovo" ? pick(["#d9d9d9", "#bdbdbd", "#f0f0f0"]) : pick(HAIRS),
+      shirt: pick(SHIRTS), glasses: group === "vovo" || pick([0, 0, 0, 0, 1]) === 1,
+      freckles: pick([0, 0, 0, 1]) === 1,
+      item: productFor(price, pick),
     };
   }
   function customerSvg(c, mood = "normal", anim = "") {
-    const back = c.style === 2 ? `<circle cx="60" cy="50" r="42" fill="${c.hair}"/>`
-      : c.style === 1 ? `<circle cx="22" cy="40" r="15" fill="${c.hair}"/><circle cx="98" cy="40" r="15" fill="${c.hair}"/>` : "";
-    const top = c.style === 3
-      ? `<path d="M25 50 Q28 16 60 16 Q92 16 95 50 Z" fill="${c.shirt}"/><rect x="58" y="42" width="44" height="9" rx="4" fill="${c.shirt}"/>`
-      : c.style === 2 ? `<path d="M28 44 Q60 22 92 44 Q60 34 28 44 Z" fill="${c.hair}"/>`
-      : `<path d="M25 56 Q26 18 60 18 Q94 18 95 56 Q86 36 60 36 Q34 36 25 56 Z" fill="${c.hair}"/>`;
+    const hair = c.hair;
+    const back = {
+      black: `<circle cx="60" cy="50" r="42" fill="${hair}"/>`,
+      chiquinha: `<circle cx="22" cy="40" r="15" fill="${hair}"/><circle cx="98" cy="40" r="15" fill="${hair}"/>`,
+      longo: `<path d="M24 50 Q20 110 36 118 L84 118 Q100 110 96 50 Z" fill="${hair}"/>`,
+      coque: `<circle cx="60" cy="18" r="13" fill="${hair}"/>`,
+      vovo: c.name.startsWith("Vó") ? `<circle cx="60" cy="20" r="12" fill="${hair}"/>` : "",
+    }[c.style] || "";
+    const top = {
+      bone: `<path d="M25 50 Q28 16 60 16 Q92 16 95 50 Z" fill="${c.shirt}"/><rect x="58" y="42" width="44" height="9" rx="4" fill="${c.shirt}"/>`,
+      black: `<path d="M28 44 Q60 22 92 44 Q60 34 28 44 Z" fill="${hair}"/>`,
+      vovo: c.name.startsWith("Vó")
+        ? `<path d="M26 54 Q26 22 60 22 Q94 22 94 54 Q84 38 60 38 Q36 38 26 54 Z" fill="${hair}"/>`
+        : `<path d="M26 58 Q24 40 34 36 M94 58 Q96 40 86 36" stroke="${hair}" stroke-width="7" fill="none" stroke-linecap="round"/>`,
+    }[c.style] || `<path d="M25 56 Q26 18 60 18 Q94 18 95 56 Q86 36 60 36 Q34 36 25 56 Z" fill="${hair}"/>`;
+    const glasses = c.glasses
+      ? `<g stroke="#1f2b52" stroke-width="2.5" fill="rgba(255,255,255,.25)"><circle cx="48" cy="60" r="9"/><circle cx="72" cy="60" r="9"/><path d="M57 60 L63 60"/></g>` : "";
+    const freckles = c.freckles
+      ? `<g fill="#b5653a" opacity=".6"><circle cx="38" cy="68" r="1.3"/><circle cx="42" cy="71" r="1.3"/><circle cx="82" cy="68" r="1.3"/><circle cx="78" cy="71" r="1.3"/></g>` : "";
     const eyes = mood === "happy"
       ? `<path d="M42 62 Q48 54 54 62 M66 62 Q72 54 78 62" stroke="#1f2b52" stroke-width="4" fill="none" stroke-linecap="round"/>`
       : `<circle cx="48" cy="60" r="5" fill="#1f2b52"/><circle cx="72" cy="60" r="5" fill="#1f2b52"/>
@@ -441,7 +511,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       <path d="M18 140 Q18 98 60 98 Q102 98 102 140 Z" fill="${c.shirt}"/>
       <circle cx="26" cy="62" r="7" fill="${c.skin}"/><circle cx="94" cy="62" r="7" fill="${c.skin}"/>
       <circle cx="60" cy="60" r="34" fill="${c.skin}"/>
-      ${top}${brows}${eyes}
+      ${top}${brows}${eyes}${glasses}${freckles}
       <circle cx="40" cy="72" r="5" fill="#ff6b9a" opacity=".4"/><circle cx="80" cy="72" r="5" fill="#ff6b9a" opacity=".4"/>
       ${mouth}
     </svg>`;
@@ -588,6 +658,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   // ---------- Telas ----------
   function renderStart() {
+    app.classList.remove("game");
     stopTick();
     const uf = store("tc-uf") || "SP";
     const played = store("tc-day-" + todayKey());
@@ -631,6 +702,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   const starsHtml = (n) => `${"⭐".repeat(n)}<span class="off">${"⭐".repeat(3 - n)}</span>`;
 
   function renderLevels() {
+    app.classList.remove("game");
     stopTick();
     app.replaceChildren(el(`
       <header class="top">
@@ -725,7 +797,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function askText(c, r) { return `Quero ${c.item}! Toma ${brl(r.paid)}.`; }
 
   function setCustomer(mood, text, kind = "", anim = "") {
-    const c = makeCustomer(S.seed, S.i);
+    const c = makeCustomer(S.seed, S.i, S.rounds[S.i].price);
     document.getElementById("cust").innerHTML = customerSvg(c, mood, anim);
     const say = document.getElementById("say");
     say.className = "say " + kind;
@@ -736,6 +808,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   // Monta a tela do caixa uma vez; depois só o cliente e o visor mudam
   function renderRound() {
+    app.classList.add("game");
     app.replaceChildren(el(`
       <header class="top">
         <span class="left">
@@ -796,7 +869,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   // Um cliente novo chega ao caixa
   function showCustomer() {
-    const r = S.rounds[S.i], c = makeCustomer(S.seed, S.i);
+    const r = S.rounds[S.i], c = makeCustomer(S.seed, S.i, S.rounds[S.i].price);
     document.querySelectorAll("#dots span").forEach((d, k) => { d.className = k < S.i ? "done" : k === S.i ? "now" : ""; });
     document.getElementById("shop").setAttribute("aria-label", `Cliente ${S.i + 1} de 5`);
     setCustomer("normal", askText(c, r), "", "enter");
@@ -819,7 +892,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     if (S.lastAdded) retrigger(sumEl, "bump");
     const items = document.getElementById("items");
     const entries = Object.entries(S.tray).sort((a, b) => b[0] - a[0]);
-    if (!entries.length) { items.innerHTML = `<span class="empty">Toque nas notas e moedas abaixo</span>`; return; }
+    if (!entries.length) { items.innerHTML = `<span class="empty">Toque nas notas e moedas 👇</span>`; return; }
     items.replaceChildren(...entries.map(([c, n]) => {
       const b = document.createElement("button");
       b.className = "chip" + (Number(c) === S.lastAdded ? " pop" : "");
@@ -854,7 +927,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       const cur = S, round = S.i, token = (S.token = (S.token || 0) + 1);
       setTimeout(() => {
         if (S !== cur || S.i !== round || S.token !== token || S.busy) return;
-        setCustomer("normal", askText(makeCustomer(S.seed, S.i), r));
+        setCustomer("normal", askText(makeCustomer(S.seed, S.i, r.price), r));
         lcdVal.textContent = "?"; lcdLn.className = "ln q";
       }, 1600);
       return;
@@ -916,6 +989,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   }
 
   function renderResult(res) {
+    app.classList.remove("game");
     const sc = res.score;
     const perfect = res.results.filter(isPerfect).length;
     const stars = starsOf(res.results);
