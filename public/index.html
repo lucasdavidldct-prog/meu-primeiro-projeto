@@ -146,6 +146,10 @@ td.meh { color: var(--warn); font-weight: 700; }
 .note-box { font-size: 0.85rem; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; }
 .share-text { width: 100%; font: inherit; font-size: 0.85rem; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: none; }
 a { color: var(--accent); }
+tr.me td { font-weight: 700; color: var(--accent); }
+.toplist { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.toplist li { display: flex; justify-content: space-between; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.toplist li.me { font-weight: 700; color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) {
   .tray.shake { animation: none; }
@@ -156,14 +160,13 @@ a { color: var(--accent); }
 <body>
 <main class="app" id="app"></main>
 
+<script src="regras.js"></script>
 <script>
 (function () {
   "use strict";
 
   // ---------- Utilidades ----------
-  const LAUNCH = new Date(2026, 8, 29); // 29/09/2026 = desafio nº 1
-  const DAY = 86400000;
-  const UFS = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+  const { UFS, makeRounds, dailySeed, dayKey, msToNextDay, challengeNumber: challengeOf, minPieces, scoreOf, WRONG_PENALTY } = window.Regras;
 
   // Denominações em centavos (sem a nota de 200: o troco máximo é menor que isso)
   const DENOMS = [
@@ -191,49 +194,9 @@ a { color: var(--accent); }
     } catch (e) { return null; }
   }
 
-  function todayKey(d = new Date()) {
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-  }
-  function challengeNumber(d = new Date()) {
-    const mid = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    return Math.max(1, Math.round((mid - LAUNCH) / DAY) + 1);
-  }
+  const todayKey = () => dayKey();
+  const challengeNumber = () => challengeOf(todayKey());
 
-  // RNG determinístico: mesma data => mesmo desafio para todo mundo
-  function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-
-  const TIERS = [
-    { min: 150,  max: 900,   pays: [1000, 2000], extraCoins: false },
-    { min: 600,  max: 1900,  pays: [2000, 5000], extraCoins: true },
-    { min: 1200, max: 4600,  pays: [5000, 10000], extraCoins: true },
-    { min: 3000, max: 9600,  pays: [10000], extraCoins: true },
-    { min: 6000, max: 18900, pays: [20000], extraCoins: false },
-  ];
-
-  function makeRounds(seedStr) {
-    const rng = mulberry32(hashStr(seedStr));
-    const randInt = (a, b) => a + Math.floor(rng() * (b - a + 1));
-    return TIERS.map((t) => {
-      const price = 5 * randInt(t.min / 5, t.max / 5);
-      const options = t.pays.filter((p) => p > price);
-      let paid = options[randInt(0, options.length - 1)];
-      // Às vezes o cliente "facilita" e completa com as moedas dos centavos
-      const cents = price % 100;
-      if (t.extraCoins && cents !== 0 && rng() < 0.45) paid += cents;
-      return { price, paid, change: paid - price };
-    });
-  }
-
-  // Menor número de peças para um valor (programação dinâmica)
-  function minPieces(amount) {
-    const n = amount / 5, dp = new Array(n + 1).fill(Infinity); dp[0] = 0;
-    for (let i = 1; i <= n; i++) for (const d of DENOMS) { const k = d.c / 5; if (k <= i && dp[i - k] + 1 < dp[i]) dp[i] = dp[i - k] + 1; }
-    return dp[n];
-  }
-
-  const WRONG_PENALTY = 5000;  // 5s por troco errado
-  const EXTRA_PENALTY = 2000;  // 2s por peça a mais que o mínimo
 
   // ---------- Estado ----------
   const app = document.getElementById("app");
@@ -271,7 +234,7 @@ a { color: var(--accent); }
   }
 
   function startGame(training) {
-    const seed = training ? "treino-" + Date.now() : "troco-" + todayKey();
+    const seed = training ? "treino-" + Date.now() : dailySeed(todayKey());
     S = {
       training, rounds: makeRounds(seed), i: 0, tray: {}, results: [],
       wrong: 0, roundStart: performance.now(), gameStart: performance.now(),
@@ -363,17 +326,10 @@ a { color: var(--accent); }
     }
     const now = performance.now();
     const pieces = trayCount(), best = minPieces(r.change);
-    S.results.push({ ...r, ms: now - S.roundStart, pieces, best, wrong: S.roundWrong || 0 });
+    S.results.push({ ...r, ms: now - S.roundStart, pieces, best, wrong: S.roundWrong || 0, tray: { ...S.tray } });
     S.roundWrong = 0; S.tray = {}; S.i++; S.roundStart = now;
     if (S.i >= S.rounds.length) return finish();
     renderRound();
-  }
-
-  function scoreOf(results) {
-    const raw = results.reduce((a, r) => a + r.ms, 0);
-    const wrong = results.reduce((a, r) => a + r.wrong, 0);
-    const extra = results.reduce((a, r) => a + (r.pieces - r.best), 0);
-    return { raw, wrong, extra, total: raw + wrong * WRONG_PENALTY + extra * EXTRA_PENALTY };
   }
 
   function finish() {
@@ -416,10 +372,11 @@ a { color: var(--accent); }
         </div>
         <p class="flash good" id="copied" aria-live="polite"></p>
       </section>`}
-      <section class="card">
-        <h2>Ranking de ${res.uf}</h2>
-        <p class="note-box">No protótipo o ranking ainda não existe: ele precisa de um servidor que junte os resultados de todo mundo. Na versão final, aqui aparecem sua posição no estado e o placar entre os estados.</p>
-      </section>
+      ${res.training ? "" : `
+      <section class="card" id="rank" aria-live="polite">
+        <h2>Ranking de hoje</h2>
+        <p class="muted">Buscando o ranking…</p>
+      </section>`}
       <section class="card">
         <h2>Cliente por cliente</h2>
         <div class="table-wrap"><table>
@@ -443,16 +400,81 @@ a { color: var(--accent); }
       const fallback = () => { const t = document.getElementById("sharetxt"); t.focus(); t.select(); document.getElementById("copied").textContent = "Texto selecionado. Copie e cole no grupo."; };
       try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
     });
-    if (!res.training) startCountdown();
+    if (!res.training) { startCountdown(res); syncRanking(res); }
   }
 
-  function startCountdown() {
+  // ---------- Ranking (servidor) ----------
+  function playerId() {
+    let id = store("tc-player");
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12));
+      store("tc-player", id);
+    }
+    return id;
+  }
+
+  async function api(path, opts) {
+    const r = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+    const data = await r.json().catch(() => ({}));
+    return { status: r.status, data };
+  }
+
+  async function syncRanking(res) {
+    const box = document.getElementById("rank");
+    try {
+      let ranking;
+      if (!res.sent) {
+        const body = { day: res.day, uf: res.uf, playerId: playerId(), rounds: res.results.map((r) => ({ pieces: r.tray || {}, ms: r.ms, wrong: r.wrong })) };
+        const { status, data } = await api("api/resultado", { method: "POST", body: JSON.stringify(body) });
+        if (status === 201 || status === 409) { res.sent = true; store("tc-day-" + res.day, res); ranking = data.ranking; }
+        else if (status === 400) { res.sent = true; store("tc-day-" + res.day, res); throw new Error(data.error || "Resultado recusado."); }
+        else throw new Error("offline");
+      }
+      if (!ranking) {
+        const q = new URLSearchParams({ day: res.day, uf: res.uf, playerId: playerId() });
+        const { status, data } = await api("api/ranking?" + q);
+        if (status !== 200) throw new Error("offline");
+        ranking = data;
+      }
+      if (document.body.contains(box)) paintRanking(box, ranking, res.uf);
+    } catch (e) {
+      if (!document.body.contains(box)) return;
+      const msg = e.message && e.message !== "offline" && !(e instanceof TypeError)
+        ? "Seu resultado não entrou no ranking. Motivo: " + e.message
+        : "Sem conexão com o servidor do ranking. Seu resultado fica guardado aqui e é enviado na próxima vez que você abrir o jogo com internet.";
+      box.innerHTML = `<h2>Ranking de hoje</h2><p class="note-box">${msg}</p>`;
+    }
+  }
+
+  function paintRanking(box, r, uf) {
+    const ord = (n) => n + "º";
+    const you = r.voce
+      ? `<p><strong>Você:</strong> ${r.voce.posicaoUf ? ord(r.voce.posicaoUf) + " de " + r.totalUf + " em " + uf + " · " : ""}${ord(r.voce.posicaoBrasil)} de ${r.totalBrasil} no Brasil</p>`
+      : `<p class="muted">${r.totalBrasil} pessoa(s) jogaram hoje.</p>`;
+    const mine = r.estados.find((e) => e.uf === uf);
+    const top = r.estados.slice(0, 10);
+    if (mine && !top.includes(mine)) top.push(mine);
+    const rows = top.map((e) => `<tr${e.uf === uf ? ' class="me"' : ""}>
+        <td>${e.posicao ? ord(e.posicao) : "—"}</td><td>${e.uf}</td><td>${e.jogadores}</td><td>${secs(e.media)}</td></tr>`).join("");
+    const tops = r.topUf.map((p) => `<li${p.voce ? ' class="me"' : ""}><span>${ord(p.posicao)}</span><span>${secs(p.score)}${p.voce ? " (você)" : ""}</span></li>`).join("");
+    box.innerHTML = `
+      <h2>Ranking de hoje</h2>
+      ${you}
+      <p class="eyebrow">Placar dos estados (média de tempo)</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Pos.</th><th>UF</th><th>Jogadores</th><th>Média</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="4" class="muted">Ninguém jogou ainda.</td></tr>`}</tbody>
+      </table></div>
+      <p class="muted" style="font-size:.85rem">Um estado entra no placar com pelo menos ${r.minJogadoresEstado} jogadores.</p>
+      ${tops ? `<p class="eyebrow">Melhores tempos de ${uf}</p><ol class="toplist">${tops}</ol>` : ""}`;
+  }
+
+  function startCountdown(res) {
     const n = document.getElementById("next");
     const paint = () => {
       if (!document.body.contains(n)) return stopTick();
-      const now = new Date(), tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      let s = Math.max(0, Math.floor((tom - now) / 1000));
-      if (s === 0) return boot();
+      let s = Math.floor(msToNextDay() / 1000);
+      if (res.day !== todayKey()) return boot();
       const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); s %= 60;
       n.textContent = `Próximo desafio em ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     };
