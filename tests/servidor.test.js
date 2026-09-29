@@ -12,7 +12,7 @@ const Regras = require("../public/regras.js");
 
 let server, base;
 before(async () => {
-  server = createServer();
+  server = await createServer();
   await new Promise((r) => server.listen(0, r));
   base = `http://localhost:${server.address().port}`;
 });
@@ -93,7 +93,7 @@ test("monta o placar dos estados com mínimo de 3 jogadores", async () => {
   assert.strictEqual(r.estados[1].posicao, null);  // RJ tem só 1 jogador
 });
 
-test("grava cada resultado aceito no arquivo de dados", () => {
+test("grava cada resultado aceito no arquivo de dados", { skip: !!process.env.DATABASE_URL }, () => {
   const lines = fs.readFileSync(path.join(process.env.DATA_DIR, "resultados.jsonl"), "utf8").trim().split("\n");
   assert.ok(lines.length >= 4);
 });

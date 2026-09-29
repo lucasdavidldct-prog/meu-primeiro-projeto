@@ -103,17 +103,40 @@ Tudo já está no código; falta a configuração, que depende da conta na Play 
 5. No Render, adicione `GOOGLE_SERVICE_ACCOUNT` com o conteúdo do JSON e mude `INTEGRITY_MODE` para `log`. Olhe o painel por alguns dias: resultados legítimos devem aparecer como "app original".
 6. Quando estiver tudo certo, mude `INTEGRITY_MODE` para `require`: resultados sem prova do Google passam a ser recusados.
 
-## Colocar no ar (Render, plano grátis)
+## Colocar no ar de graça (Render + Neon + cron-job.org)
 
-1. Crie uma conta em [render.com](https://render.com) entrando com o GitHub.
-2. Clique em **New > Blueprint** e escolha este repositório e o branch com o código.
-3. O Render lê o `render.yaml` e cria o serviço `troco-certo`. Em alguns minutos o jogo fica em `https://troco-certo.onrender.com` (ou um nome parecido, se esse já existir).
+Três serviços gratuitos, sem cartão de crédito:
 
-Limites do plano grátis:
-- O servidor dorme depois de 15 minutos sem uso. O primeiro acesso depois disso demora cerca de 1 minuto.
-- O disco é apagado quando o servidor reinicia ou recebe código novo, e o ranking some junto. Serve para testar com amigos. Para valer, use um VPS ou um serviço com disco (`Dockerfile` pronto, com volume em `/data`).
+| Peça | Serviço | Para quê |
+|---|---|---|
+| Servidor | [Render](https://render.com) | Roda o `server.js` |
+| Banco de dados | [Neon](https://neon.tech) | Guarda ranking e códigos de recuperação sem apagar (0,5 GB grátis) |
+| Despertador | [cron-job.org](https://cron-job.org) | Visita o servidor a cada 10 minutos para ele não dormir |
 
-Variáveis de ambiente: `PORT` (padrão 3000), `DATA_DIR` (padrão `./dados`), `ADMIN_TOKEN` (senha do painel, mínimo 12 caracteres), `INTEGRITY_MODE` (`off`, `log` ou `require`), `GOOGLE_SERVICE_ACCOUNT` (JSON da conta de serviço) e `PLAY_PACKAGE` (padrão `app.trococerto`).
+**1. Banco de dados (Neon)**
+1. Entre em neon.tech com a conta do GitHub e crie um projeto (região: São Paulo, se houver; senão, a mais próxima).
+2. Na tela do projeto, copie a **Connection string**. Ela começa com `postgresql://` e termina com `?sslmode=require`.
+
+**2. Servidor (Render)**
+1. Entre em render.com com a conta do GitHub.
+2. **New > Blueprint**, escolha este repositório e o branch com o código.
+3. Quando o Render pedir `DATABASE_URL`, cole a Connection string do Neon.
+4. Pronto: o Render cria o serviço, gera a senha do painel (`ADMIN_TOKEN`, em *Environment*) e o jogo fica em `https://troco-certo.onrender.com` (ou nome parecido).
+5. Para conferir, abra `https://SEU-SERVIDOR/api/saude`: deve aparecer `"armazenamento":"postgres"`.
+
+As tabelas do banco são criadas sozinhas na primeira vez.
+
+**3. Despertador (cron-job.org)**
+1. Crie a conta em cron-job.org.
+2. **Create cronjob**: URL `https://SEU-SERVIDOR/api/saude`, a cada **10 minutos**.
+
+O Render grátis dá 750 horas por mês, e um mês tem no máximo 744: dá para ficar acordado o mês todo sem pagar.
+
+**Rodar no computador:** `npm install` e `npm start`. Sem `DATABASE_URL`, os dados ficam na pasta `dados/`. Também há um `Dockerfile` (com volume em `/data`) para quem preferir um VPS.
+
+Variáveis de ambiente: `PORT` (padrão 3000), `DATABASE_URL` (PostgreSQL; sem ela usa arquivos), `DATA_DIR` (padrão `./dados`), `ADMIN_TOKEN` (senha do painel, mínimo 12 caracteres), `INTEGRITY_MODE` (`off`, `log` ou `require`), `GOOGLE_SERVICE_ACCOUNT` (JSON da conta de serviço) e `PLAY_PACKAGE` (padrão `app.trococerto`).
+
+Testes: `npm test`. Para incluir o teste com PostgreSQL de verdade: `TEST_DATABASE_URL=postgresql://... npm test` (o banco de teste é apagado).
 
 ## App Android (APK)
 

@@ -7,6 +7,10 @@ services:
     startCommand: node server.js
     healthCheckPath: /api/saude
     envVars:
+      # Endereço do banco PostgreSQL grátis (Neon). O Render pede para colar ao criar.
+      # Sem ele, os dados ficam no disco e somem quando o servidor reinicia.
+      - key: DATABASE_URL
+        sync: false
       # Senha do painel do dono (/admin). O Render gera uma senha forte;
       # veja em Environment no painel do Render.
       - key: ADMIN_TOKEN

@@ -1,6 +1,7 @@
 // Servidor do Troco Certo: serve o jogo, guarda o ranking diário por estado,
 // mede o tempo das partidas, oferece o painel do dono e guarda os códigos de recuperação.
-// Sem dependências: rode com `node server.js` (Node 18 ou mais novo).
+// Rode com `npm install` e `node server.js` (Node 18 ou mais novo).
+// Guarda os dados em arquivos ou, com DATABASE_URL, num PostgreSQL (veja armazenamento.js).
 "use strict";
 
 const http = require("node:http");
@@ -9,13 +10,11 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const Regras = require("./public/regras.js");
 const Integridade = require("./integridade.js");
+const { createStore } = require("./armazenamento.js");
 
 const PORT = Number(process.env.PORT) || 3000;
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "dados");
 const PUBLIC_DIR = path.join(__dirname, "public");
 const ADMIN_DIR = path.join(__dirname, "admin");
-const DATA_FILE = path.join(DATA_DIR, "resultados.jsonl");
-const BACKUP_FILE = path.join(DATA_DIR, "backups.jsonl");
 
 const MIN_UF_PLAYERS = 3;          // estado só entra no placar com pelo menos 3 jogadores
 const MIN_MS_PER_ROUND = 800;      // ninguém entrega troco em menos que isso
@@ -24,11 +23,13 @@ const MAX_MS_PER_ROUND = 30 * 60 * 1000;
 const NET_TOLERANCE = 1500;        // folga para a demora da internet ao medir o tempo no servidor
 
 // ---------- Armazenamento ----------
-// Uma linha por registro (JSON Lines). Tudo fica em memória; o arquivo só recebe acréscimos.
-// Tipos: resultado (sem "type"), "remove" (painel do dono), "nick" (troca de apelido).
+// Tudo fica em memória para responder rápido; cada mudança também é gravada
+// no armazenamento (arquivo ou PostgreSQL) e relida quando o servidor reinicia.
+// Tipos de registro: resultado (sem "type"), "remove" (painel do dono), "nick" (troca de apelido).
 const byDay = new Map();     // dia -> Map(playerId -> resultado)
 const removed = new Set();   // "dia|playerId" removidos pelo dono
 const backups = new Map();   // código -> { secretHash, data, at }
+let store = null;
 
 function remember(entry) {
   if (!byDay.has(entry.day)) byDay.set(entry.day, new Map());
@@ -40,27 +41,24 @@ function apply(rec) {
   const key = `${rec.day}|${rec.playerId}`;
   if (rec.type === "remove") { if (rec.undo) removed.delete(key); else removed.add(key); }
   if (rec.type === "nick") { const e = byDay.get(rec.day)?.get(rec.playerId); if (e) e.nick = rec.nick; }
-  if (rec.type === "backup") backups.set(rec.code, { secretHash: rec.secretHash, data: rec.data, at: rec.at });
 }
 
-function readLines(file) {
-  if (!fs.existsSync(file)) return;
-  for (const line of fs.readFileSync(file, "utf8").split("\n")) {
-    if (!line.trim()) continue;
-    try { apply(JSON.parse(line)); } catch { /* linha corrompida: ignora */ }
-  }
-}
-
-function loadData() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+async function loadData() {
   byDay.clear(); removed.clear(); backups.clear();
-  readLines(DATA_FILE);
-  readLines(BACKUP_FILE);
+  store = createStore();
+  await store.init();
+  await store.loadRecords(apply);
+  await store.loadBackups((code, b) => backups.set(code, b));
 }
 
-function save(rec, file = DATA_FILE) {
-  fs.appendFileSync(file, JSON.stringify(rec) + "\n");
+async function save(rec) {
   apply(rec);
+  await store.appendRecord(rec);
+}
+
+async function saveBackup(code, b) {
+  backups.set(code, b);
+  await store.putBackup(code, b);
 }
 
 // ---------- Datas (horário de Brasília) ----------
@@ -294,7 +292,7 @@ async function handle(req, res) {
     if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
   }
 
-  if (p === "/api/saude") return sendJson(res, 200, { ok: true, hoje: dayKeyBrasilia(), integridade: Integridade.mode() });
+  if (p === "/api/saude") return sendJson(res, 200, { ok: true, hoje: dayKeyBrasilia(), integridade: Integridade.mode(), armazenamento: store.kind });
 
   // Avisos de tempo da partida (inicio, fim, pausa, volta)
   if (p === "/api/evento" && req.method === "POST") {
@@ -338,7 +336,7 @@ async function handle(req, res) {
       entry.integrity = verdict.ok ? "ok" : `falhou: ${verdict.reason}`;
       if (!verdict.ok && mode === "require") return sendJson(res, 403, { error: "Não conseguimos confirmar que o jogo é original. Baixe pela Play Store." });
     }
-    save(entry);
+    await save(entry);
     return sendJson(res, 201, { ranking: ranking(entry.day, entry.uf, entry.playerId) });
   }
 
@@ -347,7 +345,7 @@ async function handle(req, res) {
     if (limitSubmit(ip)) return sendJson(res, 429, { error: "Muitos pedidos." });
     const b = await jsonBody(req, 1000);
     if (!b || !validPlayer(b.playerId) || !Regras.validNick(b.nick) || !isPlayableDay(b.day)) return sendJson(res, 400, { error: "Apelido inválido." });
-    if (byDay.get(b.day)?.get(b.playerId)) save({ type: "nick", day: b.day, playerId: b.playerId, nick: b.nick });
+    if (byDay.get(b.day)?.get(b.playerId)) await save({ type: "nick", day: b.day, playerId: b.playerId, nick: b.nick });
     return sendJson(res, 200, { ok: true, apelido: Regras.nickName(b.nick) });
   }
 
@@ -367,11 +365,11 @@ async function handle(req, res) {
     if (b.code) {
       const cur = backups.get(b.code);
       if (!cur || cur.secretHash !== hashSecret(b.secret)) return sendJson(res, 403, { error: "Código não confere." });
-      save({ type: "backup", code: b.code, secretHash: cur.secretHash, data, at: new Date().toISOString() }, BACKUP_FILE);
+      await saveBackup(b.code, { secretHash: cur.secretHash, data, at: new Date().toISOString() });
       return sendJson(res, 200, { code: b.code, secret: b.secret });
     }
     const code = newCode(), secret = crypto.randomBytes(18).toString("base64url");
-    save({ type: "backup", code, secretHash: hashSecret(secret), data, at: new Date().toISOString() }, BACKUP_FILE);
+    await saveBackup(code, { secretHash: hashSecret(secret), data, at: new Date().toISOString() });
     return sendJson(res, 201, { code, secret });
   }
 
@@ -405,7 +403,7 @@ async function handle(req, res) {
     if (p === "/api/admin/remover" && req.method === "POST") {
       const b = await jsonBody(req, 1000);
       if (!b || !validPlayer(b.playerId) || !/^\d{4}-\d{2}-\d{2}$/.test(b.day) || !byDay.get(b.day)?.get(b.playerId)) return sendJson(res, 400, { error: "Resultado não encontrado." });
-      save({ type: "remove", day: b.day, playerId: b.playerId, undo: !!b.desfazer, at: new Date().toISOString() });
+      await save({ type: "remove", day: b.day, playerId: b.playerId, undo: !!b.desfazer, at: new Date().toISOString() });
       return sendJson(res, 200, { ok: true, removido: !b.desfazer });
     }
     return sendJson(res, 404, { error: "Rota não encontrada." });
@@ -418,15 +416,19 @@ async function handle(req, res) {
   serveFile(res, PUBLIC_DIR, rel);
 }
 
-function createServer() {
-  loadData();
-  return http.createServer((req, res) => {
+async function createServer() {
+  await loadData();
+  const server = http.createServer((req, res) => {
     handle(req, res).catch((e) => { console.error(e); if (!res.headersSent) sendJson(res, 500, { error: "Erro no servidor." }); });
   });
+  server.on("close", () => { store.close().catch(() => {}); });
+  return server;
 }
 
 if (require.main === module) {
-  createServer().listen(PORT, () => console.log(`Troco Certo rodando em http://localhost:${PORT}`));
+  createServer()
+    .then((server) => server.listen(PORT, () => console.log(`Troco Certo rodando em http://localhost:${PORT} (dados: ${store.kind})`)))
+    .catch((e) => { console.error("Não consegui abrir o armazenamento:", e.message); process.exit(1); });
 }
 
 module.exports = { createServer, validateSubmission, ranking, dayKeyBrasilia, recordEvent, measuredMs };
