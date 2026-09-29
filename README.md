@@ -44,7 +44,7 @@ Fora do ranking, a criança joga quantas vezes quiser em 3 níveis. Terminar um 
 
 - A Moedinha **fala**: as instruções da tela inicial, o pedido de cada cliente (com o preço e quanto ele pagou), os erros e acertos, e as mensagens da lojinha. Tocar num balão repete a fala. No app Android usa a voz do próprio celular; no navegador, a voz do navegador.
 - O menu inicial usa ícones grandes e cores: a Moedinha explica "botão verde, amarelo e branco".
-- Na primeira vez, duas telas de boas-vindas pedem o estado (com um adulto) e o apelido. Depois, os dois só mudam na **Área dos pais**, que abre segurando o botão por 2 segundos.
+- O jogo abre direto no menu. O estado e o apelido só são pedidos na primeira vez que a criança entra no **Desafio do dia** (o que tem ranking); quem só joga os níveis nunca vê essas telas. Depois, os dois só mudam na **Área dos pais**, que abre segurando o botão por 2 segundos.
 
 ## Minha lojinha
 

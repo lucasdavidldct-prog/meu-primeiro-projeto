@@ -982,12 +982,11 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const lastDif = store("tc-lastdif") || "facil";
     const played = dayRes(lastDif) || anyDayRes()[0] || null;
     const paused = DAILY_ORDER.some((d) => pausedGame(d));
-    const main = "Desafio do dia";
-    const mainSub = paused ? "você tem um desafio pela metade" : played ? "🐣 🦊 🦁 · bora bater seu recorde?" : "🐣 🦊 🦁 · vale pro ranking";
+    const dailySub = paused ? "você tem um desafio pela metade" : played ? "🐣 🦊 🦁 · bora bater seu recorde?" : "🐣 🦊 🦁 · vale pro ranking do Brasil";
     const streak = streakNow(), playedToday = (store("tc-streak") || {}).last === todayKey();
     const greet = greeted ? "O que vamos fazer agora?"
-      : streak && !playedToday ? `Oi! Você está com ${streak} ${streak === 1 ? "dia" : "dias seguidos"}! Jogue o desafio do dia no botão verde pra não perder a sequência!`
-      : `Oi! Eu sou a Moedinha! No botão verde, ${played ? "tente bater o seu recorde de hoje" : "tem o desafio do dia"}. No amarelo, você escolhe o nível. E no branco, decora a sua lojinha!`;
+      : streak && !playedToday ? `Oi! Você está com ${streak} ${streak === 1 ? "dia" : "dias seguidos"}! Jogue o desafio do dia no botão amarelo pra não perder a sequência!`
+      : `Oi! Eu sou a Moedinha! No botão verde, você joga os níveis. No amarelo, ${played ? "tente bater o seu recorde de hoje" : "tem o desafio do dia, valendo ranking"}. E no branco, decora a sua lojinha!`;
     greeted = true;
     app.replaceChildren(el(`
       <header class="top">${brandHtml()}<span class="left">
@@ -1000,8 +999,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         </div>
       </section>
       <nav class="menu">
-        <button class="btn" id="go"><span class="big">${`<svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#fff" opacity=".25"/><path d="M15 11 L30 20 L15 29 Z" fill="#fff"/></svg>`}</span><span class="txt">${main}<small>${mainSub}</small></span></button>
-        <button class="btn sun" id="levels"><span class="big">🎮</span><span class="txt">Níveis<small>🐣 🦊 🦁</small></span></button>
+        <button class="btn" id="levels"><span class="big">${`<svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#fff" opacity=".25"/><path d="M15 11 L30 20 L15 29 Z" fill="#fff"/></svg>`}</span><span class="txt">Jogar<small>🐣 🦊 🦁 níveis</small></span></button>
+        <button class="btn sun" id="go"><span class="big">🏆</span><span class="txt">Desafio do dia<small>${dailySub}</small></span></button>
         <button class="btn ghost" id="shopBtn"><span class="big">🏪</span><span class="txt">Minha lojinha<small>🪙 ${bank()} moedinhas</small></span></button>
         <button class="btn ghost" id="albumBtn"><span class="big">🏅</span><span class="txt">Conquistas<small>${(store("tc-ach") || []).length} de ${ACHIEVEMENTS.length}</small></span></button>
         ${played ? `<button class="btn ghost" id="rankBtn"><span class="big">🏆</span><span class="txt">Ranking de hoje<small>${DAILY[played.dif || "dificil"].emoji} seu melhor: ${fmtTime(played.score.total)}</small></span></button>` : ""}
@@ -1011,7 +1010,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     `));
     bindToggles();
     speak(greet);
-    document.getElementById("go").addEventListener("click", () => { enterScreen(); renderDailyPick(); });
+    // Estado e apelido só são pedidos na primeira vez que a criança entra no ranking
+    document.getElementById("go").addEventListener("click", () => { enterScreen(); store("tc-onboarded") ? renderDailyPick() : renderWelcome(1); });
     const rankBtn = document.getElementById("rankBtn");
     if (rankBtn) rankBtn.addEventListener("click", () => { enterScreen(); renderResult({ ...played, dif: played.dif || "dificil", fromMenu: true }); });
     document.getElementById("levels").addEventListener("click", () => { enterScreen(); renderLevels(); });
@@ -1058,7 +1058,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     app.querySelectorAll(".ach").forEach((b) => b.addEventListener("click", () => { sfx.tap(); speak(b.dataset.speak); }));
   }
 
-  // ---------- Boas-vindas: estado e apelido, só na primeira vez ----------
+  // ---------- Entrada no ranking: estado e apelido, só na primeira vez ----------
   const UF_NOMES = { AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia", CE: "Ceará", DF: "Distrito Federal",
     ES: "Espírito Santo", GO: "Goiás", MA: "Maranhão", MT: "Mato Grosso", MS: "Mato Grosso do Sul", MG: "Minas Gerais", PA: "Pará",
     PB: "Paraíba", PR: "Paraná", PE: "Pernambuco", PI: "Piauí", RJ: "Rio de Janeiro", RN: "Rio Grande do Norte", RS: "Rio Grande do Sul",
@@ -1068,9 +1068,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     app.classList.remove("game");
     stopTick();
     if (step === 1) {
-      const line = "Oi! Eu sou a Moedinha! Pra começar, peça pra um adulto tocar no seu estado.";
+      const line = "O desafio do dia tem ranking do Brasil! Toque no estado onde você mora.";
       app.replaceChildren(el(`
-        <header class="top">${brandHtml()}<span class="pill">1 de 2</span></header>
+        <header class="top"><span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🏆 Ranking</span></span><span class="pill">1 de 2</span></header>
         <div class="talk">${mascot("happy", "mascot bob")}<p class="bubble" data-speak="${line}">${line} <span class="hear">🔈</span></p></div>
         <div class="uf-grid">${UFS.map((u) => `<button class="uf-btn" data-uf="${u}"><strong>${u}</strong><small>${UF_NOMES[u]}</small></button>`).join("")}</div>
         <button class="parents" id="skip">Pular por enquanto</button>
@@ -1078,20 +1078,22 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       speak(line);
       app.querySelectorAll(".uf-btn").forEach((b) => b.addEventListener("click", () => { sfx.tap(); store("tc-uf", b.dataset.uf); renderWelcome(2); }));
       document.getElementById("skip").addEventListener("click", () => renderWelcome(2));
+      document.getElementById("back").addEventListener("click", goBack);
       return;
     }
     const line = "Agora, o seu apelido no ranking! Toque no dado pra sortear outro. Quando gostar, toque no botão verde.";
     app.replaceChildren(el(`
-      <header class="top">${brandHtml()}<span class="pill">2 de 2</span></header>
+      <header class="top"><span class="left"><button class="back" id="back" aria-label="Voltar">←</button><span class="brand">🏆 Ranking</span></span><span class="pill">2 de 2</span></header>
       <div class="talk">${mascot("happy", "mascot bob")}<p class="bubble" data-speak="${line}">${line} <span class="hear">🔈</span></p></div>
       <section class="card nick-pick">
         <p class="eyebrow">Seu apelido</p>
         <p class="nick-big" id="nickName">${nickName(myNick())}</p>
         <button class="btn sun" id="dice"><span class="big-dice">🎲</span> Sortear outro</button>
       </section>
-      <button class="btn" id="done">É esse! Vamos jogar ▶</button>
+      <button class="btn" id="done">É esse! Escolher o desafio ▶</button>
     `));
     speak(line);
+    document.getElementById("back").addEventListener("click", () => renderWelcome(1));
     document.getElementById("dice").addEventListener("click", async () => {
       await rerollNick(null);
       const n = document.getElementById("nickName");
@@ -1101,7 +1103,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     document.getElementById("done").addEventListener("click", () => {
       store("tc-onboarded", true);
       sfx.ok();
-      renderStart();
+      renderDailyPick();
     });
   }
 
@@ -1972,7 +1974,6 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   function boot() {
     migrateItems();
-    if (!store("tc-onboarded")) { if (!Object.keys(buffers).length) loadSounds(); return renderWelcome(1); }
     if (!Object.keys(buffers).length) loadSounds();
     renderStart();
     // Recordes de hoje que ainda não chegaram ao servidor: tenta enviar em segundo plano
