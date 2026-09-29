@@ -183,12 +183,21 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 }
 .shop .shelf { position: absolute; right: 12px; bottom: 34px; width: calc(100% - 160px); display: flex; justify-content: space-around; font-size: 1.4rem; }
 .shop .counter { position: absolute; left: 0; right: 0; bottom: 0; height: 30px; background: #e98a5b; box-shadow: inset 0 5px 0 #f4a57c; }
-.customer { position: absolute; left: 14px; bottom: 18px; width: 118px; height: 138px; animation: walkIn 0.45s ease-out; }
-.customer.leave { animation: walkOut 0.35s ease-in forwards; }
-.customer.bump { animation: bump 0.4s; }
-@keyframes walkIn { from { transform: translateX(-140%); } to { transform: translateX(0); } }
-@keyframes walkOut { to { transform: translateX(260%); } }
-@keyframes bump { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-8px); } }
+.customer { position: absolute; left: 14px; bottom: 18px; width: 118px; height: 138px; transform-origin: 50% 100%; }
+.customer.enter { animation: walkIn 0.55s cubic-bezier(.2,.9,.3,1.25); }
+.customer.leave { animation: walkOut 0.4s ease-in forwards; }
+.customer.bump { animation: bump 0.5s; }
+.customer.nope { animation: nope 0.5s; }
+@keyframes walkIn { 0% { transform: translateX(-150%); } 60% { transform: translateX(6%) translateY(-6px); } 100% { transform: translateX(0); } }
+@keyframes walkOut { 30% { transform: translateY(-10px); } 100% { transform: translateX(280%) translateY(-4px); } }
+@keyframes bump { 0%,100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-12px) scale(1.06); } 60% { transform: translateY(0) scale(0.97); } }
+@keyframes nope { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-9deg); } 40% { transform: rotate(8deg); } 60% { transform: rotate(-6deg); } 80% { transform: rotate(4deg); } }
+.say { transform-origin: 0 40%; }
+.say.pop { animation: pop 0.35s 0.3s both; }
+@keyframes pop { from { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.05); } to { transform: scale(1); opacity: 1; } }
+.confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.confetti i { position: absolute; left: 22%; top: 45%; width: 8px; height: 12px; border-radius: 2px; animation: conf 0.9s ease-out forwards; }
+@keyframes conf { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
 .say {
   position: absolute; right: 12px; top: 12px; width: calc(100% - 160px); min-width: 0;
   background: var(--surface); border-radius: 16px; padding: 8px 12px; font-size: 0.95rem; line-height: 1.3;
@@ -211,6 +220,17 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 }
 .lcd .ln { display: flex; justify-content: space-between; gap: 10px; }
 .lcd .ln.q { color: #ffe36e; }
+.lcd .ln.q.bad { color: #ff8080; animation: blink 0.25s 3; }
+.lcd .ln.q.ok { color: #7dffb2; }
+.lcd.flick { animation: flick 0.4s; }
+@keyframes flick { 0% { opacity: 0.1; } 25% { opacity: 1; } 45% { opacity: 0.3; } 100% { opacity: 1; } }
+@keyframes blink { 50% { opacity: 0.2; } }
+.register.shake { animation: shake 0.4s; }
+.chip.pop { animation: chipPop 0.3s; }
+@keyframes chipPop { from { transform: scale(0.3); } 70% { transform: scale(1.15); } to { transform: scale(1); } }
+.tray-sum.bump { animation: sumBump 0.25s; }
+@keyframes sumBump { 50% { transform: scale(1.12); } }
+.round-dots span { transition: background-color 0.4s; }
 .register .tray { box-shadow: none; min-height: 96px; }
 .keys { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
 .key { border: 0; border-radius: 14px; padding: 12px; font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; line-height: 1.1; color: #fff; }
@@ -228,7 +248,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 .busy .drawer, .busy .keys, .busy .tray-items { pointer-events: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .customer, .customer.leave, .customer.bump { animation: none; }
+  .customer.enter, .customer.bump, .customer.nope, .say.pop, .lcd.flick, .register.shake, .chip.pop, .tray-sum.bump { animation: none; }
+  .customer.leave { animation: none; opacity: 0; }
+  .confetti { display: none; }
   .tray.shake, .mascot.bob { animation: none; }
   .note:active, .coin:active, .btn:active { transform: none; }
 }
@@ -291,11 +313,11 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   const SHIRTS = ["#ff6b9a", "#4fb3ff", "#ffc93c", "#22b35e", "#9b6bff", "#ff8a3d"];
   const NAMES = ["Ana", "Léo", "Bia", "Davi", "Malu", "Théo", "Lara", "Caio", "Nina", "Gabi", "Rafa", "Duda"];
   const ITEMS = [
-    ["🍦 um sorvete", "🍭 um pirulito", "🧃 um suco", "🍪 uns biscoitos"],
-    ["📒 um caderno", "🍫 uns chocolates", "🖍️ uns gizes de cera", "🧁 uns cupcakes"],
-    ["⚽ uma bola", "🧸 um ursinho", "🎲 um jogo", "🪀 um ioiô de luz"],
-    ["🛹 um skate", "🪁 uma pipa gigante", "🧩 um quebra-cabeça", "🎒 uma mochila"],
-    ["🚲 uma bicicleta", "🛴 um patinete", "⛺ uma barraca", "🎸 um violão"],
+    ["um sorvete 🍦", "um pirulito 🍭", "um suco 🧃", "uns biscoitos 🍪"],
+    ["um caderno 📒", "uns chocolates 🍫", "uns gizes de cera 🖍️", "uns cupcakes 🧁"],
+    ["uma bola ⚽", "um ursinho 🧸", "um jogo 🎲", "um ioiô de luz 🪀"],
+    ["um skate 🛹", "uma pipa gigante 🪁", "um quebra-cabeça 🧩", "uma mochila 🎒"],
+    ["uma bicicleta 🚲", "um patinete 🛴", "uma barraca ⛺", "um violão 🎸"],
   ];
   function makeCustomer(seedStr, round) {
     let h = 2166136261;
@@ -306,7 +328,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       name: pick(NAMES), item: pick(ITEMS[Math.min(round, ITEMS.length - 1)]),
     };
   }
-  function customerSvg(c, mood = "normal") {
+  function customerSvg(c, mood = "normal", anim = "") {
     const back = c.style === 2 ? `<circle cx="60" cy="50" r="42" fill="${c.hair}"/>`
       : c.style === 1 ? `<circle cx="22" cy="40" r="15" fill="${c.hair}"/><circle cx="98" cy="40" r="15" fill="${c.hair}"/>` : "";
     const top = c.style === 3
@@ -321,7 +343,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const mouth = mood === "happy" ? `<path d="M46 74 Q60 92 74 74 Z" fill="#1f2b52"/><path d="M52 83 Q60 88 68 83" stroke="#ff8fa9" stroke-width="4" fill="none"/>`
       : mood === "sad" ? `<path d="M50 82 Q60 74 70 82" stroke="#1f2b52" stroke-width="4" fill="none" stroke-linecap="round"/>`
       : `<path d="M50 76 Q60 84 70 76" stroke="#1f2b52" stroke-width="4" fill="none" stroke-linecap="round"/>`;
-    return `<svg class="customer${mood === "happy" || mood === "sad" ? " bump" : ""}" viewBox="0 0 120 140" aria-hidden="true">
+    return `<svg class="customer ${anim}" viewBox="0 0 120 140" aria-hidden="true">
       ${back}
       <path d="M18 140 Q18 98 60 98 Q102 98 102 140 Z" fill="${c.shirt}"/>
       <circle cx="26" cy="62" r="7" fill="${c.skin}"/><circle cx="94" cy="62" r="7" fill="${c.skin}"/>
@@ -330,6 +352,43 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       <circle cx="40" cy="72" r="5" fill="#ff6b9a" opacity=".4"/><circle cx="80" cy="72" r="5" fill="#ff6b9a" opacity=".4"/>
       ${mouth}
     </svg>`;
+  }
+
+  // Sons sintetizados (sem arquivos). Tocam só depois de um toque na tela.
+  let actx = null;
+  const soundOn = () => store("tc-sound") !== "off";
+  function beep(freq, dur, type = "sine", delay = 0, vol = 0.12) {
+    if (!soundOn()) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur);
+    } catch (e) { /* sem áudio */ }
+  }
+  const sfx = {
+    tap: () => beep(740, 0.06, "triangle", 0, 0.08),
+    ok: () => { beep(988, 0.1, "square", 0, 0.06); beep(1319, 0.25, "square", 0.1, 0.06); },
+    bad: () => { beep(220, 0.18, "sawtooth", 0, 0.07); beep(165, 0.25, "sawtooth", 0.15, 0.07); },
+    door: () => beep(1047, 0.15, "sine", 0, 0.07),
+  };
+  const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* ok */ } };
+
+  function confetti(host) {
+    const box = document.createElement("div");
+    box.className = "confetti";
+    const colors = ["#ff6b9a", "#ffc93c", "#22b35e", "#4fb3ff", "#9b6bff"];
+    for (let k = 0; k < 22; k++) {
+      const i = document.createElement("i");
+      i.style.background = colors[k % colors.length];
+      i.style.setProperty("--dx", (Math.random() * 300 - 60) + "px");
+      i.style.setProperty("--dy", (Math.random() * -120 - 10) + "px");
+      i.style.setProperty("--rot", (Math.random() * 720 - 360) + "deg");
+      box.appendChild(i);
+    }
+    host.appendChild(box);
+    setTimeout(() => box.remove(), 1000);
   }
 
   const brandHtml = () => `<span class="brand">${mascot("happy", "")}Troco Certo</span>`;
@@ -460,38 +519,41 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   function askText(c, r) { return `Quero ${c.item}! Toma ${brl(r.paid)}.`; }
 
-  function setCustomer(mood, text, kind = "") {
+  function setCustomer(mood, text, kind = "", anim = "") {
     const c = makeCustomer(S.seed, S.i);
-    document.getElementById("cust").innerHTML = customerSvg(c, mood);
+    document.getElementById("cust").innerHTML = customerSvg(c, mood, anim);
     const say = document.getElementById("say");
     say.className = "say " + kind;
     say.innerHTML = `<span class="who">${c.name} · cliente ${S.i + 1} de 5</span>${text}`;
   }
 
+  const retrigger = (node, cls) => { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); };
+
+  // Monta a tela do caixa uma vez; depois só o cliente e o visor mudam
   function renderRound() {
-    const r = S.rounds[S.i];
-    const cust = makeCustomer(S.seed, S.i);
-    const dots = S.rounds.map((_, k) => `<span class="${k < S.i ? "done" : k === S.i ? "now" : ""}"></span>`).join("");
     app.replaceChildren(el(`
       <header class="top">
         <span class="left">
           <button class="back" id="back" aria-label="${S.training ? "Sair do treino" : "Pausar e voltar ao início"}">←</button>
           <span class="brand">${S.training ? "🎯 Treino" : "Desafio do dia"}</span>
         </span>
-        <span class="pill num" id="clock">0,0s</span>
+        <span class="left">
+          <button class="back" id="sound" aria-label="Ligar ou desligar o som">${soundOn() ? "🔊" : "🔇"}</button>
+          <span class="pill num" id="clock">0,0s</span>
+        </span>
       </header>
-      <div class="round-dots" aria-label="Cliente ${S.i + 1} de 5">${dots}</div>
-      <section class="shop" aria-label="Cliente ${S.i + 1} de 5">
+      <div class="round-dots" id="dots">${S.rounds.map(() => "<span></span>").join("")}</div>
+      <section class="shop" id="shop">
         <div class="shelf" aria-hidden="true"><span>🧃</span><span>🍎</span><span>🧸</span><span>🍞</span><span>🎈</span></div>
-        <div id="cust">${customerSvg(cust)}</div>
-        <p class="say" id="say"><span class="who">${cust.name} · cliente ${S.i + 1} de 5</span>${askText(cust, r)}</p>
+        <div id="cust"></div>
+        <p class="say" id="say" aria-live="polite"></p>
         <div class="counter"></div>
       </section>
-      <section class="register">
-        <div class="lcd" aria-label="Visor do caixa">
-          <div class="ln"><span>TOTAL</span><span>${brl(r.price)}</span></div>
-          <div class="ln"><span>PAGO</span><span>${brl(r.paid)}</span></div>
-          <div class="ln q"><span>TROCO</span><span>?</span></div>
+      <section class="register" id="register">
+        <div class="lcd" id="lcd" aria-label="Visor do caixa">
+          <div class="ln"><span>TOTAL</span><span id="lcdTotal"></span></div>
+          <div class="ln"><span>PAGO</span><span id="lcdPaid"></span></div>
+          <div class="ln q" id="lcdChangeLn"><span>TROCO</span><span id="lcdChange">?</span></div>
         </div>
         <div class="tray" id="tray">
           <div class="tray-head"><span class="eyebrow">Troco na mão</span><span class="tray-sum" id="sum">R$ 0,00</span></div>
@@ -515,24 +577,47 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       </section>
     `));
     app.querySelectorAll("[data-c]").forEach((b) => b.addEventListener("click", () => addPiece(Number(b.dataset.c))));
-    document.getElementById("clear").addEventListener("click", () => { if (S.busy) return; S.tray = {}; paintTray(); });
+    document.getElementById("clear").addEventListener("click", () => { if (S.busy) return; sfx.tap(); S.tray = {}; paintTray(); });
     document.getElementById("give").addEventListener("click", deliver);
     document.getElementById("back").addEventListener("click", goBack);
-    paintTray();
+    document.getElementById("sound").addEventListener("click", (e) => {
+      store("tc-sound", soundOn() ? "off" : "on");
+      e.currentTarget.textContent = soundOn() ? "🔊" : "🔇";
+      sfx.tap();
+    });
+    showCustomer();
     paintClock();
   }
 
-  function addPiece(c) { if (S.busy) return; S.tray[c] = (S.tray[c] || 0) + 1; paintTray(); }
-  function removePiece(c) { if (S.busy) return; S.tray[c]--; if (S.tray[c] <= 0) delete S.tray[c]; paintTray(); }
+  // Um cliente novo chega ao caixa
+  function showCustomer() {
+    const r = S.rounds[S.i], c = makeCustomer(S.seed, S.i);
+    document.querySelectorAll("#dots span").forEach((d, k) => { d.className = k < S.i ? "done" : k === S.i ? "now" : ""; });
+    document.getElementById("shop").setAttribute("aria-label", `Cliente ${S.i + 1} de 5`);
+    setCustomer("normal", askText(c, r), "", "enter");
+    retrigger(document.getElementById("say"), "pop");
+    document.getElementById("lcdTotal").textContent = brl(r.price);
+    document.getElementById("lcdPaid").textContent = brl(r.paid);
+    document.getElementById("lcdChange").textContent = "?";
+    document.getElementById("lcdChangeLn").className = "ln q";
+    retrigger(document.getElementById("lcd"), "flick");
+    S.tray = {}; S.lastAdded = null;
+    paintTray(); flash("", "");
+  }
+
+  function addPiece(c) { if (S.busy) return; sfx.tap(); S.tray[c] = (S.tray[c] || 0) + 1; S.lastAdded = c; paintTray(); }
+  function removePiece(c) { if (S.busy) return; sfx.tap(); S.lastAdded = null; S.tray[c]--; if (S.tray[c] <= 0) delete S.tray[c]; paintTray(); }
 
   function paintTray() {
-    document.getElementById("sum").textContent = brl(traySum());
+    const sumEl = document.getElementById("sum");
+    sumEl.textContent = brl(traySum());
+    if (S.lastAdded) retrigger(sumEl, "bump");
     const items = document.getElementById("items");
     const entries = Object.entries(S.tray).sort((a, b) => b[0] - a[0]);
     if (!entries.length) { items.innerHTML = `<span class="empty">Toque nas notas e moedas abaixo</span>`; return; }
     items.replaceChildren(...entries.map(([c, n]) => {
       const b = document.createElement("button");
-      b.className = "chip";
+      b.className = "chip" + (Number(c) === S.lastAdded ? " pop" : "");
       b.setAttribute("aria-label", `Tirar uma de ${brl(Number(c))}`);
       b.innerHTML = `${n > 1 ? n + "× " : ""}${brl(Number(c))} <span class="x">×</span>`;
       b.addEventListener("click", () => removePiece(Number(c)));
@@ -551,16 +636,21 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     if (S.busy) return;
     const r = S.rounds[S.i];
     const sum = traySum();
+    const lcdLn = document.getElementById("lcdChangeLn"), lcdVal = document.getElementById("lcdChange");
     if (sum !== r.change) {
       S.wrong++;
       S.roundWrong = (S.roundWrong || 0) + 1;
-      const tray = document.getElementById("tray");
-      tray.classList.remove("shake"); void tray.offsetWidth; tray.classList.add("shake");
+      sfx.bad(); buzz(200);
+      retrigger(document.getElementById("register"), "shake");
+      lcdVal.textContent = "ERRO!";
+      lcdLn.className = "ln q"; retrigger(lcdLn, "bad");
       flash("Tente de novo! (+5s)", "bad");
-      setCustomer("sad", sum > r.change ? "Hmm... você me deu troco a mais! 🤔" : "Hmm... acho que faltou troco! 🤔", "bad");
+      setCustomer("sad", sum > r.change ? "Hmm... você me deu troco a mais! 🤔" : "Hmm... acho que faltou troco! 🤔", "bad", "nope");
       const cur = S, round = S.i, token = (S.token = (S.token || 0) + 1);
       setTimeout(() => {
-        if (S === cur && S.i === round && S.token === token && !S.busy) setCustomer("normal", askText(makeCustomer(S.seed, S.i), r));
+        if (S !== cur || S.i !== round || S.token !== token || S.busy) return;
+        setCustomer("normal", askText(makeCustomer(S.seed, S.i), r));
+        lcdVal.textContent = "?"; lcdLn.className = "ln q";
       }, 1600);
       return;
     }
@@ -568,24 +658,29 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const pieces = trayCount(), best = minPieces(r.change);
     S.results.push({ ...r, ms: t - S.roundStart, pieces, best, wrong: S.roundWrong || 0, tray: { ...S.tray } });
     S.roundWrong = 0;
-    // O relógio para enquanto o cliente agradece e vai embora
+    // O relógio para enquanto o cliente comemora e vai embora
     S.busy = true; S.pausedAt = t;
     app.classList.add("busy");
+    sfx.ok(); buzz(40);
+    lcdVal.textContent = brl(r.change) + " ✓";
+    lcdLn.className = "ln q ok";
     flash("", "");
-    setCustomer("happy", "Valeu! Troco certinho! 😄", "good");
+    setCustomer("happy", "Valeu! Troco certinho! 😄", "good", "bump");
+    confetti(document.getElementById("shop"));
     const cur = S;
-    setTimeout(() => { if (S === cur) document.querySelector(".customer").classList.add("leave"); }, 750);
+    setTimeout(() => { if (S === cur) document.querySelector(".customer").classList.add("leave"); }, 800);
     setTimeout(() => {
       if (S !== cur) return;
       app.classList.remove("busy");
       const resume = performance.now();
       S.gameStart += resume - S.pausedAt;
       S.pausedAt = null; S.busy = false;
-      S.tray = {}; S.i++; S.roundStart = resume;
+      S.i++; S.roundStart = resume;
       if (S.i >= S.rounds.length) return finish();
       saveProgress();
-      renderRound();
-    }, 1100);
+      sfx.door();
+      showCustomer();
+    }, 1200);
   }
 
   function finish() {
@@ -770,8 +865,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function boot() {
     const played = store("tc-day-" + todayKey());
     renderStart();
-    // Quem já jogou hoje vê o resultado, mas o voltar leva ao início
-    if (played) { enterScreen(); renderResult(played); }
+    // Resultado de hoje que ainda não chegou ao servidor: tenta enviar em segundo plano
+    if (played && !played.sent) syncRanking(played);
   }
   boot();
 })();
