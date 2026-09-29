@@ -190,7 +190,18 @@ select { font: inherit; font-weight: 800; padding: 12px 14px; border-radius: 14p
 .toggle[aria-pressed="false"] { opacity: 0.55; }
 
 /* Decoração da lojinha */
+.shop { --ch: 30px; }
+.app.game .shop { --ch: 22px; }
 .shop .wall { position: absolute; inset: 0; }
+.shop .on-counter { position: absolute; bottom: calc(var(--ch) - 3px); width: 34px; height: 34px; z-index: 2; display: grid; place-items: center; font-size: 1.7rem; line-height: 1; }
+.shop .on-counter svg { width: 100%; height: 100%; }
+.shop .on-counter.toy { left: 42%; }
+.shop .on-counter.uf { right: 52px; }
+.app.game .shop .on-counter { width: 28px; height: 28px; font-size: 1.4rem; }
+.item .sw svg { width: 60%; height: 80%; }
+.uf-pick { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 0.9rem; }
+.uf-pick select { padding: 6px 10px; }
+.item .tag { font-size: 0.68rem; font-weight: 800; color: var(--accent-dark); }
 .shop .deco-top { position: absolute; left: 0; right: 0; top: 0; height: 18px; background-repeat: repeat-x; background-size: auto 100%; }
 .shop .deco-emoji { position: absolute; left: 50%; top: 2px; transform: translateX(-50%); font-size: 1rem; letter-spacing: 6px; white-space: nowrap; }
 .app.game .shop .deco-emoji { left: 22%; }
@@ -248,7 +259,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   position: relative; height: 160px; border-radius: 22px 22px 0 0; overflow: hidden;
   background: linear-gradient(180deg, #fff1cf 0 62%, #f7dca0 62% 64%, #fff1cf 64%);
 }
-.shop .shelf { position: absolute; right: 62px; bottom: 34px; width: calc(100% - 210px); display: flex; justify-content: space-around; font-size: 1.4rem; }
+.shop .shelf { position: absolute; right: 62px; bottom: calc(var(--ch) + 34px); width: calc(100% - 210px); display: flex; justify-content: space-around; font-size: 1.4rem; }
 .shop .counter { position: absolute; left: 0; right: 0; bottom: 0; height: 30px; background: #e98a5b; box-shadow: inset 0 5px 0 #f4a57c; }
 .customer { z-index: 1; position: absolute; left: 14px; bottom: 18px; width: 118px; height: 138px; transform-origin: 50% 100%; }
 .customer.enter { animation: walkIn 0.55s cubic-bezier(.2,.9,.3,1.25); }
@@ -324,7 +335,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 .app.game .customer { height: calc(100% - 14px); width: auto; aspect-ratio: 120 / 140; bottom: 10px; left: 10px; }
 .app.game .say { top: 8px; padding: 6px 10px; font-size: 0.88rem; width: calc(100% - 44% - 20px); }
 .app.game .shop .counter { height: 22px; }
-.app.game .shop .shelf { font-size: 1.1rem; bottom: 24px; right: 54px; width: calc(56% - 64px); }
+.app.game .shop .shelf { font-size: 1.1rem; bottom: calc(var(--ch) + 28px); right: 54px; width: calc(56% - 64px); }
 .app.game .shop .pet { font-size: 1.7rem; bottom: 12px; }
 .app.game .register { padding: 8px; gap: 8px; margin-top: -14px; flex: none; }
 .app.game .lcd { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; font-size: 1.3rem; padding: 6px 12px; }
@@ -362,6 +373,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
 <script src="config.js"></script>
 <script src="regras.js"></script>
+<script src="regional.js"></script>
 <script>
 (function () {
   "use strict";
@@ -717,7 +729,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     try { return [...new Intl.Segmenter("pt", { granularity: "grapheme" }).segment(t)].map((x) => x.segment); }
     catch (e) { return t.match(/\p{Extended_Pictographic}\uFE0F?/gu) || []; }
   }
-  const DEFAULT_DECO = { parede: "p-creme", balcao: "b-coral", prateleira: "s-nada", bichinho: "a-nada", enfeite: "e-nada" };
+  DECOR.estado = { label: "Do meu estado", icon: "🇧🇷", items: window.Regional.estadoItems };
+  DECOR.antigo = { label: "Antigamente", icon: "🪀", items: window.Regional.antigoItems };
+  const DEFAULT_DECO = { parede: "p-creme", balcao: "b-coral", prateleira: "s-nada", bichinho: "a-nada", enfeite: "e-nada", estado: "x-nada", antigo: "t-nada" };
   const findItem = (cat, id) => DECOR[cat].items.find((x) => x.id === id) || DECOR[cat].items[0];
   const bank = () => Number(store("tc-bank")) || 0;
   const setBank = (n) => store("tc-bank", Math.max(0, n));
@@ -729,11 +743,14 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function decorLayers(d = deco()) {
     const wall = findItem("parede", d.parede), shelf = findItem("prateleira", d.prateleira);
     const pet = findItem("bichinho", d.bichinho), orn = findItem("enfeite", d.enfeite);
+    const toy = findItem("antigo", d.antigo), reg = findItem("estado", d.estado);
     return `<div class="wall" style="background:${wall.css}"></div>
       ${orn.css ? `<div class="deco-top" style="background-image:${orn.css}"></div>` : ""}
       ${orn.text ? `<div class="deco-emoji" aria-hidden="true">${orn.text}</div>` : ""}
       ${shelf.text ? `<div class="shelf" aria-hidden="true">${graphemes(shelf.text).map((ch) => `<span>${ch}</span>`).join("")}</div>` : ""}
-      ${pet.text ? `<div class="pet" aria-hidden="true">${pet.text}</div>` : ""}`;
+      ${pet.text ? `<div class="pet" aria-hidden="true">${pet.text}</div>` : ""}
+      ${toy.text ? `<div class="on-counter toy" aria-hidden="true">${toy.text}</div>` : ""}
+      ${reg.text ? `<div class="on-counter uf" aria-hidden="true">${reg.text}</div>` : ""}`;
   }
   function counterStyle(d = deco()) {
     const c = findItem("balcao", d.balcao);
@@ -814,11 +831,14 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   }
 
   // ---------- Minha lojinha ----------
-  let shopTab = "parede";
+  let shopTab = "parede", shopUf = null;
   function renderShop(msg) {
     app.classList.remove("game");
     stopTick();
     const d = deco(), cat = DECOR[shopTab], money = bank();
+    const myUf = store("tc-uf") || "SP";
+    shopUf = shopUf || myUf;
+    const list = shopTab === "estado" ? cat.items.filter((it) => !it.uf || it.uf === shopUf) : cat.items;
     app.replaceChildren(el(`
       <header class="top">
         <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🏪 Minha lojinha</span></span>
@@ -833,21 +853,28 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       <div class="tabs" role="tablist">${Object.entries(DECOR).map(([k, c]) => `
         <button class="tab" role="tab" data-tab="${k}" aria-selected="${k === shopTab}">${c.icon} ${c.label}</button>`).join("")}
       </div>
-      <div class="items">${cat.items.map((it) => {
+      ${shopTab === "estado" ? `<label class="uf-pick" for="shopUf">Coisas de
+        <select id="shopUf">${UFS.map((u) => `<option ${u === shopUf ? "selected" : ""}>${u}</option>`).join("")}</select>
+        ${shopUf === myUf ? "⭐ seu estado" : "· colecione o Brasil!"}</label>` : ""}
+      ${shopTab === "antigo" ? `<p class="pause-note">Os brinquedos que o papai, a mamãe e os avós brincavam 💛</p>` : ""}
+      <div class="items">${list.map((it) => {
         const have = isOwned(it), on = d[shopTab] === it.id;
         const sw = shopTab === "parede" ? `<span class="sw" style="background:${it.css}"></span>`
           : shopTab === "balcao" ? `<span class="sw" style="background:${it.bg};box-shadow:inset 0 6px 0 ${it.top}"></span>`
           : it.css ? `<span class="sw" style="background:${it.css} repeat-x top / auto 40%, var(--bg)"></span>`
           : `<span class="sw">${it.text || "🚫"}</span>`;
+        const tag = it.uf ? `<span class="tag">${it.uf}</span>` : "";
         const pr = on ? "✔ Usando" : have ? "Usar" : `🪙 ${it.price}`;
         return `<button class="item${on ? " on" : ""}${!have && it.price > money ? " poor" : ""}" data-id="${it.id}">
-          ${sw}<span class="nm">${it.name}</span><span class="pr">${pr}</span></button>`;
+          ${sw}${tag}<span class="nm">${it.name}</span><span class="pr">${pr}</span></button>`;
       }).join("")}</div>
       <p class="pause-note">Ganhe moedinhas atendendo clientes: troco perfeito vale mais!</p>
     `));
     document.getElementById("back").addEventListener("click", goBack);
     app.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => { sfx.tap(); shopTab = b.dataset.tab; renderShop(); }));
     app.querySelectorAll(".item").forEach((b) => b.addEventListener("click", () => chooseItem(b)));
+    const ufSel = document.getElementById("shopUf");
+    if (ufSel) ufSel.addEventListener("change", (e) => { shopUf = e.target.value; sfx.tap(); renderShop(); });
   }
   function chooseItem(btn) {
     const it = findItem(shopTab, btn.dataset.id), d = deco();

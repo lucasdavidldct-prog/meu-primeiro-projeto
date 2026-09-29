@@ -32,6 +32,12 @@ Fora do ranking, a criança joga quantas vezes quiser em 3 níveis. Terminar um 
 
 Cada cliente atendido rende moedinhas 🪙: 2 por troco certo, mais 2 se for perfeito, mais 3 por estrela e 10 de bônus no desafio do dia. Com elas a criança compra decoração para a loja onde atende os clientes: parede, balcão, prateleira, bichinho e enfeite (33 itens, de 15 a 90 moedinhas). A carteira e a decoração ficam salvas no aparelho.
 
+Duas categorias especiais, em `public/regional.js`:
+- **Do meu estado:** 55 itens típicos dos 27 estados (pão de queijo, acarajé, chimarrão, frevo…). A aba abre no estado da criança, e ela pode colecionar os dos outros estados.
+- **Antigamente:** 11 brinquedos da infância dos pais e avós (peão, bolinha de gude, peteca, bilboquê, carrinho de rolimã, bichinho virtual…).
+
+Os itens que não existem em emoji são desenhados em SVG no mesmo arquivo.
+
 ## Música e sons
 
 A música de fundo e os efeitos ficam em `public/sons/`. Eles são compostos em código, no estilo de videogame antigo (chiptune), por `tools/gerar-audio.mjs`. Para mudar e gerar de novo:
