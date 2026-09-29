@@ -28,12 +28,18 @@ Fora do ranking, a criança joga quantas vezes quiser em 3 níveis. Terminar um 
 | 🦊 Intermediário | Centavos quebrados e notas de até R$ 50 |
 | 🦁 Avançado | Valores até R$ 200 e clientes que dão moedas a mais para facilitar o troco |
 
+## Para quem ainda não sabe ler
+
+- A Moedinha **fala**: as instruções da tela inicial, o pedido de cada cliente (com o preço e quanto ele pagou), os erros e acertos, e as mensagens da lojinha. Tocar num balão repete a fala. No app Android usa a voz do próprio celular; no navegador, a voz do navegador.
+- O menu inicial usa ícones grandes e cores: a Moedinha explica "botão verde, amarelo e branco".
+- O estado (para o ranking) fica na **Área dos pais**, que abre segurando o botão por 2 segundos.
+
 ## Minha lojinha
 
 Cada cliente atendido rende moedinhas 🪙: 2 por troco certo, mais 2 se for perfeito, mais 3 por estrela e 10 de bônus no desafio do dia. Com elas a criança compra decoração para a loja onde atende os clientes: parede, balcão, prateleira, bichinho e enfeite (33 itens, de 15 a 90 moedinhas). A carteira e a decoração ficam salvas no aparelho.
 
 Duas categorias especiais, em `public/regional.js`:
-- **Do meu estado:** 55 itens típicos dos 27 estados (pão de queijo, acarajé, chimarrão, frevo…). A aba abre no estado da criança, e ela pode colecionar os dos outros estados.
+- **Brasil:** 55 itens típicos dos 27 estados (pão de queijo, acarajé, chimarrão, frevo…), todos juntos numa aba só.
 - **Antigamente:** 11 brinquedos da infância dos pais e avós (peão, bolinha de gude, peteca, bilboquê, carrinho de rolimã, bichinho virtual…).
 
 Os itens que não existem em emoji são desenhados em SVG no mesmo arquivo.

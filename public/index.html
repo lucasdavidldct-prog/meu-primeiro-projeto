@@ -199,8 +199,6 @@ select { font: inherit; font-weight: 800; padding: 12px 14px; border-radius: 14p
 .shop .on-counter.uf { right: 52px; }
 .app.game .shop .on-counter { width: 28px; height: 28px; font-size: 1.4rem; }
 .item .sw svg { width: 60%; height: 80%; }
-.uf-pick { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 0.9rem; }
-.uf-pick select { padding: 6px 10px; }
 .item .tag { font-size: 0.68rem; font-weight: 800; color: var(--accent-dark); }
 .shop .deco-top { position: absolute; left: 0; right: 0; top: 0; height: 18px; background-repeat: repeat-x; background-size: auto 100%; }
 .shop .deco-emoji { position: absolute; left: 50%; top: 2px; transform: translateX(-50%); font-size: 1rem; letter-spacing: 6px; white-space: nowrap; }
@@ -228,6 +226,19 @@ select { font: inherit; font-weight: 800; padding: 12px 14px; border-radius: 14p
 .item.poor .pr { color: var(--bad); }
 .item.shake { animation: shake 0.35s; }
 .earned { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; color: var(--warn); }
+
+/* Menu para quem ainda não lê: ícone grande, cor forte, pouco texto */
+.menu { display: grid; gap: 14px; }
+.menu .btn { flex-direction: row; justify-content: flex-start; gap: 14px; padding: 14px 18px; text-align: left; }
+.menu .btn .big { font-size: 2.6rem; line-height: 1; flex: none; }
+.menu .btn .txt { display: flex; flex-direction: column; gap: 2px; }
+.toggles .toggle { width: 54px; height: 54px; padding: 0; border-radius: 50%; font-size: 1.5rem; display: grid; place-items: center; }
+.parents { border: 0; background: none; color: var(--muted); font-weight: 800; font-size: 0.85rem; padding: 10px; position: relative; overflow: hidden; border-radius: 999px; }
+.parents .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(34,179,94,.25); }
+.parents.holding .fill { width: 100%; transition: width 2s linear; }
+.talk .bubble, .say { cursor: pointer; }
+.hear { font-size: 0.8rem; opacity: 0.6; margin-left: 4px; }
+.parent-card label.field { margin-top: 4px; }
 
 /* Resultado */
 .celebrate { background: var(--surface); border-radius: 24px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; box-shadow: 0 4px 0 var(--line); }
@@ -644,8 +655,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   });
   function togglesHtml() {
     return `<div class="toggles">
-      <button class="toggle" id="tMusic" aria-pressed="${musicOn()}">🎵 Música</button>
-      <button class="toggle" id="tSound" aria-pressed="${soundOn()}">🔊 Sons</button>
+      <button class="toggle" id="tMusic" aria-pressed="${musicOn()}" aria-label="Música">🎵</button>
+      <button class="toggle" id="tSound" aria-pressed="${soundOn()}" aria-label="Sons">🔊</button>
+      <button class="toggle" id="tVoice" aria-pressed="${voiceOn()}" aria-label="Voz da Moedinha">🗣️</button>
     </div>`;
   }
   function bindToggles() {
@@ -655,7 +667,46 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     document.getElementById("tSound").addEventListener("click", (e) => {
       store("tc-sound", soundOn() ? "off" : "on"); e.currentTarget.setAttribute("aria-pressed", soundOn()); sfx.tap();
     });
+    document.getElementById("tVoice").addEventListener("click", (e) => {
+      store("tc-voice", voiceOn() ? "off" : "on"); e.currentTarget.setAttribute("aria-pressed", voiceOn());
+      if (voiceOn()) speak("Oba! Eu vou falar com você."); else hush();
+    });
   }
+  // ---------- Voz da Moedinha (para quem ainda não sabe ler) ----------
+  // No app Android usa o leitor de voz do celular (ponte AndroidVoz); no navegador, speechSynthesis.
+  const voiceOn = () => store("tc-voice") !== "off";
+  let pendingSpeech = null;
+  const clean = (t) => String(t).replace(/<[^>]+>/g, " ").replace(/\p{Extended_Pictographic}|\uFE0F|\u200D/gu, "").replace(/R\$\s?(\d+),(\d{2})/g, (m, r, c) => falaValor(Number(r) * 100 + Number(c))).replace(/\s+/g, " ").replace(/\s+([.!?,])/g, "$1").trim();
+  function falaValor(c) {
+    const r = Math.floor(c / 100), ct = c % 100;
+    const reais = r ? (r === 1 ? "1 real" : `${r} reais`) : "";
+    const cents = ct ? (ct === 1 ? "1 centavo" : `${ct} centavos`) : "";
+    return [reais, cents].filter(Boolean).join(" e ") || "zero";
+  }
+  function speak(text) {
+    if (!voiceOn()) return;
+    const t = clean(text);
+    if (!t) return;
+    try {
+      if (window.AndroidVoz) return window.AndroidVoz.speak(t);
+      if (!("speechSynthesis" in window)) return;
+      if (!unlocked) { pendingSpeech = t; return; }
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(t);
+      u.lang = "pt-BR"; u.rate = 0.95; u.pitch = 1.15;
+      speechSynthesis.speak(u);
+    } catch (e) { /* sem voz */ }
+  }
+  function hush() {
+    try { if (window.AndroidVoz) window.AndroidVoz.stop(); else if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) { /* ok */ }
+  }
+  document.addEventListener("pointerdown", () => { if (pendingSpeech) { const t = pendingSpeech; pendingSpeech = null; setTimeout(() => speak(t), 50); } }, { capture: true });
+  // Tocar no balão da Moedinha ou do cliente repete a fala
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest(".bubble, .say");
+    if (b) speak(b.dataset.speak || b.textContent);
+  });
+
   const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* ok */ } };
 
   function confetti(host) {
@@ -729,7 +780,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     try { return [...new Intl.Segmenter("pt", { granularity: "grapheme" }).segment(t)].map((x) => x.segment); }
     catch (e) { return t.match(/\p{Extended_Pictographic}\uFE0F?/gu) || []; }
   }
-  DECOR.estado = { label: "Do meu estado", icon: "🇧🇷", items: window.Regional.estadoItems };
+  DECOR.estado = { label: "Brasil", icon: "🇧🇷", items: window.Regional.estadoItems };
   DECOR.antigo = { label: "Antigamente", icon: "🪀", items: window.Regional.antigoItems };
   const DEFAULT_DECO = { parede: "p-creme", balcao: "b-coral", prateleira: "s-nada", bichinho: "a-nada", enfeite: "e-nada", estado: "x-nada", antigo: "t-nada" };
   const findItem = (cat, id) => DECOR[cat].items.find((x) => x.id === id) || DECOR[cat].items[0];
@@ -789,56 +840,94 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function el(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content; }
 
   // ---------- Telas ----------
+  let greeted = false;
   function renderStart() {
     app.classList.remove("game");
     stopTick();
-    const uf = store("tc-uf") || "SP";
     const played = store("tc-day-" + todayKey());
     const paused = pausedGame();
-    const main = played ? "⭐ Ver meu resultado"
-      : paused ? `▶ Continuar (cliente ${paused.i + 1} de 5)` : "▶ Desafio do dia";
+    const main = played ? "Ver meu resultado" : paused ? "Continuar" : "Desafio do dia";
+    const mainSub = played ? "você já jogou hoje!" : paused ? `você parou no cliente ${paused.i + 1}` : "vale pro ranking · 1 vez por dia";
+    const greet = greeted ? "O que vamos fazer agora?"
+      : `Oi! Eu sou a Moedinha! No botão verde, ${played ? "você vê seu resultado de hoje" : "tem o desafio do dia"}. No amarelo, você escolhe o nível. E no branco, decora a sua lojinha!`;
+    greeted = true;
     app.replaceChildren(el(`
       <header class="top">${brandHtml()}<span class="pill bank" aria-label="Suas moedinhas">🪙 ${bank()}</span></header>
       <section class="hero">
         <div class="talk">
           ${mascot("happy", "mascot bob")}
-          <p class="bubble">Oi! Eu sou a <strong>Moedinha</strong>. Me ajuda a dar o troco certo pros clientes?</p>
+          <p class="bubble" data-speak="${greet}">${greet} <span class="hear">🔈</span></p>
         </div>
-        <h1>Você é bom de troco?</h1>
       </section>
-      <ol class="how">
-        <li><span class="ico">🛒</span><span>Veja quanto custou e quanto o cliente pagou</span></li>
-        <li><span class="ico">🪙</span><span>Toque nas notas e moedas pra montar o troco</span></li>
-        <li><span class="ico">⏱️</span><span>Seja rápido! Errou? Ganha +5 segundos</span></li>
-      </ol>
-      <label class="field" for="uf">📍 Seu estado
-        <select id="uf">${UFS.map((u) => `<option ${u === uf ? "selected" : ""}>${u}</option>`).join("")}</select>
-      </label>
-      <button class="btn" id="go">${main}<small>${played ? "você já jogou hoje!" : "vale pro ranking · 1 vez por dia"}</small></button>
-      ${paused ? `<p class="pause-note">O relógio continua de onde parou.</p>` : ""}
-      <button class="btn sun" id="levels">🎮 Níveis<small>iniciante, intermediário e avançado</small></button>
-      <button class="btn ghost" id="shopBtn">🏪 Minha lojinha<small>gaste suas moedinhas decorando a loja</small></button>
+      <nav class="menu">
+        <button class="btn" id="go"><span class="big">${played ? "⭐" : `<svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#fff" opacity=".25"/><path d="M15 11 L30 20 L15 29 Z" fill="#fff"/></svg>`}</span><span class="txt">${main}<small>${mainSub}</small></span></button>
+        <button class="btn sun" id="levels"><span class="big">🎮</span><span class="txt">Níveis<small>🐣 🦊 🦁</small></span></button>
+        <button class="btn ghost" id="shopBtn"><span class="big">🏪</span><span class="txt">Minha lojinha<small>🪙 ${bank()} moedinhas</small></span></button>
+      </nav>
       ${togglesHtml()}
+      <button class="parents" id="parents"><span class="fill"></span>👨‍👩‍👧 Área dos pais (segure)</button>
     `));
     bindToggles();
-    document.getElementById("uf").addEventListener("change", (e) => store("tc-uf", e.target.value));
+    speak(greet);
     document.getElementById("go").addEventListener("click", () => {
       enterScreen();
       if (played) renderResult(played); else startGame(null);
     });
     document.getElementById("levels").addEventListener("click", () => { enterScreen(); renderLevels(); });
     document.getElementById("shopBtn").addEventListener("click", () => { enterScreen(); renderShop(); });
+    bindHold(document.getElementById("parents"), () => { enterScreen(); renderParents(); });
+  }
+
+  // Segurar 2 segundos: criança pequena não entra sem querer
+  function bindHold(btn, open) {
+    let timer = null;
+    const stop = () => { clearTimeout(timer); btn.classList.remove("holding"); };
+    btn.addEventListener("pointerdown", () => { btn.classList.add("holding"); timer = setTimeout(() => { stop(); open(); }, 2000); });
+    ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => btn.addEventListener(ev, stop));
+    btn.addEventListener("keydown", (e) => { if (e.key === "Enter") open(); });
+  }
+
+  // ---------- Área dos pais ----------
+  function renderParents(msg) {
+    app.classList.remove("game");
+    stopTick();
+    const uf = store("tc-uf");
+    app.replaceChildren(el(`
+      <header class="top">
+        <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">👨‍👩‍👧 Área dos pais</span></span>
+      </header>
+      <section class="card parent-card">
+        <h2>Estado</h2>
+        <p>Usado só no ranking do desafio do dia, para comparar os estados.</p>
+        <label class="field" for="uf">Estado da criança
+          <select id="uf"><option value="">Escolha…</option>${UFS.map((u) => `<option ${u === uf ? "selected" : ""}>${u}</option>`).join("")}</select>
+        </label>
+        ${msg ? `<p class="flash good">${msg}</p>` : ""}
+      </section>
+      <section class="card">
+        <h2>Privacidade</h2>
+        <p>O jogo não pede nome, e-mail nem fotos. Para o ranking, envia apenas o resultado do desafio do dia, o estado escolhido e um código aleatório gerado no aparelho. Moedinhas e decoração ficam só no celular.</p>
+      </section>
+      <section class="card">
+        <h2>Como a criança joga</h2>
+        <p>A Moedinha fala as instruções e os pedidos dos clientes, então dá para jogar antes de saber ler. Tocar num balão repete a fala. O botão 🗣️ na tela inicial liga e desliga a voz.</p>
+      </section>
+    `));
+    document.getElementById("back").addEventListener("click", goBack);
+    document.getElementById("uf").addEventListener("change", (e) => {
+      if (!e.target.value) return;
+      store("tc-uf", e.target.value);
+      renderParents(`Pronto! Estado: ${e.target.value}.`);
+    });
   }
 
   // ---------- Minha lojinha ----------
-  let shopTab = "parede", shopUf = null;
+  let shopTab = "parede";
   function renderShop(msg) {
     app.classList.remove("game");
     stopTick();
     const d = deco(), cat = DECOR[shopTab], money = bank();
-    const myUf = store("tc-uf") || "SP";
-    shopUf = shopUf || myUf;
-    const list = shopTab === "estado" ? cat.items.filter((it) => !it.uf || it.uf === shopUf) : cat.items;
+    const list = cat.items;
     app.replaceChildren(el(`
       <header class="top">
         <span class="left"><button class="back" id="back" aria-label="Voltar ao início">←</button><span class="brand">🏪 Minha lojinha</span></span>
@@ -853,9 +942,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       <div class="tabs" role="tablist">${Object.entries(DECOR).map(([k, c]) => `
         <button class="tab" role="tab" data-tab="${k}" aria-selected="${k === shopTab}">${c.icon} ${c.label}</button>`).join("")}
       </div>
-      ${shopTab === "estado" ? `<label class="uf-pick" for="shopUf">Coisas de
-        <select id="shopUf">${UFS.map((u) => `<option ${u === shopUf ? "selected" : ""}>${u}</option>`).join("")}</select>
-        ${shopUf === myUf ? "⭐ seu estado" : "· colecione o Brasil!"}</label>` : ""}
+      ${shopTab === "estado" ? `<p class="pause-note">Coisas gostosas e famosas de todo o Brasil 🇧🇷 Qual é a do seu estado?</p>` : ""}
       ${shopTab === "antigo" ? `<p class="pause-note">Os brinquedos que o papai, a mamãe e os avós brincavam 💛</p>` : ""}
       <div class="items">${list.map((it) => {
         const have = isOwned(it), on = d[shopTab] === it.id;
@@ -871,10 +958,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       <p class="pause-note">Ganhe moedinhas atendendo clientes: troco perfeito vale mais!</p>
     `));
     document.getElementById("back").addEventListener("click", goBack);
-    app.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => { sfx.tap(); shopTab = b.dataset.tab; renderShop(); }));
+    speak(msg || "Bem-vindo à sua lojinha! Escolha o que quer mudar.");
+    app.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => { sfx.tap(); shopTab = b.dataset.tab; renderShop(DECOR[shopTab].label + "!"); }));
     app.querySelectorAll(".item").forEach((b) => b.addEventListener("click", () => chooseItem(b)));
-    const ufSel = document.getElementById("shopUf");
-    if (ufSel) ufSel.addEventListener("change", (e) => { shopUf = e.target.value; sfx.tap(); renderShop(); });
+
   }
   function chooseItem(btn) {
     const it = findItem(shopTab, btn.dataset.id), d = deco();
@@ -885,6 +972,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         btn.classList.remove("shake"); void btn.offsetWidth; btn.classList.add("shake");
         const say = document.getElementById("say");
         say.textContent = `Faltam ${it.price - bank()} moedinhas pra ${it.name}. Atenda mais uns clientes! 💪`;
+        speak(say.textContent);
         return;
       }
       setBank(bank() - it.price);
@@ -914,7 +1002,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       </header>
       <div class="talk">
         ${mascot("happy", "mascot bob")}
-        <p class="bubble">Escolha um nível! Termine um pra liberar o próximo. Aqui não tem ranking: jogue quantas vezes quiser.</p>
+        <p class="bubble" data-speak="Escolha um nível! O pintinho é o mais fácil, a raposa é médio e o leão é o mais difícil. Termine um pra liberar o próximo.">Escolha um nível! 🐣 fácil, 🦊 médio, 🦁 difícil. Termine um pra liberar o próximo. <span class="hear">🔈</span></p>
       </div>
       <div class="levels">${LEVEL_ORDER.map((k, i) => {
         const L = LEVELS[k], open = isOpen(k);
@@ -929,7 +1017,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     `));
     bindToggles();
     document.getElementById("back").addEventListener("click", goBack);
+    speak("Escolha um nível! O pintinho é o mais fácil, a raposa é médio e o leão é o mais difícil.");
     app.querySelectorAll(".level:not(.locked)").forEach((b) => b.addEventListener("click", () => { sfx.tap(); startGame(b.dataset.lv); }));
+    app.querySelectorAll(".level.locked").forEach((b) => { b.disabled = false; b.addEventListener("click", () => { sfx.bad(); speak("Esse ainda está trancado. Termine o nível anterior pra abrir!"); }); });
   }
 
   // ---------- Navegação (botão voltar da tela e do Android) ----------
@@ -980,7 +1070,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     S = {
       training, level, seed, rounds: makeRounds(seed, training ? LEVELS[level].tiers : undefined), i: 0, tray: {}, results: [],
       wrong: 0, roundStart: performance.now(), gameStart: performance.now(),
-      uf: store("tc-uf") || "SP", day: todayKey(),
+      uf: store("tc-uf") || null, day: todayKey(),
     };
     const paused = training ? null : pausedGame();
     if (paused) {
@@ -999,6 +1089,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function trayCount() { return Object.values(S.tray).reduce((a, n) => a + n, 0); }
 
   function askText(c, r) { return `Quero ${c.item}! Toma ${brl(r.paid)}.`; }
+  // Falado: inclui o preço, que quem não lê só vê no visor
+  function askSpeech(c, r) { return `Quero ${c.item}. Custa ${falaValor(r.price)}. Toma ${falaValor(r.paid)}.`; }
 
   function setCustomer(mood, text, kind = "", anim = "") {
     const c = makeCustomer(S.seed, S.i, S.rounds[S.i].price);
@@ -1077,6 +1169,8 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     document.querySelectorAll("#dots span").forEach((d, k) => { d.className = k < S.i ? "done" : k === S.i ? "now" : ""; });
     document.getElementById("shop").setAttribute("aria-label", `Cliente ${S.i + 1} de 5`);
     setCustomer("normal", askText(c, r), "", "enter");
+    document.getElementById("say").dataset.speak = askSpeech(c, r);
+    setTimeout(() => { if (S && S.rounds[S.i] === r) speak(askSpeech(c, r)); }, 500);
     retrigger(document.getElementById("say"), "pop");
     document.getElementById("lcdTotal").textContent = brl(r.price);
     document.getElementById("lcdPaid").textContent = brl(r.paid);
@@ -1127,7 +1221,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       lcdVal.textContent = "ERRO!";
       lcdLn.className = "ln q"; retrigger(lcdLn, "bad");
       flash(S.level === "iniciante" ? `Dica: o troco é ${brl(r.change)} 😉 (+5s)` : "Tente de novo! (+5s)", "bad");
-      setCustomer("sad", sum > r.change ? "Hmm... você me deu troco a mais! 🤔" : "Hmm... acho que faltou troco! 🤔", "bad", "nope");
+      const sadLine = sum > r.change ? "Hmm... você me deu troco a mais! 🤔" : "Hmm... acho que faltou troco! 🤔";
+      setCustomer("sad", sadLine, "bad", "nope");
+      speak(S.level === "iniciante" ? `${sadLine} Dica: o troco é ${falaValor(r.change)}.` : sadLine);
       const cur = S, round = S.i, token = (S.token = (S.token || 0) + 1);
       setTimeout(() => {
         if (S !== cur || S.i !== round || S.token !== token || S.busy) return;
@@ -1148,6 +1244,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     lcdLn.className = "ln q ok";
     flash("", "");
     setCustomer("happy", "Valeu! Troco certinho! 😄", "good", "bump");
+    speak("Valeu!");
     confetti(document.getElementById("shop"));
     const cur = S;
     setTimeout(() => { if (S === cur) document.querySelector(".customer").classList.add("leave"); }, 800);
@@ -1185,7 +1282,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function squares(results) { return results.map((r) => (r.wrong === 0 && r.pieces === r.best) ? "🟩" : "🟨").join(""); }
 
   function shareText(res) {
-    return `Troco Certo ${ddmm(res.day)} (${res.uf})\n${squares(res.results)}\n⏱️ ${fmtTime(res.score.total)}\nVocê é bom de troco?`;
+    return `Troco Certo ${ddmm(res.day)}${res.uf ? ` (${res.uf})` : ""}\n${squares(res.results)}\n⏱️ ${fmtTime(res.score.total)}\nVocê é bom de troco?`;
   }
 
   function nextLevel(res) {
@@ -1279,6 +1376,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
     });
     if (!res.training) { startCountdown(res); syncRanking(res); }
+    if (res.coins && !res.spoken) { res.spoken = true; setTimeout(() => speak(`${cheer} Você ganhou ${res.coins} moedinhas!`), 900); }
   }
 
   // ---------- Ranking (servidor) ----------
@@ -1299,6 +1397,11 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   async function syncRanking(res) {
     const box = document.getElementById("rank");
+    res.uf = res.uf || store("tc-uf");
+    if (!res.uf) {
+      if (box) box.innerHTML = `<h2>🏆 Ranking de hoje</h2><p class="note-box">Peça pra um adulto escolher o seu estado na <strong>Área dos pais</strong> 👨‍👩‍👧 pra entrar no ranking.</p>`;
+      return;
+    }
     try {
       let ranking;
       if (!res.sent) {
