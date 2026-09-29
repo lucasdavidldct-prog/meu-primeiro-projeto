@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Gerado por tools/gerar-icone.py. Não edite à mão. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M0,0 H108 V108 H0 Z" android:fillColor="#2F9BEF" />
+    <path android:pathData="M54,54 L163.18,40.59 L163.18,67.41 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L155.26,96.98 L141.85,120.20 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L120.20,141.85 L96.98,155.26 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L67.41,163.18 L40.59,163.18 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L11.02,155.26 L-12.20,141.85 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L-33.85,120.20 L-47.26,96.98 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L-55.18,67.41 L-55.18,40.59 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L-47.26,11.02 L-33.85,-12.20 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L-12.20,-33.85 L11.02,-47.26 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L40.59,-55.18 L67.41,-55.18 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L96.98,-47.26 L120.20,-33.85 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M54,54 L141.85,-12.20 L155.26,11.02 Z" android:fillColor="#5DB8FF" />
+    <path android:pathData="M14.00,54.00 a40.00,40.00 0 1,0 80.00,0 a40.00,40.00 0 1,0 -80.00,0 Z" android:fillColor="#7CC8FF" android:fillAlpha="0.55" />
+</vector>

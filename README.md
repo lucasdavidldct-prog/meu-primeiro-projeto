@@ -37,6 +37,10 @@ npm install
 npm run audio
 ```
 
+## Ícone
+
+A Moedinha é desenhada em `tools/gerar-icone.py`, que gera o ícone do Android (`android/app/src/main/res/drawable/ic_launcher_*.xml`), `arte/icone.svg` e o favicon. A imagem de 512×512 para a Play Store é `arte/icone-play-store-512.png` (gerada por `tools/gerar-icone-png.cjs`).
+
 ## Como o ranking funciona
 
 | Arquivo | O que faz |
