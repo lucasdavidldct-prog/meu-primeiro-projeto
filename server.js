@@ -77,10 +77,11 @@ const validPlayer = (id) => typeof id === "string" && /^[A-Za-z0-9-]{8,64}$/.tes
 // e quando o jogo é pausado/retomado. O servidor anota a hora em que recebeu cada aviso.
 // Na pontuação vale o MAIOR entre o tempo que o celular diz e o tempo medido aqui (menos
 // uma folga para a internet): quem tentar declarar um tempo menor do que levou não ganha nada.
-const timings = new Map(); // "dia|playerId" -> { [rodada]: { start, end, pausedMs, pauseAt } }
+const timings = new Map(); // "dia|playerId|tentativa" -> { [rodada]: { start, end, pausedMs, pauseAt } }
+const validAttempt = (t) => t === undefined || t === "" || (typeof t === "string" && /^[A-Za-z0-9]{6,32}$/.test(t));
 
-function recordEvent(day, playerId, round, kind, now = Date.now()) {
-  const key = `${day}|${playerId}`;
+function recordEvent(day, playerId, round, kind, now = Date.now(), attempt = "") {
+  const key = `${day}|${playerId}|${attempt || ""}`;
   if (!timings.has(key)) timings.set(key, {});
   const t = timings.get(key);
   const r = (t[round] = t[round] || { start: null, end: null, pausedMs: 0, pauseAt: null });
@@ -93,8 +94,8 @@ function recordEvent(day, playerId, round, kind, now = Date.now()) {
   if (kind === "volta" && r.pauseAt !== null) { r.pausedMs += now - r.pauseAt; r.pauseAt = null; }
 }
 
-function measuredMs(day, playerId, round) {
-  const r = timings.get(`${day}|${playerId}`)?.[round];
+function measuredMs(day, playerId, round, attempt = "") {
+  const r = timings.get(`${day}|${playerId}|${attempt || ""}`)?.[round];
   if (!r || r.start === null || r.end === null) return null;
   return Math.max(0, r.end - r.start - r.pausedMs);
 }
@@ -109,10 +110,11 @@ setInterval(() => {
 // ---------- Validação ----------
 function validateSubmission(body) {
   if (!body || typeof body !== "object") return { error: "Corpo inválido." };
-  const { day, uf, playerId, rounds, nick } = body;
+  const { day, uf, playerId, rounds, nick, tentativa } = body;
   if (!validPlayer(playerId)) return { error: "Jogador inválido." };
   if (!Regras.UFS.includes(uf)) return { error: "Estado inválido." };
   if (typeof day !== "string" || !isPlayableDay(day)) return { error: "Esse desafio não está mais aberto." };
+  if (!validAttempt(tentativa)) return { error: "Partida inválida." };
 
   const expected = Regras.makeRounds(Regras.dailySeed(day));
   if (!Array.isArray(rounds) || rounds.length !== expected.length) return { error: "Número de clientes inválido." };
@@ -133,7 +135,7 @@ function validateSubmission(body) {
     const ms = Number(r.ms);
     const floor = Math.max(MIN_MS_PER_ROUND, count * MIN_MS_PER_PIECE);
     if (!Number.isFinite(ms) || ms < floor || ms > MAX_MS_PER_ROUND) return { error: `Cliente ${i + 1}: tempo impossível.` };
-    const measured = measuredMs(day, playerId, i);
+    const measured = measuredMs(day, playerId, i, tentativa);
     if (measured === null) measuredAll = false;
     // Vale o maior: o que o celular diz ou o que o servidor mediu (menos a folga da internet)
     const effective = Math.round(measured === null ? ms : Math.max(ms, measured - NET_TOLERANCE));
@@ -299,8 +301,8 @@ async function handle(req, res) {
     if (limitEvents(ip)) return sendJson(res, 429, { error: "Muitos avisos." });
     const b = await jsonBody(req, 2000);
     if (!b || !validPlayer(b.playerId) || !isPlayableDay(b.day) || !Number.isInteger(b.round) || b.round < 0 || b.round > 4
-      || !["inicio", "fim", "pausa", "volta"].includes(b.tipo)) return sendJson(res, 400, { error: "Aviso inválido." });
-    recordEvent(b.day, b.playerId, b.round, b.tipo);
+      || !["inicio", "fim", "pausa", "volta"].includes(b.tipo) || !validAttempt(b.tentativa)) return sendJson(res, 400, { error: "Aviso inválido." });
+    recordEvent(b.day, b.playerId, b.round, b.tipo, Date.now(), b.tentativa);
     return sendJson(res, 200, { ok: true });
   }
 
@@ -320,8 +322,11 @@ async function handle(req, res) {
     if (!body) return sendJson(res, 400, { error: "Corpo inválido." });
     const { error, entry } = validateSubmission(body);
     if (error) return sendJson(res, 400, { error });
+    // Pode jogar o desafio do dia quantas vezes quiser: no ranking fica o melhor tempo
     const existing = byDay.get(entry.day)?.get(entry.playerId);
-    if (existing) return sendJson(res, 409, { error: "Você já jogou o desafio de hoje.", ranking: ranking(entry.day, existing.uf, entry.playerId) });
+    if (existing && removed.has(`${entry.day}|${entry.playerId}`)) return sendJson(res, 409, { error: "Seu resultado de hoje foi retirado do ranking." });
+    if (existing && entry.score >= existing.score) return sendJson(res, 200, { melhorou: false, ranking: ranking(entry.day, existing.uf, entry.playerId) });
+    if (existing) entry.tentativas = (existing.tentativas || 1) + 1;
 
     // Play Integrity (desligado até o app estar na Play Store)
     const mode = Integridade.mode();
@@ -337,7 +342,7 @@ async function handle(req, res) {
       if (!verdict.ok && mode === "require") return sendJson(res, 403, { error: "Não conseguimos confirmar que o jogo é original. Baixe pela Play Store." });
     }
     await save(entry);
-    return sendJson(res, 201, { ranking: ranking(entry.day, entry.uf, entry.playerId) });
+    return sendJson(res, 201, { melhorou: true, ranking: ranking(entry.day, entry.uf, entry.playerId) });
   }
 
   // Troca de apelido (também no resultado de hoje, se já tiver jogado)

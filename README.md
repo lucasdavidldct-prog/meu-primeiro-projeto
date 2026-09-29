@@ -13,7 +13,7 @@ npm test           # roda os testes do servidor
 
 ## Como o jogo funciona
 
-- 5 clientes por dia. O desafio vira à meia-noite de Brasília e é o mesmo para todo mundo (gerado a partir da data).
+- 5 clientes por dia. O desafio vira à meia-noite de Brasília e é o mesmo para todo mundo (gerado a partir da data). Dá para jogar quantas vezes quiser: no ranking fica o melhor tempo do dia.
 - Troco errado: +5s. Cada peça além do mínimo possível: +2s.
 - O resultado sai em quadradinhos (🟩 perfeito, 🟨 com erro ou peça a mais) para compartilhar no WhatsApp.
 - "Treinar" gera clientes aleatórios e não conta para o ranking.
@@ -32,14 +32,14 @@ Fora do ranking, a criança joga quantas vezes quiser em 3 níveis. Terminar um 
 
 - A Moedinha **fala**: as instruções da tela inicial, o pedido de cada cliente (com o preço e quanto ele pagou), os erros e acertos, e as mensagens da lojinha. Tocar num balão repete a fala. No app Android usa a voz do próprio celular; no navegador, a voz do navegador.
 - O menu inicial usa ícones grandes e cores: a Moedinha explica "botão verde, amarelo e branco".
-- O estado (para o ranking) fica na **Área dos pais**, que abre segurando o botão por 2 segundos.
+- Na primeira vez, duas telas de boas-vindas pedem o estado (com um adulto) e o apelido. Depois, os dois só mudam na **Área dos pais**, que abre segurando o botão por 2 segundos.
 
 ## Minha lojinha
 
 Cada cliente atendido rende moedinhas 🪙: 2 por troco certo, mais 2 se for perfeito, mais 3 por estrela e 10 de bônus no desafio do dia. Com elas a criança compra decoração para a loja onde atende os clientes: parede, balcão, prateleira, bichinho e enfeite (33 itens, de 15 a 90 moedinhas). A carteira e a decoração ficam salvas no aparelho.
 
 Duas categorias especiais, em `public/regional.js`:
-- **Brasil:** 55 itens típicos dos 27 estados (pão de queijo, acarajé, chimarrão, frevo…), todos juntos numa aba só.
+- **Brasil:** 53 coisas gostosas e famosas do país (pão de queijo, acarajé, chimarrão, frevo…), todas juntas e sem dizer de qual estado: cada um reconhece a sua.
 - **Antigamente:** 11 brinquedos da infância dos pais e avós (peão, bolinha de gude, peteca, bilboquê, carrinho de rolimã, bichinho virtual…).
 
 Os itens que não existem em emoji são desenhados em SVG no mesmo arquivo.
@@ -72,7 +72,7 @@ A Moedinha é desenhada em `tools/gerar-icone.py`, que gera o ícone do Android 
 **Contra trapaça:**
 - O servidor refaz os 5 clientes do dia, confere cada troco e calcula a pontuação ele mesmo.
 - **Tempo medido no servidor:** o jogo avisa quando cada cliente aparece, quando o troco é entregue e quando pausa. Vale o **maior** entre o tempo que o celular diz e o tempo medido (com 1,5 s de folga para a internet). Declarar um tempo menor não adianta.
-- Um resultado por jogador por dia; limites de pedidos por minuto.
+- Pode jogar o desafio do dia várias vezes: o servidor guarda só o melhor resultado de cada jogador; limites de pedidos por minuto.
 - **Play Integrity** (quando ligado): prova que o resultado veio do app original da Play Store num celular de verdade.
 - **Painel do dono** para remover resultados suspeitos.
 

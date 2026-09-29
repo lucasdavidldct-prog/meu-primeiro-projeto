@@ -29,46 +29,37 @@
   const svg = (k) => `<svg viewBox="0 0 40 40" aria-hidden="true">${I[k]}</svg>`;
 
   // [nome, ícone (chave de I ou emoji), preço]
-  const ESTADOS = {
-    AC: [["Castanha-do-brasil", "🌰", 30], ["Canoa no rio Acre", "🛶", 40]],
-    AL: [["Tapioca", "tapioca", 30], ["Jangada", "⛵", 40]],
-    AP: [["Camarão no bafo", "🦐", 30], ["Marco Zero do Equador", "🧭", 40]],
-    AM: [["Tacacá", "🥣", 30], ["Boi-bumbá de Parintins", "🐂", 45]],
-    BA: [["Acarajé", "acaraje", 35], ["Berimbau", "berimbau", 45]],
-    CE: [["Caju", "caju", 30], ["Rede de dormir", "rede", 40]],
-    DF: [["Pastel com caldo de cana", "🥟", 30], ["Ipê amarelo", "🌼", 35]],
-    ES: [["Moqueca capixaba", "🍲", 35], ["Tambor do congo", "🥁", 40]],
-    GO: [["Pamonha", "🌽", 30], ["Pequi", "pequi", 35]],
-    MA: [["Guaraná Jesus", "🥤", 30], ["Lençóis Maranhenses", "🏜️", 45]],
-    MT: [["Pacu assado", "🐟", 35], ["Onça do Pantanal", "🐆", 45]],
-    MS: [["Sobá", "🍜", 35], ["Jacaré do Pantanal", "🐊", 45]],
-    MG: [["Pão de queijo", "paoqueijo", 30], ["Queijo minas", "queijo", 35], ["Trem de ferro", "🚂", 45]],
-    PA: [["Açaí na tigela", "acai", 30], ["Vaso marajoara", "🏺", 45]],
-    PB: [["Queijo coalho no espeto", "🍢", 30], ["Sanfona de forró", "🪗", 45]],
-    PR: [["Pinhão", "pinhao", 30], ["Araucária", "🌲", 40]],
-    PE: [["Bolo de rolo", "bolorolo", 35], ["Sombrinha de frevo", "frevo", 45]],
-    PI: [["Cajuína", "🧃", 30], ["Pedra Furada", "🪨", 40]],
-    RJ: [["Biscoito de polvilho", "biscoitoglobo", 30], ["Bondinho", "🚡", 45]],
-    RN: [["Camarão", "🦐", 30], ["Dunas de Genipabu", "🐪", 40]],
-    RS: [["Chimarrão", "chimarrao", 35], ["Churrasco", "🍖", 40]],
-    RO: [["Tambaqui", "🐟", 30], ["Castanheira", "🌳", 40]],
-    RR: [["Damorida", "🌶️", 30], ["Monte Roraima", "⛰️", 45]],
-    SC: [["Ostras", "🦪", 35], ["Pretzel da Oktoberfest", "🥨", 35]],
-    SP: [["Pastel de feira", "🥟", 30], ["Metrô", "🚇", 40]],
-    SE: [["Caranguejo", "🦀", 30], ["Cocada", "🥥", 30]],
-    TO: [["Capim dourado", "capim", 40], ["Fervedouro do Jalapão", "💧", 35]],
-  };
+  // Coisas gostosas e famosas do Brasil, sem dizer de qual estado: cada um reconhece a sua.
+  // [nome, ícone (chave de I ou emoji), preço]
+  const BRASIL = [
+    ["Pão de queijo", "paoqueijo", 30], ["Queijo minas", "queijo", 35], ["Trem de ferro", "🚂", 45],
+    ["Castanha-do-brasil", "🌰", 30], ["Canoa", "🛶", 40], ["Tapioca", "tapioca", 30], ["Jangada", "⛵", 40],
+    ["Camarão", "🦐", 30], ["Bússola do Marco Zero", "🧭", 40], ["Tacacá", "🥣", 30], ["Boi-bumbá", "🐂", 45],
+    ["Acarajé", "acaraje", 35], ["Berimbau", "berimbau", 45], ["Caju", "caju", 30], ["Rede de dormir", "rede", 40],
+    ["Pastel com caldo de cana", "🥟", 30], ["Ipê amarelo", "🌼", 35], ["Moqueca", "🍲", 35], ["Tambor de congo", "🥁", 40],
+    ["Pamonha", "🌽", 30], ["Pequi", "pequi", 35], ["Guaraná Jesus", "🥤", 30], ["Dunas", "🏜️", 45],
+    ["Peixe assado", "🐟", 35], ["Onça-pintada", "🐆", 45], ["Sobá", "🍜", 35], ["Jacaré", "🐊", 45],
+    ["Açaí na tigela", "acai", 30], ["Vaso marajoara", "🏺", 45], ["Queijo coalho no espeto", "🍢", 30], ["Sanfona", "🪗", 45],
+    ["Pinhão", "pinhao", 30], ["Araucária", "🌲", 40], ["Bolo de rolo", "bolorolo", 35], ["Sombrinha de frevo", "frevo", 45],
+    ["Cajuína", "🧃", 30], ["Pedra Furada", "🪨", 40], ["Biscoito de polvilho", "biscoitoglobo", 30], ["Bondinho", "🚡", 45],
+    ["Camelo nas dunas", "🐪", 40], ["Chimarrão", "chimarrao", 35], ["Churrasco", "🍖", 40], ["Castanheira", "🌳", 40],
+    ["Pimenta", "🌶️", 30], ["Monte Roraima", "⛰️", 45], ["Ostras", "🦪", 35], ["Pretzel", "🥨", 35],
+    ["Pastel de feira", "🥟", 30], ["Metrô", "🚇", 40], ["Caranguejo", "🦀", 30], ["Cocada", "🥥", 30],
+    ["Capim dourado", "capim", 40], ["Fervedouro", "💧", 35],
+  ];
   const ANTIGAMENTE = [
     ["Peão", "peao", 30], ["Bolinhas de gude", "gude", 25], ["Pipa", "🪁", 25], ["Ioiô", "🪀", 25],
     ["Peteca", "peteca", 30], ["Bilboquê", "bilboque", 35], ["Bola de meia", "bolameia", 25],
     ["Carrinho de rolimã", "rolima", 50], ["Bichinho virtual", "virtual", 50], ["Videogame antigo", "🕹️", 60], ["Fita cassete", "📼", 40],
   ];
   const icon = (k) => (I[k] ? svg(k) : k);
+  // Códigos da versão que separava por estado -> códigos novos (para não perder o que já foi comprado)
+  const ANTIGOS = {"x-AC-0":"x-3","x-AC-1":"x-4","x-AL-0":"x-5","x-AL-1":"x-6","x-AP-0":"x-7","x-AP-1":"x-8","x-AM-0":"x-9","x-AM-1":"x-10","x-BA-0":"x-11","x-BA-1":"x-12","x-CE-0":"x-13","x-CE-1":"x-14","x-DF-0":"x-15","x-DF-1":"x-16","x-ES-0":"x-17","x-ES-1":"x-18","x-GO-0":"x-19","x-GO-1":"x-20","x-MA-0":"x-21","x-MA-1":"x-22","x-MT-0":"x-23","x-MT-1":"x-24","x-MS-0":"x-25","x-MS-1":"x-26","x-MG-0":"x-0","x-MG-1":"x-1","x-MG-2":"x-2","x-PA-0":"x-27","x-PA-1":"x-28","x-PB-0":"x-29","x-PB-1":"x-30","x-PR-0":"x-31","x-PR-1":"x-32","x-PE-0":"x-33","x-PE-1":"x-34","x-PI-0":"x-35","x-PI-1":"x-36","x-RJ-0":"x-37","x-RJ-1":"x-38","x-RN-0":"x-7","x-RN-1":"x-39","x-RS-0":"x-40","x-RS-1":"x-41","x-RO-0":"x-23","x-RO-1":"x-42","x-RR-0":"x-43","x-RR-1":"x-44","x-SC-0":"x-45","x-SC-1":"x-46","x-SP-0":"x-47","x-SP-1":"x-48","x-SE-0":"x-49","x-SE-1":"x-50","x-TO-0":"x-51","x-TO-1":"x-52"};
 
   root.Regional = {
-    icon,
+    icon, ANTIGOS,
     estadoItems: [{ id: "x-nada", name: "Nenhum", price: 0, text: "" }].concat(
-      Object.entries(ESTADOS).flatMap(([uf, list]) => list.map(([name, ic, price], i) => ({ id: `x-${uf}-${i}`, uf, name, price, text: icon(ic) })))),
+      BRASIL.map(([name, ic, price], i) => ({ id: `x-${i}`, name, price, text: icon(ic) }))),
     antigoItems: [{ id: "t-nada", name: "Nenhum", price: 0, text: "" }].concat(
       ANTIGAMENTE.map(([name, ic, price], i) => ({ id: `t-${i}`, name, price, text: icon(ic) }))),
   };

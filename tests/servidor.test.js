@@ -56,9 +56,17 @@ test("aceita um resultado válido e calcula a pontuação no servidor", async ()
   assert.strictEqual(data.ranking.voce.posicaoUf, 1);
 });
 
-test("recusa o mesmo jogador duas vezes no dia", async () => {
-  const { status } = await post({ day: today, uf: "SP", playerId: "jogador-aaaa", rounds: play(today) });
-  assert.strictEqual(status, 409);
+test("pode jogar de novo no mesmo dia e vale o melhor tempo", async () => {
+  const worse = await post({ day: today, uf: "SP", playerId: "jogador-aaaa", rounds: play(today, { ms: 6000 }) });
+  assert.strictEqual(worse.status, 200);
+  assert.strictEqual(worse.data.melhorou, false);
+  assert.strictEqual(worse.data.ranking.voce.score, 5 * 4000); // continua o melhor
+  const better = await post({ day: today, uf: "SP", playerId: "jogador-melhora", rounds: play(today, { ms: 6000 }) });
+  assert.strictEqual(better.status, 201);
+  const b2 = await post({ day: today, uf: "SP", playerId: "jogador-melhora", rounds: play(today, { ms: 5000 }) });
+  assert.strictEqual(b2.status, 201);
+  assert.strictEqual(b2.data.melhorou, true);
+  assert.strictEqual(b2.data.ranking.voce.score, 5 * 5000);
 });
 
 test("recusa troco que não confere", async () => {
@@ -85,9 +93,9 @@ test("monta o placar dos estados com mínimo de 3 jogadores", async () => {
   await post({ day: today, uf: "SP", playerId: "jogador-sp-3", rounds: play(today, { ms: 6000 }) });
   await post({ day: today, uf: "RJ", playerId: "jogador-rj-1", rounds: play(today, { ms: 2000 }) });
   const r = await fetch(`${base}/api/ranking?day=${today}&uf=SP&playerId=jogador-sp-3`).then((x) => x.json());
-  assert.strictEqual(r.totalBrasil, 4);
-  assert.strictEqual(r.totalUf, 3);
-  assert.deepStrictEqual(r.voce, { score: 30000, apelido: "Jogador", posicaoBrasil: 4, posicaoUf: 3 });
+  assert.strictEqual(r.totalBrasil, 5);
+  assert.strictEqual(r.totalUf, 4);
+  assert.deepStrictEqual(r.voce, { score: 30000, apelido: "Jogador", posicaoBrasil: 5, posicaoUf: 4 });
   assert.strictEqual(r.estados[0].uf, "SP");       // único com 3+ jogadores
   assert.strictEqual(r.estados[0].posicao, 1);
   assert.strictEqual(r.estados[1].posicao, null);  // RJ tem só 1 jogador
@@ -169,6 +177,16 @@ test("sem avisos de tempo o resultado entra, marcado como não medido", () => {
   assert.strictEqual(entry.score, 25000);
 });
 
+test("cada partida do dia tem sua própria medição de tempo", () => {
+  const { recordEvent, measuredMs } = require("../server.js");
+  recordEvent(today, "jogador-tent", 0, "inicio", 1000, "partidaA1");
+  recordEvent(today, "jogador-tent", 0, "fim", 9000, "partidaA1");
+  recordEvent(today, "jogador-tent", 0, "inicio", 50000, "partidaB2");
+  recordEvent(today, "jogador-tent", 0, "fim", 53000, "partidaB2");
+  assert.strictEqual(measuredMs(today, "jogador-tent", 0, "partidaA1"), 8000);
+  assert.strictEqual(measuredMs(today, "jogador-tent", 0, "partidaB2"), 3000);
+});
+
 test("aceita avisos de tempo pela rede e recusa avisos inválidos", async () => {
   const ok = await fetch(base + "/api/evento", { method: "POST", body: JSON.stringify({ day: today, playerId: "jogador-evt", round: 0, tipo: "inicio" }) });
   assert.strictEqual(ok.status, 200);
@@ -192,7 +210,7 @@ test("painel do dono exige senha, lista o dia e remove do ranking", async () => 
   const rk = await fetch(`${base}/api/ranking?day=${today}&uf=RJ`).then((x) => x.json());
   assert.strictEqual(rk.totalUf, 0);
   // não pode reenviar para "voltar" ao ranking
-  const again = await post({ day: today, uf: "RJ", playerId: "jogador-rj-1", rounds: play(today) });
+  const again = await post({ day: today, uf: "RJ", playerId: "jogador-rj-1", rounds: play(today, { ms: 1000 }) });
   assert.strictEqual(again.status, 409);
   // desfazer
   await fetch(base + "/api/admin/remover", { method: "POST", headers: H, body: JSON.stringify({ day: today, playerId: "jogador-rj-1", desfazer: true }) });

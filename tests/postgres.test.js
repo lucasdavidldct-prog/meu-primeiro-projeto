@@ -43,8 +43,8 @@ test("com PostgreSQL, ranking e códigos sobrevivem ao servidor reiniciar", opts
   const rk = await fetch(`${at(s)}/api/ranking?day=${day}&uf=MG&playerId=pg-jogador-1`).then((r) => r.json());
   assert.strictEqual(rk.totalBrasil, 2); // o trapaceiro removido continua fora
   assert.strictEqual(rk.voce.apelido, "🧀 Pão de Queijo Ágil 31");
-  const again = await fetch(at(s) + "/api/resultado", { method: "POST", body: JSON.stringify({ day, uf: "MG", playerId: "pg-jogador-2", rounds }) });
-  assert.strictEqual(again.status, 409); // continua valendo 1 por dia
+  const again = await fetch(at(s) + "/api/resultado", { method: "POST", body: JSON.stringify({ day, uf: "MG", playerId: "pg-jogador-2", rounds }) }).then((r) => r.json());
+  assert.strictEqual(again.melhorou, false); // mesmo tempo: continua o recorde anterior
   const back = await fetch(`${at(s)}/api/backup/${bk.code}`).then((r) => r.json());
   assert.strictEqual(back.data.bank, 88);
   await new Promise((r) => s.close(r));

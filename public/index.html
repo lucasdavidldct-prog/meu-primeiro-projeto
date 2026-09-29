@@ -246,6 +246,17 @@ select { font: inherit; font-weight: 800; padding: 12px 14px; border-radius: 14p
 .code { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; letter-spacing: .02em; background: var(--bg); border-radius: 12px; padding: 8px 12px; text-align: center; word-break: break-word; }
 .parent-card input[type="text"] { font: inherit; padding: 12px; border-radius: 12px; border: 2px solid var(--line); width: 100%; }
 
+/* Boas-vindas */
+.uf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.uf-btn { border: 0; border-radius: 14px; background: var(--surface); box-shadow: 0 3px 0 var(--line); padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.uf-btn:active { transform: translateY(3px); box-shadow: 0 0 0 var(--line); }
+.uf-btn strong { font-family: var(--font-display); font-size: 1.3rem; line-height: 1; }
+.uf-btn small { font-size: 0.68rem; color: var(--muted); font-weight: 700; line-height: 1.1; text-align: center; }
+.nick-pick { text-align: center; justify-items: center; }
+.nick-big { font-family: var(--font-display); font-size: 1.9rem; font-weight: 800; line-height: 1.15; }
+.nick-big.pop { animation: chipPop 0.35s; }
+.big-dice { font-size: 1.6rem; }
+
 /* Resultado */
 .celebrate { background: var(--surface); border-radius: 24px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; box-shadow: 0 4px 0 var(--line); }
 .stars { font-size: 2.6rem; letter-spacing: 4px; line-height: 1; }
@@ -817,7 +828,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   // Moedinhas ganhas numa partida
   function coinsFor(res) {
     const perRound = res.results.reduce((a, r) => a + 2 + (isPerfect(r) ? 2 : 0), 0);
-    return perRound + starsOf(res.results) * 3 + (res.training ? 0 : 10);
+    return perRound + starsOf(res.results) * 3 + (res.firstToday ? 10 : 0);
   }
 
   const brandHtml = () => `<span class="brand">${mascot("happy", "")}Troco Certo</span>`;
@@ -852,10 +863,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     stopTick();
     const played = store("tc-day-" + todayKey());
     const paused = pausedGame();
-    const main = played ? "Ver meu resultado" : paused ? "Continuar" : "Desafio do dia";
-    const mainSub = played ? "você já jogou hoje!" : paused ? `você parou no cliente ${paused.i + 1}` : "vale pro ranking · 1 vez por dia";
+    const main = paused ? "Continuar" : played ? "Desafio do dia" : "Desafio do dia";
+    const mainSub = paused ? `você parou no cliente ${paused.i + 1}` : played ? `seu recorde hoje: ${fmtTime(played.score.total)} · bora bater?` : "vale pro ranking";
     const greet = greeted ? "O que vamos fazer agora?"
-      : `Oi! Eu sou a Moedinha! No botão verde, ${played ? "você vê seu resultado de hoje" : "tem o desafio do dia"}. No amarelo, você escolhe o nível. E no branco, decora a sua lojinha!`;
+      : `Oi! Eu sou a Moedinha! No botão verde, ${played ? "tente bater o seu recorde de hoje" : "tem o desafio do dia"}. No amarelo, você escolhe o nível. E no branco, decora a sua lojinha!`;
     greeted = true;
     app.replaceChildren(el(`
       <header class="top">${brandHtml()}<span class="pill bank" aria-label="Suas moedinhas">🪙 ${bank()}</span></header>
@@ -866,9 +877,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         </div>
       </section>
       <nav class="menu">
-        <button class="btn" id="go"><span class="big">${played ? "⭐" : `<svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#fff" opacity=".25"/><path d="M15 11 L30 20 L15 29 Z" fill="#fff"/></svg>`}</span><span class="txt">${main}<small>${mainSub}</small></span></button>
+        <button class="btn" id="go"><span class="big">${`<svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#fff" opacity=".25"/><path d="M15 11 L30 20 L15 29 Z" fill="#fff"/></svg>`}</span><span class="txt">${main}<small>${mainSub}</small></span></button>
         <button class="btn sun" id="levels"><span class="big">🎮</span><span class="txt">Níveis<small>🐣 🦊 🦁</small></span></button>
         <button class="btn ghost" id="shopBtn"><span class="big">🏪</span><span class="txt">Minha lojinha<small>🪙 ${bank()} moedinhas</small></span></button>
+        ${played ? `<button class="btn ghost" id="rankBtn"><span class="big">🏆</span><span class="txt">Ranking de hoje<small>seu melhor: ${fmtTime(played.score.total)}</small></span></button>` : ""}
       </nav>
       ${togglesHtml()}
       <button class="parents" id="parents"><span class="fill"></span>👨‍👩‍👧 Área dos pais (segure)</button>
@@ -877,8 +889,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     speak(greet);
     document.getElementById("go").addEventListener("click", () => {
       enterScreen();
-      if (played) renderResult(played); else startGame(null);
+      startGame(null);
     });
+    const rankBtn = document.getElementById("rankBtn");
+    if (rankBtn) rankBtn.addEventListener("click", () => { enterScreen(); renderResult({ ...played, fromMenu: true }); });
     document.getElementById("levels").addEventListener("click", () => { enterScreen(); renderLevels(); });
     document.getElementById("shopBtn").addEventListener("click", () => { enterScreen(); renderShop(); });
     bindHold(document.getElementById("parents"), () => { enterScreen(); renderParents(); });
@@ -891,6 +905,53 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     btn.addEventListener("pointerdown", () => { btn.classList.add("holding"); timer = setTimeout(() => { stop(); open(); }, 2000); });
     ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => btn.addEventListener(ev, stop));
     btn.addEventListener("keydown", (e) => { if (e.key === "Enter") open(); });
+  }
+
+  // ---------- Boas-vindas: estado e apelido, só na primeira vez ----------
+  const UF_NOMES = { AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia", CE: "Ceará", DF: "Distrito Federal",
+    ES: "Espírito Santo", GO: "Goiás", MA: "Maranhão", MT: "Mato Grosso", MS: "Mato Grosso do Sul", MG: "Minas Gerais", PA: "Pará",
+    PB: "Paraíba", PR: "Paraná", PE: "Pernambuco", PI: "Piauí", RJ: "Rio de Janeiro", RN: "Rio Grande do Norte", RS: "Rio Grande do Sul",
+    RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina", SP: "São Paulo", SE: "Sergipe", TO: "Tocantins" };
+
+  function renderWelcome(step = 1) {
+    app.classList.remove("game");
+    stopTick();
+    if (step === 1) {
+      const line = "Oi! Eu sou a Moedinha! Pra começar, peça pra um adulto tocar no seu estado.";
+      app.replaceChildren(el(`
+        <header class="top">${brandHtml()}<span class="pill">1 de 2</span></header>
+        <div class="talk">${mascot("happy", "mascot bob")}<p class="bubble" data-speak="${line}">${line} <span class="hear">🔈</span></p></div>
+        <div class="uf-grid">${UFS.map((u) => `<button class="uf-btn" data-uf="${u}"><strong>${u}</strong><small>${UF_NOMES[u]}</small></button>`).join("")}</div>
+        <button class="parents" id="skip">Pular por enquanto</button>
+      `));
+      speak(line);
+      app.querySelectorAll(".uf-btn").forEach((b) => b.addEventListener("click", () => { sfx.tap(); store("tc-uf", b.dataset.uf); renderWelcome(2); }));
+      document.getElementById("skip").addEventListener("click", () => renderWelcome(2));
+      return;
+    }
+    const line = "Agora, o seu apelido no ranking! Toque no dado pra sortear outro. Quando gostar, toque no botão verde.";
+    app.replaceChildren(el(`
+      <header class="top">${brandHtml()}<span class="pill">2 de 2</span></header>
+      <div class="talk">${mascot("happy", "mascot bob")}<p class="bubble" data-speak="${line}">${line} <span class="hear">🔈</span></p></div>
+      <section class="card nick-pick">
+        <p class="eyebrow">Seu apelido</p>
+        <p class="nick-big" id="nickName">${nickName(myNick())}</p>
+        <button class="btn sun" id="dice"><span class="big-dice">🎲</span> Sortear outro</button>
+      </section>
+      <button class="btn" id="done">É esse! Vamos jogar ▶</button>
+    `));
+    speak(line);
+    document.getElementById("dice").addEventListener("click", async () => {
+      await rerollNick(null);
+      const n = document.getElementById("nickName");
+      n.textContent = nickName(myNick());
+      n.classList.remove("pop"); void n.offsetWidth; n.classList.add("pop");
+    });
+    document.getElementById("done").addEventListener("click", () => {
+      store("tc-onboarded", true);
+      sfx.ok();
+      renderStart();
+    });
   }
 
   // ---------- Área dos pais ----------
@@ -999,7 +1060,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
           : shopTab === "balcao" ? `<span class="sw" style="background:${it.bg};box-shadow:inset 0 6px 0 ${it.top}"></span>`
           : it.css ? `<span class="sw" style="background:${it.css} repeat-x top / auto 40%, var(--bg)"></span>`
           : `<span class="sw">${it.text || "🚫"}</span>`;
-        const tag = it.uf ? `<span class="tag">${it.uf}</span>` : "";
+        const tag = "";
         const pr = on ? "✔ Usando" : have ? "Usar" : `🪙 ${it.price}`;
         return `<button class="item${on ? " on" : ""}${!have && it.price > money ? " poor" : ""}" data-id="${it.id}">
           ${sw}${tag}<span class="nm">${it.name}</span><span class="pr">${pr}</span></button>`;
@@ -1097,7 +1158,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     if (!S || S.training) return;
     const t = now();
     store(pauseKey(), {
-      day: S.day, i: S.busy ? S.i + 1 : S.i, results: S.results, wrong: S.wrong, roundWrong: S.roundWrong || 0,
+      day: S.day, attempt: S.attempt, i: S.busy ? S.i + 1 : S.i, results: S.results, wrong: S.wrong, roundWrong: S.roundWrong || 0,
       gameElapsed: t - S.gameStart, roundElapsed: S.busy ? 0 : t - S.roundStart,
     });
   }
@@ -1124,12 +1185,13 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       training, level, seed, rounds: makeRounds(seed, training ? LEVELS[level].tiers : undefined), i: 0, tray: {}, results: [],
       wrong: 0, roundStart: performance.now(), gameStart: performance.now(),
       uf: store("tc-uf") || null, day: todayKey(),
+      attempt: training ? null : Math.random().toString(36).slice(2, 10) + Date.now().toString(36),
     };
     const paused = training ? null : pausedGame();
     if (paused) {
       const now = performance.now();
       Object.assign(S, {
-        i: paused.i, results: paused.results, wrong: paused.wrong, roundWrong: paused.roundWrong,
+        i: paused.i, results: paused.results, wrong: paused.wrong, roundWrong: paused.roundWrong, attempt: paused.attempt || S.attempt,
         gameStart: now - paused.gameElapsed, roundStart: now - paused.roundElapsed,
       });
     }
@@ -1320,8 +1382,22 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 
   function finish() {
     stopTick();
-    const res = { day: S.day, uf: S.uf, training: S.training, level: S.level, results: S.results, score: scoreOf(S.results) };
-    if (!S.training) { store("tc-day-" + S.day, res); clearProgress(); }
+    const res = { day: S.day, uf: S.uf, training: S.training, level: S.level, attempt: S.attempt, results: S.results, score: scoreOf(S.results) };
+    if (!S.training) {
+      // Pode jogar de novo: no ranking vale o melhor tempo do dia
+      const prev = store("tc-day-" + S.day);
+      res.firstToday = !prev;
+      res.isBest = !prev || res.score.total < prev.score.total;
+      res.prevBest = prev ? prev.score.total : null;
+      if (res.isBest) store("tc-day-" + S.day, res);
+      else {
+        // Não bateu o recorde: esta partida não vai para o ranking. Se o recorde
+        // ainda não chegou ao servidor (estava sem internet), envia o recorde.
+        res.sent = true;
+        if (!prev.sent) setTimeout(() => syncRanking({ ...prev, isBest: true }), 300);
+      }
+      clearProgress();
+    }
     if (S.level) {
       const next = LEVEL_ORDER[LEVEL_ORDER.indexOf(S.level) + 1];
       const wasOpen = next ? isOpen(next) : true;
@@ -1372,7 +1448,9 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         <div class="score">${fmtTime(sc.total)}</div>
         <div class="stats">
           <span class="stat">✅ ${perfect} de 5 perfeitos</span>
-          ${res.coins ? `<span class="stat earned-stat">🪙 +${res.coins} moedinhas</span>` : ""}
+          ${res.coins && !res.fromMenu ? `<span class="stat earned-stat">🪙 +${res.coins} moedinhas</span>` : ""}
+          ${!res.level && !res.fromMenu && res.isBest && res.prevBest ? `<span class="stat earned-stat">🏅 Novo recorde!</span>` : ""}
+          ${!res.level && !res.fromMenu && !res.isBest && res.prevBest ? `<span class="stat">🏅 Seu recorde: ${fmtTime(res.prevBest)}</span>` : ""}
           ${sc.wrong ? `<span class="stat">❌ ${sc.wrong} ${sc.wrong === 1 ? "erro" : "erros"} (+${sc.wrong * 5}s)</span>` : ""}
           ${sc.extra ? `<span class="stat">🪙 ${sc.extra} ${sc.extra === 1 ? "peça" : "peças"} a mais (+${sc.extra * 2}s)</span>` : ""}
         </div>
@@ -1386,10 +1464,10 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       </section>` : `
       <section class="card daily">
         <h2>📅 Como funciona o desafio do dia</h2>
-        <p>Todo mundo do Brasil recebe os <strong>mesmos 5 clientes</strong> no dia. Ele vale <strong>1 vez por dia</strong> pro ranking, pra ser justo com todos.</p>
+        <p>Todo mundo do Brasil recebe os <strong>mesmos 5 clientes</strong> no dia. Jogue quantas vezes quiser: no ranking fica o <strong>seu melhor tempo</strong>.</p>
         <p>Um desafio novo chega em:</p>
         <div class="countdown" id="next">--:--:--</div>
-        <p>Enquanto isso, <strong>jogue os níveis quantas vezes quiser</strong>!</p>
+        <p>Até lá, tente bater o seu recorde ou jogue os níveis!</p>
       </section>
       <section class="card">
         <h2>📣 Mostre pros amigos</h2>
@@ -1415,13 +1493,13 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       ${nextLevel(res) ? `<button class="btn" id="nextLv">▶ Próximo: ${LEVELS[nextLevel(res)].emoji} ${LEVELS[nextLevel(res)].name}</button>` : ""}
       <button class="btn ghost" id="shopBtn">🏪 Gastar na lojinha<small>você tem 🪙 ${bank()} moedinhas</small></button>
       <div class="row">
-        ${res.level ? `<button class="btn sun" id="again">🔁 De novo</button>` : `<button class="btn sun" id="levels">🎮 Níveis</button>`}
+        <button class="btn sun" id="again">🔁 De novo</button>
         <button class="btn ghost" id="home">🏠 Início</button>
       </div>
     `));
     const on = (id, fn) => { const b = document.getElementById(id); if (b) b.addEventListener("click", fn); };
     on("nextLv", () => startGame(nextLevel(res)));
-    on("again", () => startGame(res.level));
+    on("again", () => startGame(res.level || null));
     on("levels", () => { enterScreen(); renderLevels(); });
     on("shopBtn", () => { enterScreen(); renderShop(); });
     document.getElementById("home").addEventListener("click", goBack);
@@ -1433,7 +1511,11 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
     });
     if (!res.training) { startCountdown(res); syncRanking(res); }
-    if (res.coins && !res.spoken) { res.spoken = true; setTimeout(() => speak(`${cheer} Você ganhou ${res.coins} moedinhas!`), 900); }
+    if (res.coins && !res.spoken && !res.fromMenu) {
+      res.spoken = true;
+      const rec = !res.level && res.isBest && res.prevBest ? " Novo recorde!" : "";
+      setTimeout(() => speak(`${cheer}${rec} Você ganhou ${res.coins} moedinhas!`), 900);
+    }
   }
 
   // ---------- Ranking (servidor) ----------
@@ -1473,7 +1555,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function ping(tipo, round) {
     if (!S || S.training) return;
     const url = (window.TROCO_API || "") + "api/evento";
-    const body = JSON.stringify({ day: S.day, playerId: playerId(), round, tipo });
+    const body = JSON.stringify({ day: S.day, playerId: playerId(), round, tipo, tentativa: S.attempt });
     try {
       if (tipo === "pausa" && navigator.sendBeacon) { navigator.sendBeacon(url, new Blob([body], { type: "text/plain" })); return; }
       fetch(url, { method: "POST", body, keepalive: true, headers: { "Content-Type": "text/plain" } }).catch(() => {});
@@ -1533,12 +1615,12 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     try {
       let ranking;
       if (!res.sent) {
-        const body = { day: res.day, uf: res.uf, playerId: playerId(), nick: myNick(), rounds: res.results.map((r) => ({ pieces: r.tray || {}, ms: r.ms, wrong: r.wrong })) };
+        const body = { day: res.day, uf: res.uf, playerId: playerId(), nick: myNick(), tentativa: res.attempt, rounds: res.results.map((r) => ({ pieces: r.tray || {}, ms: r.ms, wrong: r.wrong })) };
         const integrity = await getIntegrity();
         if (integrity) body.integrity = integrity;
         const { status, data } = await api("api/resultado", { method: "POST", body: JSON.stringify(body) });
-        if (status === 201 || status === 409) { res.sent = true; store("tc-day-" + res.day, res); ranking = data.ranking; }
-        else if (status === 400 || status === 403) { res.sent = true; store("tc-day-" + res.day, res); throw new Error(data.error || "Resultado recusado."); }
+        if (status === 201 || status === 200 || status === 409) { res.sent = true; if (res.isBest) store("tc-day-" + res.day, res); ranking = data.ranking; }
+        else if (status === 400 || status === 403) { res.sent = true; if (res.isBest) store("tc-day-" + res.day, res); throw new Error(data.error || "Resultado recusado."); }
         else throw new Error("offline");
       }
       if (!ranking) {
@@ -1611,7 +1693,17 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function startTick() { stopTick(); tick = setInterval(paintClock, 100); }
   function stopTick() { if (tick) clearInterval(tick); tick = null; }
 
+  // Itens comprados na versão que separava o Brasil por estado ganham os códigos novos
+  function migrateItems() {
+    const map = window.Regional.ANTIGOS, own = store("tc-owned") || [], d = store("tc-deco") || {};
+    if (!own.some((id) => map[id]) && !map[d.estado]) return;
+    store("tc-owned", [...new Set(own.map((id) => map[id] || id))]);
+    if (map[d.estado]) store("tc-deco", { ...d, estado: map[d.estado] });
+  }
+
   function boot() {
+    migrateItems();
+    if (!store("tc-onboarded")) { if (!Object.keys(buffers).length) loadSounds(); return renderWelcome(1); }
     if (!Object.keys(buffers).length) loadSounds();
     const played = store("tc-day-" + todayKey());
     renderStart();
