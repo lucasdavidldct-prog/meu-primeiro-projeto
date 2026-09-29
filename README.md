@@ -55,7 +55,7 @@ O GitHub gera o APK sozinho a cada mudança em `public/` ou `android/` (workflow
 - O endereço do servidor vem de `TROCO_API_URL`. Se o Render der outro nome, crie essa variável em *Settings > Secrets and variables > Actions > Variables* e rode o workflow de novo.
 - O APK é assinado com uma chave de teste (`android/app/teste.keystore`), então versões novas instalam por cima. Para a Play Store, será preciso uma chave própria, guardada fora do repositório.
 
-Para gerar no computador: copie `public/*` para `android/app/src/main/assets/` e rode `gradle assembleRelease` dentro de `android/` (precisa do Android SDK).
+Para gerar no computador: copie o conteúdo de `public/` (com a pasta `fonts/`) para `android/app/src/main/assets/` e rode `gradle assembleRelease` dentro de `android/` (precisa do Android SDK).
 
 ## Próximos passos
 

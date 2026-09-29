@@ -31,7 +31,7 @@ jobs:
       - name: Copiar o jogo para dentro do app
         run: |
           mkdir -p android/app/src/main/assets
-          cp public/* android/app/src/main/assets/
+          cp -r public/. android/app/src/main/assets/
           url="${TROCO_API_URL%/}/"
           echo "window.TROCO_API = \"$url\";" > android/app/src/main/assets/config.js
           cat android/app/src/main/assets/config.js
