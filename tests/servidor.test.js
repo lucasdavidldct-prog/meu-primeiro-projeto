@@ -104,3 +104,9 @@ test("serve o jogo e bloqueia acesso fora da pasta pública", async () => {
   assert.strictEqual((await fetch(base + "/regras.js")).status, 200);
   assert.notStrictEqual((await fetch(base + "/..%2fserver.js")).status, 200);
 });
+
+test("libera o acesso da API para o app Android (CORS)", async () => {
+  const r = await fetch(base + "/api/resultado", { method: "OPTIONS" });
+  assert.strictEqual(r.status, 204);
+  assert.strictEqual(r.headers.get("access-control-allow-origin"), "*");
+});

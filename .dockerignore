@@ -2,3 +2,5 @@ dados
 node_modules
 .git
 tests
+android
+.github

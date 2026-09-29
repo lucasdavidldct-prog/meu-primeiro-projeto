@@ -160,6 +160,7 @@ tr.me td { font-weight: 700; color: var(--accent); }
 <body>
 <main class="app" id="app"></main>
 
+<script src="config.js"></script>
 <script src="regras.js"></script>
 <script>
 (function () {
@@ -414,7 +415,7 @@ tr.me td { font-weight: 700; color: var(--accent); }
   }
 
   async function api(path, opts) {
-    const r = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+    const r = await fetch((window.TROCO_API || "") + path, { headers: { "Content-Type": "application/json" }, ...opts });
     const data = await r.json().catch(() => ({}));
     return { status: r.status, data };
   }

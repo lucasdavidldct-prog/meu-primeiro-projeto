@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'app.trococerto'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'app.trococerto'
+        minSdk 26
+        targetSdk 35
+        // Cada build do GitHub ganha um número maior, para o celular aceitar a atualização
+        versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger())
+        versionName '0.1.0'
+    }
+
+    // Chave SÓ PARA TESTES: permite instalar versões novas por cima da antiga.
+    // Para a Play Store, gere uma chave própria e guarde-a fora do repositório.
+    signingConfigs {
+        teste {
+            storeFile file('teste.keystore')
+            storePassword 'trococerto'
+            keyAlias 'teste'
+            keyPassword 'trococerto'
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.teste
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}

@@ -161,6 +161,13 @@ async function handle(req, res) {
   const url = new URL(req.url, "http://localhost");
   const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress;
 
+  if (url.pathname.startsWith("/api/")) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
+  }
+
   if (url.pathname === "/api/saude") return sendJson(res, 200, { ok: true, hoje: dayKeyBrasilia() });
 
   if (url.pathname === "/api/resultado" && req.method === "POST") {

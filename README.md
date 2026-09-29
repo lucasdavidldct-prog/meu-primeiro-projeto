@@ -35,15 +35,27 @@ API:
 - `GET /api/ranking?day=AAAA-MM-DD&uf=SP&playerId=...`
 - `GET /api/saude`
 
-## Colocar no ar
+## Colocar no ar (Render, plano grátis)
 
-O servidor precisa de um **disco que não se apaga**, porque os resultados ficam num arquivo. Opções:
+1. Crie uma conta em [render.com](https://render.com) entrando com o GitHub.
+2. Clique em **New > Blueprint** e escolha este repositório e o branch com o código.
+3. O Render lê o `render.yaml` e cria o serviço `troco-certo`. Em alguns minutos o jogo fica em `https://troco-certo.onrender.com` (ou um nome parecido, se esse já existir).
 
-1. **VPS** (a mais barata para rodar direto, cerca de R$ 25 a R$ 40 por mês): instale o Node, clone o repositório e rode `npm start` com [pm2](https://pm2.keymetrics.io) para ficar sempre ligado.
-2. **Railway ou Fly.io**: usam o `Dockerfile` deste repositório. Crie um volume montado em `/data` (o servidor já grava lá via `DATA_DIR=/data`).
-3. **Render (plano grátis)**: serve para testar com amigos, mas o disco grátis é apagado quando o servidor reinicia, e o ranking some junto.
+Limites do plano grátis:
+- O servidor dorme depois de 15 minutos sem uso. O primeiro acesso depois disso demora cerca de 1 minuto.
+- O disco é apagado quando o servidor reinicia ou recebe código novo, e o ranking some junto. Serve para testar com amigos. Para valer, use um VPS ou um serviço com disco (`Dockerfile` pronto, com volume em `/data`).
 
 Variáveis de ambiente: `PORT` (padrão 3000) e `DATA_DIR` (padrão `./dados`).
+
+## App Android (APK)
+
+O GitHub gera o APK sozinho a cada mudança em `public/` ou `android/` (workflow `.github/workflows/apk.yml`) e publica na página de Releases, com o nome **Troco Certo (teste)**.
+
+- O jogo vai dentro do APK e abre na hora, mesmo sem internet. Só o ranking usa o servidor.
+- O endereço do servidor vem de `TROCO_API_URL`. Se o Render der outro nome, crie essa variável em *Settings > Secrets and variables > Actions > Variables* e rode o workflow de novo.
+- O APK é assinado com uma chave de teste (`android/app/teste.keystore`), então versões novas instalam por cima. Para a Play Store, será preciso uma chave própria, guardada fora do repositório.
+
+Para gerar no computador: copie `public/*` para `android/app/src/main/assets/` e rode `gradle assembleRelease` dentro de `android/` (precisa do Android SDK).
 
 ## Próximos passos
 

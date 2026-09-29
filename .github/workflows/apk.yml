@@ -1,0 +1,60 @@
+name: APK Android
+
+on:
+  push:
+    branches: [main, ccr-98223ada-60woal]
+    paths: ["android/**", "public/**", ".github/workflows/apk.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      # Endereço do servidor no Render. Para trocar sem mexer no código, crie a variável
+      # TROCO_API_URL em Settings > Secrets and variables > Actions > Variables.
+      TROCO_API_URL: ${{ vars.TROCO_API_URL || 'https://troco-certo.onrender.com/' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.14.3
+
+      - name: Copiar o jogo para dentro do app
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp public/* android/app/src/main/assets/
+          url="${TROCO_API_URL%/}/"
+          echo "window.TROCO_API = \"$url\";" > android/app/src/main/assets/config.js
+          cat android/app/src/main/assets/config.js
+
+      - name: Gerar o APK
+        working-directory: android
+        run: gradle assembleRelease --no-daemon
+
+      - name: Renomear
+        run: cp android/app/build/outputs/apk/release/app-release.apk troco-certo.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: troco-certo-apk
+          path: troco-certo.apk
+
+      - name: Publicar para baixar no celular
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk-teste --yes --cleanup-tag || true
+          gh release create apk-teste troco-certo.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Troco Certo (teste)" \
+            --notes "APK de teste gerado a partir do commit $GITHUB_SHA. Servidor: $TROCO_API_URL"

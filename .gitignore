@@ -1,2 +1,8 @@
 dados/
 node_modules/
+
+# gerado no build do APK
+android/app/src/main/assets/
+android/.gradle/
+android/build/
+android/app/build/
