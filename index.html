@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Troco Certo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;700&display=swap">
+<style>
+/* Layout: uma tela de app estreita (max 440px) — cabeçalho, cupom fiscal, bandeja do troco, gaveta do caixa. */
+:root {
+  --bg: #eef1ea;          /* papel-moeda claro */
+  --surface: #ffffff;
+  --ink: #1d2a22;
+  --muted: #5d6b61;
+  --line: #d3dacf;
+  --accent: #0d7148;      /* verde caixa */
+  --accent-ink: #ffffff;
+  --good: #1f8a4c;
+  --warn: #b7791f;
+  --bad: #c0392b;
+  --receipt: #fffdf6;
+  --font-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* cores das cédulas do Real (iguais nos dois temas: são a própria nota) */
+  --n2: #5f7f9c; --n5: #7a5a9a; --n10: #b8413a; --n20: #d9962b; --n50: #a8733a; --n100: #2f6fae;
+  --coin-silver: #c9ccd1; --coin-gold: #d6ad4a; --coin-copper: #b8744a; --coin-edge: #7d6a3d;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111713; --surface: #1a221d; --ink: #e8efe9; --muted: #9aa89e; --line: #2c3830;
+    --accent: #37b37b; --accent-ink: #08140d; --good: #4cc27e; --warn: #e0aa4c; --bad: #ef6b5d;
+    --receipt: #20291f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111713; --surface: #1a221d; --ink: #e8efe9; --muted: #9aa89e; --line: #2c3830;
+  --accent: #37b37b; --accent-ink: #08140d; --good: #4cc27e; --warn: #e0aa4c; --bad: #ef6b5d;
+  --receipt: #20291f; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+}
+.app { max-width: 440px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 32px; display: flex; flex-direction: column; gap: 16px; }
+h1, h2 { font-family: var(--font-display); margin: 0; line-height: 1.05; text-wrap: balance; }
+h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.3rem; font-weight: 600; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+header.top .brand { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 0.85rem; font-weight: 700; }
+
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn { border: 0; border-radius: 12px; padding: 14px 18px; font-weight: 700; font-size: 1.05rem; background: var(--accent); color: var(--accent-ink); width: 100%; }
+.btn:active { transform: translateY(1px); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.small { padding: 10px 14px; font-size: 0.95rem; width: auto; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > .btn { flex: 1 1 140px; }
+
+/* Início */
+.hero { display: flex; flex-direction: column; gap: 10px; padding-block: 8px; }
+.how { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.how li { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start; }
+.how .k { font-family: var(--font-display); font-weight: 800; color: var(--accent); }
+label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 0.9rem; }
+select { font: inherit; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+
+/* Cupom */
+.receipt {
+  background: var(--receipt); border: 1px solid var(--line); border-radius: 4px;
+  padding: 14px 16px; display: grid; gap: 4px; position: relative;
+  font-variant-numeric: tabular-nums;
+}
+.receipt::after { /* serrilhado do cupom */
+  content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 8px;
+  background: radial-gradient(circle at 6px -2px, transparent 6px, var(--receipt) 6.5px) 0 0 / 12px 8px repeat-x;
+}
+.receipt .line { display: flex; justify-content: space-between; gap: 12px; }
+.receipt .big { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; }
+.receipt .dash { border-top: 1px dashed var(--line); margin-block: 6px; }
+.round-dots { display: flex; gap: 6px; }
+.round-dots span { width: 22px; height: 6px; border-radius: 3px; background: var(--line); }
+.round-dots span.done { background: var(--accent); }
+.round-dots span.now { background: var(--ink); }
+
+/* Bandeja */
+.tray { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 10px; min-height: 108px; }
+.tray-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.tray-sum { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.tray-items { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; }
+.tray-items .empty { color: var(--muted); font-size: 0.9rem; align-self: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-weight: 700; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.chip .x { color: var(--muted); font-weight: 500; }
+.tray.shake { animation: shake 0.35s; border-color: var(--bad); }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.flash { font-weight: 700; font-size: 0.9rem; min-height: 1.3em; }
+.flash.bad { color: var(--bad); }
+.flash.good { color: var(--good); }
+
+/* Gaveta do caixa */
+.drawer { display: grid; gap: 10px; }
+.notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.coins { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; justify-items: center; }
+.note {
+  border: 0; border-radius: 8px; aspect-ratio: 2 / 1; max-width: 100%; color: #fff;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
+  padding: 6px 8px; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.25);
+  position: relative; overflow: hidden;
+}
+.note::before { content: ""; position: absolute; right: -14px; top: -14px; width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.18); }
+.note .v { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; line-height: 1; }
+.note .a { font-size: 0.68rem; opacity: 0.9; font-weight: 500; }
+.coin {
+  border: 0; width: 100%; max-width: 64px; aspect-ratio: 1; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 800; font-size: 0.85rem; color: #2b2410;
+  box-shadow: inset 0 0 0 3px var(--coin-edge), 0 2px 0 rgba(0,0,0,0.15);
+  font-variant-numeric: tabular-nums;
+}
+.coin.bi { background: radial-gradient(circle, var(--coin-silver) 0 55%, var(--coin-gold) 56%); }
+.coin.silver { background: var(--coin-silver); box-shadow: inset 0 0 0 3px #8f949b, 0 2px 0 rgba(0,0,0,0.15); }
+.coin.gold { background: var(--coin-gold); }
+.coin.copper { background: var(--coin-copper); color: #fff; box-shadow: inset 0 0 0 3px #7a4527, 0 2px 0 rgba(0,0,0,0.15); }
+.note:active, .coin:active { transform: scale(0.96); }
+
+/* Resultado */
+.score { font-family: var(--font-display); font-size: 3.2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.squares { font-size: 1.8rem; letter-spacing: 2px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+td.ok { color: var(--good); font-weight: 700; }
+td.meh { color: var(--warn); font-weight: 700; }
+.note-box { font-size: 0.85rem; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; }
+.share-text { width: 100%; font: inherit; font-size: 0.85rem; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: none; }
+a { color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tray.shake { animation: none; }
+  .note:active, .coin:active, .btn:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<main class="app" id="app"></main>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Utilidades ----------
+  const LAUNCH = new Date(2026, 8, 29); // 29/09/2026 = desafio nº 1
+  const DAY = 86400000;
+  const UFS = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+
+  // Denominações em centavos (sem a nota de 200: o troco máximo é menor que isso)
+  const DENOMS = [
+    { c: 10000, kind: "note", color: "var(--n100)", animal: "garoupa" },
+    { c: 5000,  kind: "note", color: "var(--n50)",  animal: "onça-pintada" },
+    { c: 2000,  kind: "note", color: "var(--n20)",  animal: "mico-leão" },
+    { c: 1000,  kind: "note", color: "var(--n10)",  animal: "arara" },
+    { c: 500,   kind: "note", color: "var(--n5)",   animal: "garça" },
+    { c: 200,   kind: "note", color: "var(--n2)",   animal: "tartaruga" },
+    { c: 100,   kind: "coin", cls: "bi" },
+    { c: 50,    kind: "coin", cls: "silver" },
+    { c: 25,    kind: "coin", cls: "gold" },
+    { c: 10,    kind: "coin", cls: "gold" },
+    { c: 5,     kind: "coin", cls: "copper" },
+  ];
+
+  const brl = (c) => "R$ " + (c / 100).toFixed(2).replace(".", ",");
+  const coinLabel = (c) => c >= 100 ? "R$" + c / 100 : c + "¢";
+  const secs = (ms) => (ms / 1000).toFixed(1).replace(".", ",") + "s";
+
+  function store(key, val) {
+    try {
+      if (val === undefined) { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+      localStorage.setItem(key, JSON.stringify(val));
+    } catch (e) { return null; }
+  }
+
+  function todayKey(d = new Date()) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function challengeNumber(d = new Date()) {
+    const mid = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    return Math.max(1, Math.round((mid - LAUNCH) / DAY) + 1);
+  }
+
+  // RNG determinístico: mesma data => mesmo desafio para todo mundo
+  function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  const TIERS = [
+    { min: 150,  max: 900,   pays: [1000, 2000], extraCoins: false },
+    { min: 600,  max: 1900,  pays: [2000, 5000], extraCoins: true },
+    { min: 1200, max: 4600,  pays: [5000, 10000], extraCoins: true },
+    { min: 3000, max: 9600,  pays: [10000], extraCoins: true },
+    { min: 6000, max: 18900, pays: [20000], extraCoins: false },
+  ];
+
+  function makeRounds(seedStr) {
+    const rng = mulberry32(hashStr(seedStr));
+    const randInt = (a, b) => a + Math.floor(rng() * (b - a + 1));
+    return TIERS.map((t) => {
+      const price = 5 * randInt(t.min / 5, t.max / 5);
+      const options = t.pays.filter((p) => p > price);
+      let paid = options[randInt(0, options.length - 1)];
+      // Às vezes o cliente "facilita" e completa com as moedas dos centavos
+      const cents = price % 100;
+      if (t.extraCoins && cents !== 0 && rng() < 0.45) paid += cents;
+      return { price, paid, change: paid - price };
+    });
+  }
+
+  // Menor número de peças para um valor (programação dinâmica)
+  function minPieces(amount) {
+    const n = amount / 5, dp = new Array(n + 1).fill(Infinity); dp[0] = 0;
+    for (let i = 1; i <= n; i++) for (const d of DENOMS) { const k = d.c / 5; if (k <= i && dp[i - k] + 1 < dp[i]) dp[i] = dp[i - k] + 1; }
+    return dp[n];
+  }
+
+  const WRONG_PENALTY = 5000;  // 5s por troco errado
+  const EXTRA_PENALTY = 2000;  // 2s por peça a mais que o mínimo
+
+  // ---------- Estado ----------
+  const app = document.getElementById("app");
+  let S = null;       // partida em andamento
+  let tick = null;
+
+  function el(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content; }
+
+  // ---------- Telas ----------
+  function renderStart() {
+    stopTick();
+    const num = challengeNumber();
+    const uf = store("tc-uf") || "SP";
+    app.replaceChildren(el(`
+      <header class="top"><span class="brand">Troco Certo</span><span class="pill num">Desafio #${num}</span></header>
+      <section class="hero">
+        <p class="eyebrow">Desafio do dia · igual para todo o Brasil</p>
+        <h1>Você é bom de troco?</h1>
+        <p class="muted">5 clientes. Faça a conta de cabeça e devolva o troco com as notas e moedas do caixa, o mais rápido que conseguir.</p>
+      </section>
+      <ol class="how">
+        <li><span class="k">1</span><span>Veja o preço e quanto o cliente pagou.</span></li>
+        <li><span class="k">2</span><span>Toque nas notas e moedas para montar o troco.</span></li>
+        <li><span class="k">3</span><span>Troco errado custa +5s. Cada peça além do mínimo, +2s.</span></li>
+      </ol>
+      <label class="field" for="uf">Seu estado (para o ranking)
+        <select id="uf">${UFS.map((u) => `<option ${u === uf ? "selected" : ""}>${u}</option>`).join("")}</select>
+      </label>
+      <button class="btn" id="go">Abrir o caixa</button>
+      <button class="btn ghost" id="train">Treinar com clientes aleatórios</button>
+    `));
+    document.getElementById("uf").addEventListener("change", (e) => store("tc-uf", e.target.value));
+    document.getElementById("go").addEventListener("click", () => startGame(false));
+    document.getElementById("train").addEventListener("click", () => startGame(true));
+  }
+
+  function startGame(training) {
+    const seed = training ? "treino-" + Date.now() : "troco-" + todayKey();
+    S = {
+      training, rounds: makeRounds(seed), i: 0, tray: {}, results: [],
+      wrong: 0, roundStart: performance.now(), gameStart: performance.now(),
+      uf: store("tc-uf") || "SP", num: challengeNumber(), day: todayKey(),
+    };
+    renderRound();
+    startTick();
+  }
+
+  function traySum() { return Object.entries(S.tray).reduce((a, [c, n]) => a + Number(c) * n, 0); }
+  function trayCount() { return Object.values(S.tray).reduce((a, n) => a + n, 0); }
+
+  function renderRound() {
+    const r = S.rounds[S.i];
+    const dots = S.rounds.map((_, k) => `<span class="${k < S.i ? "done" : k === S.i ? "now" : ""}"></span>`).join("");
+    app.replaceChildren(el(`
+      <header class="top">
+        <span class="brand">${S.training ? "Treino" : "Desafio #" + S.num}</span>
+        <span class="pill num" id="clock">0,0s</span>
+      </header>
+      <div class="round-dots" aria-label="Cliente ${S.i + 1} de 5">${dots}</div>
+      <section class="receipt" aria-label="Cupom do cliente ${S.i + 1}">
+        <div class="line"><span class="eyebrow">Cliente ${S.i + 1} de 5</span><span class="muted">Cupom não fiscal</span></div>
+        <div class="line"><span>Total da compra</span><span class="big">${brl(r.price)}</span></div>
+        <div class="line"><span>Cliente pagou</span><span class="big">${brl(r.paid)}</span></div>
+        <div class="dash"></div>
+        <div class="line"><span class="muted">Troco</span><span class="muted">?</span></div>
+      </section>
+      <section class="tray" id="tray">
+        <div class="tray-head"><span class="eyebrow">Troco na mão</span><span class="tray-sum" id="sum">R$ 0,00</span></div>
+        <div class="tray-items" id="items"></div>
+        <div class="flash" id="flash" aria-live="polite"></div>
+      </section>
+      <div class="row">
+        <button class="btn ghost small" id="clear">Limpar</button>
+        <button class="btn" id="give" style="flex:3 1 160px">Entregar troco</button>
+      </div>
+      <section class="drawer" aria-label="Gaveta do caixa">
+        <div class="notes">${DENOMS.filter((d) => d.kind === "note").map((d) => `
+          <button class="note" data-c="${d.c}" style="background:${d.color}" aria-label="Nota de ${brl(d.c)}">
+            <span class="v">${d.c / 100}</span><span class="a">${d.animal}</span>
+          </button>`).join("")}
+        </div>
+        <div class="coins">${DENOMS.filter((d) => d.kind === "coin").map((d) => `
+          <button class="coin ${d.cls}" data-c="${d.c}" aria-label="Moeda de ${brl(d.c)}">${coinLabel(d.c)}</button>`).join("")}
+        </div>
+      </section>
+    `));
+    app.querySelectorAll("[data-c]").forEach((b) => b.addEventListener("click", () => addPiece(Number(b.dataset.c))));
+    document.getElementById("clear").addEventListener("click", () => { S.tray = {}; paintTray(); });
+    document.getElementById("give").addEventListener("click", deliver);
+    paintTray();
+    paintClock();
+  }
+
+  function addPiece(c) { S.tray[c] = (S.tray[c] || 0) + 1; paintTray(); }
+  function removePiece(c) { S.tray[c]--; if (S.tray[c] <= 0) delete S.tray[c]; paintTray(); }
+
+  function paintTray() {
+    document.getElementById("sum").textContent = brl(traySum());
+    const items = document.getElementById("items");
+    const entries = Object.entries(S.tray).sort((a, b) => b[0] - a[0]);
+    if (!entries.length) { items.innerHTML = `<span class="empty">Toque nas notas e moedas abaixo</span>`; return; }
+    items.replaceChildren(...entries.map(([c, n]) => {
+      const b = document.createElement("button");
+      b.className = "chip";
+      b.setAttribute("aria-label", `Tirar uma de ${brl(Number(c))}`);
+      b.innerHTML = `${n > 1 ? n + "× " : ""}${brl(Number(c))} <span class="x">×</span>`;
+      b.addEventListener("click", () => removePiece(Number(c)));
+      return b;
+    }));
+  }
+
+  function flash(msg, kind) {
+    const f = document.getElementById("flash");
+    f.textContent = msg; f.className = "flash " + kind;
+  }
+
+  function deliver() {
+    const r = S.rounds[S.i];
+    const sum = traySum();
+    if (sum !== r.change) {
+      S.wrong++;
+      const tray = document.getElementById("tray");
+      tray.classList.remove("shake"); void tray.offsetWidth; tray.classList.add("shake");
+      flash(sum > r.change ? "Troco a mais! O cliente agradece, o caixa não. +5s" : "Faltou troco! +5s", "bad");
+      S.roundWrong = (S.roundWrong || 0) + 1;
+      return;
+    }
+    const now = performance.now();
+    const pieces = trayCount(), best = minPieces(r.change);
+    S.results.push({ ...r, ms: now - S.roundStart, pieces, best, wrong: S.roundWrong || 0 });
+    S.roundWrong = 0; S.tray = {}; S.i++; S.roundStart = now;
+    if (S.i >= S.rounds.length) return finish();
+    renderRound();
+  }
+
+  function scoreOf(results) {
+    const raw = results.reduce((a, r) => a + r.ms, 0);
+    const wrong = results.reduce((a, r) => a + r.wrong, 0);
+    const extra = results.reduce((a, r) => a + (r.pieces - r.best), 0);
+    return { raw, wrong, extra, total: raw + wrong * WRONG_PENALTY + extra * EXTRA_PENALTY };
+  }
+
+  function finish() {
+    stopTick();
+    const res = { num: S.num, day: S.day, uf: S.uf, training: S.training, results: S.results, score: scoreOf(S.results) };
+    if (!S.training) store("tc-day-" + S.day, res);
+    renderResult(res);
+  }
+
+  function squares(results) { return results.map((r) => (r.wrong === 0 && r.pieces === r.best) ? "🟩" : "🟨").join(""); }
+
+  function shareText(res) {
+    return `Troco Certo #${res.num} (${res.uf})\n${squares(res.results)}\n⏱️ ${secs(res.score.total)}\nVocê é bom de troco?`;
+  }
+
+  function renderResult(res) {
+    const sc = res.score;
+    const perfect = res.results.filter((r) => r.wrong === 0 && r.pieces === r.best).length;
+    const rows = res.results.map((r, k) => {
+      const ok = r.wrong === 0 && r.pieces === r.best;
+      return `<tr><td>${k + 1}</td><td>${brl(r.price)}</td><td>${brl(r.paid)}</td><td>${brl(r.change)}</td>
+        <td class="${ok ? "ok" : "meh"}">${r.pieces}/${r.best}${r.wrong ? " · " + r.wrong + "✗" : ""}</td><td>${secs(r.ms)}</td></tr>`;
+    }).join("");
+    const text = shareText(res);
+    app.replaceChildren(el(`
+      <header class="top"><span class="brand">Troco Certo</span><span class="pill num">${res.training ? "Treino" : "Desafio #" + res.num}</span></header>
+      <section class="hero">
+        <p class="eyebrow">${res.training ? "Resultado do treino" : "Seu resultado de hoje"}</p>
+        <div class="score">${secs(sc.total)}</div>
+        <div class="squares" aria-label="${perfect} de 5 trocos perfeitos">${squares(res.results)}</div>
+        <p class="muted num">${secs(sc.raw)} de caixa · ${sc.wrong} troco(s) errado(s) (+${sc.wrong * 5}s) · ${sc.extra} peça(s) a mais (+${sc.extra * 2}s)</p>
+      </section>
+      ${res.training ? "" : `
+      <section class="card">
+        <h2>Compartilhe</h2>
+        <textarea class="share-text" id="sharetxt" rows="4" readonly>${text}</textarea>
+        <div class="row">
+          <button class="btn small" id="copy">Copiar resultado</button>
+          <a class="btn ghost small" style="text-align:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">Enviar no WhatsApp</a>
+        </div>
+        <p class="flash good" id="copied" aria-live="polite"></p>
+      </section>`}
+      <section class="card">
+        <h2>Ranking de ${res.uf}</h2>
+        <p class="note-box">No protótipo o ranking ainda não existe: ele precisa de um servidor que junte os resultados de todo mundo. Na versão final, aqui aparecem sua posição no estado e o placar entre os estados.</p>
+      </section>
+      <section class="card">
+        <h2>Cliente por cliente</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Compra</th><th>Pagou</th><th>Troco</th><th>Peças</th><th>Tempo</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+        <p class="muted" style="font-size:.85rem">Peças: quantas você usou / o mínimo possível.</p>
+      </section>
+      ${res.training ? "" : `<p class="muted num" id="next"></p>`}
+      <div class="row">
+        <button class="btn ghost" id="train">Treinar mais</button>
+        ${res.training ? `<button class="btn" id="home">Voltar ao início</button>` : ""}
+      </div>
+    `));
+    document.getElementById("train").addEventListener("click", () => startGame(true));
+    const home = document.getElementById("home");
+    if (home) home.addEventListener("click", boot);
+    const copy = document.getElementById("copy");
+    if (copy) copy.addEventListener("click", () => {
+      const done = () => { document.getElementById("copied").textContent = "Resultado copiado. Cole no grupo!"; };
+      const fallback = () => { const t = document.getElementById("sharetxt"); t.focus(); t.select(); document.getElementById("copied").textContent = "Texto selecionado. Copie e cole no grupo."; };
+      try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+    });
+    if (!res.training) startCountdown();
+  }
+
+  function startCountdown() {
+    const n = document.getElementById("next");
+    const paint = () => {
+      if (!document.body.contains(n)) return stopTick();
+      const now = new Date(), tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      let s = Math.max(0, Math.floor((tom - now) / 1000));
+      if (s === 0) return boot();
+      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); s %= 60;
+      n.textContent = `Próximo desafio em ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    };
+    stopTick(); paint(); tick = setInterval(paint, 1000);
+  }
+
+  // ---------- Relógio ----------
+  function paintClock() {
+    const c = document.getElementById("clock");
+    if (!c || !S) return;
+    const penalty = S.wrong * WRONG_PENALTY;
+    c.textContent = secs(performance.now() - S.gameStart + penalty);
+  }
+  function startTick() { stopTick(); tick = setInterval(paintClock, 100); }
+  function stopTick() { if (tick) clearInterval(tick); tick = null; }
+
+  function boot() {
+    const played = store("tc-day-" + todayKey());
+    if (played) renderResult(played); else renderStart();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
