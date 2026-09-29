@@ -6,7 +6,7 @@
 <title>Troco Certo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&family=VT323&display=swap">
 <style>
 /* Layout: uma tela de app estreita (max 440px), clara e colorida para crianças.
    Tema único de propósito (céu claro), igual no modo escuro do celular. */
@@ -176,7 +176,59 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
 .toplist li { display: flex; justify-content: space-between; padding: 6px 4px; border-bottom: 2px solid var(--bg); }
 .toplist li.me { font-weight: 800; color: var(--accent-dark); }
 
+/* Loja: parede, prateleira, cliente e balcão */
+.shop {
+  position: relative; height: 160px; border-radius: 22px 22px 0 0; overflow: hidden;
+  background: linear-gradient(180deg, #fff1cf 0 62%, #f7dca0 62% 64%, #fff1cf 64%);
+}
+.shop .shelf { position: absolute; right: 12px; bottom: 34px; width: calc(100% - 160px); display: flex; justify-content: space-around; font-size: 1.4rem; }
+.shop .counter { position: absolute; left: 0; right: 0; bottom: 0; height: 30px; background: #e98a5b; box-shadow: inset 0 5px 0 #f4a57c; }
+.customer { position: absolute; left: 14px; bottom: 18px; width: 118px; height: 138px; animation: walkIn 0.45s ease-out; }
+.customer.leave { animation: walkOut 0.35s ease-in forwards; }
+.customer.bump { animation: bump 0.4s; }
+@keyframes walkIn { from { transform: translateX(-140%); } to { transform: translateX(0); } }
+@keyframes walkOut { to { transform: translateX(260%); } }
+@keyframes bump { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-8px); } }
+.say {
+  position: absolute; right: 12px; top: 12px; width: calc(100% - 160px); min-width: 0;
+  background: var(--surface); border-radius: 16px; padding: 8px 12px; font-size: 0.95rem; line-height: 1.3;
+  box-shadow: 0 3px 0 rgba(31,43,82,0.15);
+}
+.say::before { content: ""; position: absolute; left: -9px; top: 22px; border: 9px solid transparent; border-left: 0; border-right-color: var(--surface); }
+.say .who { display: block; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; }
+.say.bad { background: #ffe3e4; } .say.bad::before { border-right-color: #ffe3e4; }
+.say.good { background: #dcf8e6; } .say.good::before { border-right-color: #dcf8e6; }
+
+/* Caixa registradora */
+.register {
+  background: #33a39d; border-radius: 0 0 22px 22px; padding: 12px; display: grid; gap: 10px;
+  box-shadow: 0 5px 0 #237a75; margin-top: -16px;
+}
+.lcd {
+  background: #16392b; color: #7dffb2; border-radius: 12px; padding: 8px 14px;
+  font-family: "VT323", ui-monospace, monospace; font-size: 1.55rem; line-height: 1.05;
+  box-shadow: inset 0 3px 0 rgba(0,0,0,0.35); font-variant-numeric: tabular-nums;
+}
+.lcd .ln { display: flex; justify-content: space-between; gap: 10px; }
+.lcd .ln.q { color: #ffe36e; }
+.register .tray { box-shadow: none; min-height: 96px; }
+.keys { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+.key { border: 0; border-radius: 14px; padding: 12px; font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; line-height: 1.1; color: #fff; }
+.key.clear { background: #ef6a5b; box-shadow: 0 5px 0 #b8453a; }
+.key.give { background: var(--accent); box-shadow: 0 5px 0 var(--accent-dark); }
+.key:active { transform: translateY(4px); box-shadow: none; }
+
+/* Gaveta do caixa aberta */
+.drawer.open {
+  background: #55607e; border-radius: 18px; padding: 10px; gap: 10px;
+  box-shadow: inset 0 8px 0 rgba(0,0,0,0.2), 0 4px 0 #3b4460;
+}
+.drawer.open .notes { background: rgba(0,0,0,0.18); border-radius: 12px; padding: 6px; }
+.drawer.open .coins { background: rgba(0,0,0,0.18); border-radius: 12px; padding: 6px; }
+.busy .drawer, .busy .keys, .busy .tray-items { pointer-events: none; }
+
 @media (prefers-reduced-motion: reduce) {
+  .customer, .customer.leave, .customer.bump { animation: none; }
   .tray.shake, .mascot.bob { animation: none; }
   .note:active, .coin:active, .btn:active { transform: none; }
 }
@@ -233,6 +285,53 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       ${mouth}
     </svg>`;
   }
+  // Clientes: bonequinhos montados a partir de uma "semente" (mesmos clientes para todo mundo no dia)
+  const SKINS = ["#f9d3b4", "#eab58f", "#c98b5f", "#8d5a3b", "#5e3b25"];
+  const HAIRS = ["#2b1d14", "#6b3e1f", "#e0b04a", "#c1502e", "#1a1a1a"];
+  const SHIRTS = ["#ff6b9a", "#4fb3ff", "#ffc93c", "#22b35e", "#9b6bff", "#ff8a3d"];
+  const NAMES = ["Ana", "Léo", "Bia", "Davi", "Malu", "Théo", "Lara", "Caio", "Nina", "Gabi", "Rafa", "Duda"];
+  const ITEMS = [
+    ["🍦 um sorvete", "🍭 um pirulito", "🧃 um suco", "🍪 uns biscoitos"],
+    ["📒 um caderno", "🍫 uns chocolates", "🖍️ uns gizes de cera", "🧁 uns cupcakes"],
+    ["⚽ uma bola", "🧸 um ursinho", "🎲 um jogo", "🪀 um ioiô de luz"],
+    ["🛹 um skate", "🪁 uma pipa gigante", "🧩 um quebra-cabeça", "🎒 uma mochila"],
+    ["🚲 uma bicicleta", "🛴 um patinete", "⛺ uma barraca", "🎸 um violão"],
+  ];
+  function makeCustomer(seedStr, round) {
+    let h = 2166136261;
+    for (const ch of seedStr + "#" + round) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+    const pick = (arr) => { h = Math.imul(h ^ (h >>> 13), 0x5bd1e995) >>> 0; return arr[h % arr.length]; };
+    return {
+      skin: pick(SKINS), hair: pick(HAIRS), shirt: pick(SHIRTS), style: pick([0, 1, 2, 3]),
+      name: pick(NAMES), item: pick(ITEMS[Math.min(round, ITEMS.length - 1)]),
+    };
+  }
+  function customerSvg(c, mood = "normal") {
+    const back = c.style === 2 ? `<circle cx="60" cy="50" r="42" fill="${c.hair}"/>`
+      : c.style === 1 ? `<circle cx="22" cy="40" r="15" fill="${c.hair}"/><circle cx="98" cy="40" r="15" fill="${c.hair}"/>` : "";
+    const top = c.style === 3
+      ? `<path d="M25 50 Q28 16 60 16 Q92 16 95 50 Z" fill="${c.shirt}"/><rect x="58" y="42" width="44" height="9" rx="4" fill="${c.shirt}"/>`
+      : c.style === 2 ? `<path d="M28 44 Q60 22 92 44 Q60 34 28 44 Z" fill="${c.hair}"/>`
+      : `<path d="M25 56 Q26 18 60 18 Q94 18 95 56 Q86 36 60 36 Q34 36 25 56 Z" fill="${c.hair}"/>`;
+    const eyes = mood === "happy"
+      ? `<path d="M42 62 Q48 54 54 62 M66 62 Q72 54 78 62" stroke="#1f2b52" stroke-width="4" fill="none" stroke-linecap="round"/>`
+      : `<circle cx="48" cy="60" r="5" fill="#1f2b52"/><circle cx="72" cy="60" r="5" fill="#1f2b52"/>
+         <circle cx="49.5" cy="58.5" r="1.6" fill="#fff"/><circle cx="73.5" cy="58.5" r="1.6" fill="#fff"/>`;
+    const brows = mood === "sad" ? `<path d="M41 50 L53 53 M79 50 L67 53" stroke="#1f2b52" stroke-width="3.5" stroke-linecap="round"/>` : "";
+    const mouth = mood === "happy" ? `<path d="M46 74 Q60 92 74 74 Z" fill="#1f2b52"/><path d="M52 83 Q60 88 68 83" stroke="#ff8fa9" stroke-width="4" fill="none"/>`
+      : mood === "sad" ? `<path d="M50 82 Q60 74 70 82" stroke="#1f2b52" stroke-width="4" fill="none" stroke-linecap="round"/>`
+      : `<path d="M50 76 Q60 84 70 76" stroke="#1f2b52" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    return `<svg class="customer${mood === "happy" || mood === "sad" ? " bump" : ""}" viewBox="0 0 120 140" aria-hidden="true">
+      ${back}
+      <path d="M18 140 Q18 98 60 98 Q102 98 102 140 Z" fill="${c.shirt}"/>
+      <circle cx="26" cy="62" r="7" fill="${c.skin}"/><circle cx="94" cy="62" r="7" fill="${c.skin}"/>
+      <circle cx="60" cy="60" r="34" fill="${c.skin}"/>
+      ${top}${brows}${eyes}
+      <circle cx="40" cy="72" r="5" fill="#ff6b9a" opacity=".4"/><circle cx="80" cy="72" r="5" fill="#ff6b9a" opacity=".4"/>
+      ${mouth}
+    </svg>`;
+  }
+
   const brandHtml = () => `<span class="brand">${mascot("happy", "")}Troco Certo</span>`;
   const isPerfect = (r) => r.wrong === 0 && r.pieces === r.best;
   function starsOf(results) {
@@ -319,15 +418,16 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   }
   function saveProgress() {
     if (!S || S.training) return;
-    const now = performance.now();
+    const t = now();
     store(pauseKey(), {
-      day: S.day, i: S.i, results: S.results, wrong: S.wrong, roundWrong: S.roundWrong || 0,
-      gameElapsed: now - S.gameStart, roundElapsed: now - S.roundStart,
+      day: S.day, i: S.busy ? S.i + 1 : S.i, results: S.results, wrong: S.wrong, roundWrong: S.roundWrong || 0,
+      gameElapsed: t - S.gameStart, roundElapsed: S.busy ? 0 : t - S.roundStart,
     });
   }
   function clearProgress() { try { localStorage.removeItem(pauseKey()); } catch (e) { /* ok */ } }
   function leaveGame() {
     saveProgress();
+    app.classList.remove("busy");
     S = null;
     renderStart();
   }
@@ -338,7 +438,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function startGame(training) {
     const seed = training ? "treino-" + Date.now() : dailySeed(todayKey());
     S = {
-      training, rounds: makeRounds(seed), i: 0, tray: {}, results: [],
+      training, seed, rounds: makeRounds(seed), i: 0, tray: {}, results: [],
       wrong: 0, roundStart: performance.now(), gameStart: performance.now(),
       uf: store("tc-uf") || "SP", day: todayKey(),
     };
@@ -350,6 +450,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         gameStart: now - paused.gameElapsed, roundStart: now - paused.roundElapsed,
       });
     }
+    if (S.i >= S.rounds.length) return finish();
     renderRound();
     startTick();
   }
@@ -357,8 +458,19 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
   function traySum() { return Object.entries(S.tray).reduce((a, [c, n]) => a + Number(c) * n, 0); }
   function trayCount() { return Object.values(S.tray).reduce((a, n) => a + n, 0); }
 
+  function askText(c, r) { return `Quero ${c.item}! Toma ${brl(r.paid)}.`; }
+
+  function setCustomer(mood, text, kind = "") {
+    const c = makeCustomer(S.seed, S.i);
+    document.getElementById("cust").innerHTML = customerSvg(c, mood);
+    const say = document.getElementById("say");
+    say.className = "say " + kind;
+    say.innerHTML = `<span class="who">${c.name} · cliente ${S.i + 1} de 5</span>${text}`;
+  }
+
   function renderRound() {
     const r = S.rounds[S.i];
+    const cust = makeCustomer(S.seed, S.i);
     const dots = S.rounds.map((_, k) => `<span class="${k < S.i ? "done" : k === S.i ? "now" : ""}"></span>`).join("");
     app.replaceChildren(el(`
       <header class="top">
@@ -369,23 +481,29 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
         <span class="pill num" id="clock">0,0s</span>
       </header>
       <div class="round-dots" aria-label="Cliente ${S.i + 1} de 5">${dots}</div>
-      <section class="receipt" aria-label="Cupom do cliente ${S.i + 1}">
-        <div class="line"><span class="eyebrow">Cliente ${S.i + 1} de 5</span><span class="muted">Cupom não fiscal</span></div>
-        <div class="line"><span>Total da compra</span><span class="big">${brl(r.price)}</span></div>
-        <div class="line"><span>Cliente pagou</span><span class="big">${brl(r.paid)}</span></div>
-        <div class="dash"></div>
-        <div class="line"><span class="muted">Troco</span><span class="muted">?</span></div>
+      <section class="shop" aria-label="Cliente ${S.i + 1} de 5">
+        <div class="shelf" aria-hidden="true"><span>🧃</span><span>🍎</span><span>🧸</span><span>🍞</span><span>🎈</span></div>
+        <div id="cust">${customerSvg(cust)}</div>
+        <p class="say" id="say"><span class="who">${cust.name} · cliente ${S.i + 1} de 5</span>${askText(cust, r)}</p>
+        <div class="counter"></div>
       </section>
-      <section class="tray" id="tray">
-        <div class="tray-head"><span class="eyebrow">Troco na mão</span><span class="tray-sum" id="sum">R$ 0,00</span></div>
-        <div class="tray-items" id="items"></div>
-        <div class="flash" id="flash" aria-live="polite"></div>
+      <section class="register">
+        <div class="lcd" aria-label="Visor do caixa">
+          <div class="ln"><span>TOTAL</span><span>${brl(r.price)}</span></div>
+          <div class="ln"><span>PAGO</span><span>${brl(r.paid)}</span></div>
+          <div class="ln q"><span>TROCO</span><span>?</span></div>
+        </div>
+        <div class="tray" id="tray">
+          <div class="tray-head"><span class="eyebrow">Troco na mão</span><span class="tray-sum" id="sum">R$ 0,00</span></div>
+          <div class="tray-items" id="items"></div>
+          <div class="flash" id="flash" aria-live="polite"></div>
+        </div>
+        <div class="keys">
+          <button class="key clear" id="clear">Limpar</button>
+          <button class="key give" id="give">Entregar troco ✋</button>
+        </div>
       </section>
-      <div class="row">
-        <button class="btn ghost small" id="clear">Limpar</button>
-        <button class="btn" id="give" style="flex:3 1 160px">Entregar troco</button>
-      </div>
-      <section class="drawer" aria-label="Gaveta do caixa">
+      <section class="drawer open" aria-label="Gaveta do caixa">
         <div class="notes">${DENOMS.filter((d) => d.kind === "note").map((d) => `
           <button class="note" data-c="${d.c}" style="background:${d.color}" aria-label="Nota de ${brl(d.c)}">
             <span class="v">${d.c / 100}</span><span class="a">${d.animal}</span>
@@ -397,15 +515,15 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
       </section>
     `));
     app.querySelectorAll("[data-c]").forEach((b) => b.addEventListener("click", () => addPiece(Number(b.dataset.c))));
-    document.getElementById("clear").addEventListener("click", () => { S.tray = {}; paintTray(); });
+    document.getElementById("clear").addEventListener("click", () => { if (S.busy) return; S.tray = {}; paintTray(); });
     document.getElementById("give").addEventListener("click", deliver);
     document.getElementById("back").addEventListener("click", goBack);
     paintTray();
     paintClock();
   }
 
-  function addPiece(c) { S.tray[c] = (S.tray[c] || 0) + 1; paintTray(); }
-  function removePiece(c) { S.tray[c]--; if (S.tray[c] <= 0) delete S.tray[c]; paintTray(); }
+  function addPiece(c) { if (S.busy) return; S.tray[c] = (S.tray[c] || 0) + 1; paintTray(); }
+  function removePiece(c) { if (S.busy) return; S.tray[c]--; if (S.tray[c] <= 0) delete S.tray[c]; paintTray(); }
 
   function paintTray() {
     document.getElementById("sum").textContent = brl(traySum());
@@ -427,24 +545,47 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     f.textContent = msg; f.className = "flash " + kind;
   }
 
+  const now = () => (S && S.pausedAt) || performance.now();
+
   function deliver() {
+    if (S.busy) return;
     const r = S.rounds[S.i];
     const sum = traySum();
     if (sum !== r.change) {
       S.wrong++;
+      S.roundWrong = (S.roundWrong || 0) + 1;
       const tray = document.getElementById("tray");
       tray.classList.remove("shake"); void tray.offsetWidth; tray.classList.add("shake");
-      flash(sum > r.change ? "Opa! Deu troco a mais. Tente de novo (+5s)" : "Opa! Faltou troco. Tente de novo (+5s)", "bad");
-      S.roundWrong = (S.roundWrong || 0) + 1;
+      flash("Tente de novo! (+5s)", "bad");
+      setCustomer("sad", sum > r.change ? "Hmm... você me deu troco a mais! 🤔" : "Hmm... acho que faltou troco! 🤔", "bad");
+      const cur = S, round = S.i, token = (S.token = (S.token || 0) + 1);
+      setTimeout(() => {
+        if (S === cur && S.i === round && S.token === token && !S.busy) setCustomer("normal", askText(makeCustomer(S.seed, S.i), r));
+      }, 1600);
       return;
     }
-    const now = performance.now();
+    const t = performance.now();
     const pieces = trayCount(), best = minPieces(r.change);
-    S.results.push({ ...r, ms: now - S.roundStart, pieces, best, wrong: S.roundWrong || 0, tray: { ...S.tray } });
-    S.roundWrong = 0; S.tray = {}; S.i++; S.roundStart = now;
-    if (S.i >= S.rounds.length) return finish();
-    saveProgress();
-    renderRound();
+    S.results.push({ ...r, ms: t - S.roundStart, pieces, best, wrong: S.roundWrong || 0, tray: { ...S.tray } });
+    S.roundWrong = 0;
+    // O relógio para enquanto o cliente agradece e vai embora
+    S.busy = true; S.pausedAt = t;
+    app.classList.add("busy");
+    flash("", "");
+    setCustomer("happy", "Valeu! Troco certinho! 😄", "good");
+    const cur = S;
+    setTimeout(() => { if (S === cur) document.querySelector(".customer").classList.add("leave"); }, 750);
+    setTimeout(() => {
+      if (S !== cur) return;
+      app.classList.remove("busy");
+      const resume = performance.now();
+      S.gameStart += resume - S.pausedAt;
+      S.pausedAt = null; S.busy = false;
+      S.tray = {}; S.i++; S.roundStart = resume;
+      if (S.i >= S.rounds.length) return finish();
+      saveProgress();
+      renderRound();
+    }, 1100);
   }
 
   function finish() {
@@ -621,7 +762,7 @@ tr.me td { font-weight: 800; color: var(--accent-dark); }
     const c = document.getElementById("clock");
     if (!c || !S) return;
     const penalty = S.wrong * WRONG_PENALTY;
-    c.textContent = secs(performance.now() - S.gameStart + penalty);
+    c.textContent = secs(now() - S.gameStart + penalty);
   }
   function startTick() { stopTick(); tick = setInterval(paintClock, 100); }
   function stopTick() { if (tick) clearInterval(tick); tick = null; }
