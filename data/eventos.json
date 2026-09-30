@@ -1,0 +1,29 @@
+{
+  "atualizadoEm": "2026-09-30",
+  "eventos": [
+    {
+      "id": "destinado-gloria-2",
+      "nome": "Destinado à Glória",
+      "subtitulo": "Time 2",
+      "semana": "2026-09-30",
+      "cores": ["#0c4a4e", "#e8c35f"],
+      "cartas": [
+        {"base": "mci-haaland", "overall": 93},
+        {"base": "fcb-upamecano", "overall": 88},
+        {"base": "rma-cucurella", "overall": 87},
+        {"base": "bar-gordon", "overall": 86},
+        {"base": "com-nico-paz", "overall": 86},
+        {"base": "mun-mbeumo", "overall": 86},
+        {"base": "tot-mateus-fernandes", "overall": 85},
+        {"base": "ata-lookman", "overall": 85, "clube": "ATM"},
+        {"base": "b04-maza", "overall": 85},
+        {"base": "juv-mckennie", "overall": 85, "posicao": "VOL"},
+        {"base": "fio-gosens", "overall": 85},
+        {"nome": "Jakub Kiwior", "nomeCurto": "Kiwior", "nacionalidade": "POL", "idade": 26, "posicao": "ZAG", "pe": "E", "overall": 85, "clubeTexto": "Porto", "playstyles": ["interceptacao", "lancamento"]},
+        {"nome": "Charlie Cresswell", "nomeCurto": "Cresswell", "nacionalidade": "ING", "idade": 23, "posicao": "ZAG", "pe": "D", "overall": 85, "clubeTexto": "Rennes", "playstyles": ["imposicao-fisica", "cabeceio"]},
+        {"nome": "Linda Caicedo", "nomeCurto": "Caicedo", "nacionalidade": "COL", "idade": 21, "posicao": "PE", "pe": "D", "overall": 87, "clubeTexto": "Real Madrid (feminino)", "playstyles": ["drible-rapido+", "velocista", "firula"]},
+        {"nome": "Kadidiatou Diani", "nomeCurto": "Diani", "nacionalidade": "FRA", "idade": 31, "posicao": "PD", "pe": "D", "overall": 88, "clubeTexto": "Futebol feminino", "playstyles": ["velocista+", "finalizacao-precisa", "drible-rapido"]}
+      ]
+    }
+  ]
+}

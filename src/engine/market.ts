@@ -11,6 +11,7 @@ export function marketValue(P: CardPlayer): number {
   // Comum vale pouco (tem muito no mercado); o preço dispara só nas cartas de elite e nas lendas
   let v = 100 + 12 * Math.pow(1.35, P.ovr - 65);
   if (P.leg) v *= P.legCat === 'hall' ? 2.6 : P.legCat === 'heroi' ? 3.2 : 5;
+  else if (P.ev) v *= 2.4;
   else if (isSpecial(P.tier)) v *= P.v === 'elite' ? 2.6 : P.v === 'fc' ? 2.2 : P.v === 'heroi' ? 1.9 : 1.5;
   const plus = P.ps.filter(x => parsePs(x).plus).length;
   v *= 1 + .04 * P.ps.length + .06 * plus;
@@ -50,7 +51,7 @@ const PRORROGA_MS = 15000;
 export function search(M: MarketState, q: string, now: number, r: Rng = R): Listing[] {
   const t = norm(q);
   if (t.length < 3) return [];
-  const all = [...W.pool.filter(p => !p.filler), ...W.legends];
+  const all = [...W.pool.filter(p => !p.filler), ...W.legends, ...W.events];
   const found = all.filter(p => norm(p.name).includes(t) || norm(p.short).includes(t)).sort((a, b) => b.ovr - a.ovr).slice(0, 8);
   const out: Listing[] = [];
   for (const b of found) {
@@ -58,7 +59,7 @@ export function search(M: MarketState, q: string, now: number, r: Rng = R): List
     if (have.length) { out.push(...have); continue; }
     const n = 1 + Math.floor(r() * (b.ovr >= 85 ? 2 : 4));
     for (let k = 0; k < n; k++) {
-      const v: Variant = b.leg ? 'lenda' : r() < .12 ? (['dest', 'heroi', 'fc', 'elite'] as const)[Math.floor(r() * 4)] : 'base';
+      const v: Variant = b.ev ? 'evento' : b.leg ? 'lenda' : r() < .12 ? (['dest', 'heroi', 'fc', 'elite'] as const)[Math.floor(r() * 4)] : 'base';
       if (v === 'fc' && b.age > 22) continue;
       const P = cardData(b.id, v), val = marketValue(P);
       const start = roundPrice(val * (.6 + r() * .25)), buyNow = roundPrice(val * (1.1 + r() * .45));

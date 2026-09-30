@@ -53,6 +53,19 @@ export interface LendaData extends JogadorData {
 }
 export type LegCat = 'idolo' | 'heroi' | 'hall';
 export const LEG_CATS: Record<LegCat, string> = { idolo: 'Ídolo', heroi: 'Herói', hall: 'Hall da Fama' };
+/** Evento semanal de cartas especiais (alimentado toda semana em data/eventos.json). */
+export interface CartaEventoData {
+  /** Id da carta normal em que a de evento se baseia (clube, liga, química e atributos vêm dela). */
+  base?: string;
+  overall: number;
+  /** Troca de clube/posição na carta do evento (ex.: jogador transferido). */
+  clube?: string; posicao?: Pos;
+  /** Carta avulsa (jogador fora do jogo): dados mínimos. */
+  nome?: string; nomeCurto?: string; nacionalidade?: string; idade?: number; pe?: 'D' | 'E' | 'A'; clubeTexto?: string;
+  playstyles?: string[];
+}
+export interface EventoData { id: string; nome: string; subtitulo?: string; semana: string; cores: [string, string]; cartas: CartaEventoData[] }
+export interface EventosData { atualizadoEm: string; eventos: EventoData[] }
 export interface LendasData { atualizadoEm: string; lendas: LendaData[] }
 
 export interface NacaoData { nome: string; cores: [string, string, string]; horizontal?: boolean }

@@ -28,7 +28,7 @@ export function openPack(id: PackId): void {
   if (best.ovr >= 84 || isSpecial(best.tier)) walkout(best, show); else show();
 }
 
-const GLOW: Record<string, string> = { lenda: '#fff3c4', lheroi: '#ff9a3c', hall: '#b9a4ff', elite: '#6f95ff', heroi: '#ff7a5c', fc: '#3de0cf', dest: '#f0cf6a' };
+const GLOW: Record<string, string> = { lenda: '#fff3c4', lheroi: '#b98cff', hall: '#ff4a4a', evento: '#3de0cf', elite: '#6f95ff', heroi: '#ff7a5c', fc: '#3de0cf', dest: '#f0cf6a' };
 
 /** Revelação em etapas: país, posição, clube e carta. */
 export function walkout(P: OwnedCard, done: () => void): void {

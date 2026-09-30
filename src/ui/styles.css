@@ -470,3 +470,30 @@ table tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
 .out-b.les{background:#101d2a;color:#cfe6ff;border-color:#6fb0f0}
 .desf{margin:0 0 10px;padding:8px 10px;border-radius:10px;background:rgba(240,106,90,.08);border:1px solid rgba(240,106,90,.35);font-size:13px;line-height:1.6}
 .classico{margin-top:10px;padding:9px 12px;border-radius:10px;font-size:13px;background:linear-gradient(90deg,rgba(240,106,90,.2),rgba(242,182,64,.08));border:1px solid rgba(240,106,90,.5)}
+/* ---------- Designs novos das cartas (arte própria em CSS) ---------- */
+.card::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;box-shadow:inset 0 0 0 calc(var(--w)*.02) var(--cframe,transparent),inset 0 0 calc(var(--w)*.12) var(--cglow,transparent)}
+/* Metais com lascas de vidro na diagonal */
+.t-ouro{--cbg:linear-gradient(118deg,transparent 0 38%,rgba(255,255,255,.38) 38% 41%,transparent 41% 60%,rgba(255,255,255,.22) 60% 62%,transparent 62%),linear-gradient(160deg,#fff0b0,#d9a93a 45%,#b88a1f 62%,#f6d77a);--cframe:rgba(255,240,190,.55)}
+.t-prata{--cbg:linear-gradient(118deg,transparent 0 38%,rgba(255,255,255,.55) 38% 41%,transparent 41% 60%,rgba(255,255,255,.3) 60% 62%,transparent 62%),linear-gradient(160deg,#ffffff,#b9c2c9 45%,#8d98a1 62%,#e3e8eb);--cframe:rgba(255,255,255,.6)}
+.t-bronze{--cbg:linear-gradient(118deg,transparent 0 38%,rgba(255,225,190,.35) 38% 41%,transparent 41% 60%,rgba(255,225,190,.2) 60% 62%,transparent 62%),linear-gradient(160deg,#f0b27c,#b0703f 45%,#8a522b 62%,#d99a64);--cframe:rgba(255,210,170,.45)}
+/* Ídolo: mármore branco com veios e moldura dourada */
+.t-lenda{--cbg:linear-gradient(125deg,transparent 0 62%,rgba(212,170,70,.55) 62% 63.5%,transparent 63.5% 70%,rgba(212,170,70,.35) 70% 71%,transparent 71%),
+  radial-gradient(ellipse 60% 18% at 30% 70%,rgba(120,120,120,.16),transparent 70%),radial-gradient(ellipse 45% 10% at 70% 40%,rgba(120,120,120,.14),transparent 70%),
+  linear-gradient(150deg,#ffffff,#efebe2 45%,#f8f5ee 60%,#e6e0d2);--ct:#3a2a08;--cframe:#d4aa46;--cglow:rgba(212,170,70,.35);
+  --cpat:linear-gradient(35deg,transparent 0 30%,rgba(150,150,150,.18) 30% 30.6%,transparent 30.6% 55%,rgba(150,150,150,.12) 55% 55.4%,transparent 55.4%)}
+/* Hall da Fama: vidro estilhaçado escuro com risco vermelho */
+.t-hall{--cbg:linear-gradient(140deg,transparent 0 48%,rgba(210,30,40,.75) 48% 51%,transparent 51%),
+  linear-gradient(62deg,transparent 0 30%,rgba(255,255,255,.12) 30% 31%,transparent 31% 58%,rgba(255,255,255,.1) 58% 59%,transparent 59%),
+  linear-gradient(-28deg,transparent 0 42%,rgba(255,255,255,.14) 42% 43%,transparent 43%),
+  linear-gradient(160deg,#3a3d44,#15171b 50%,#26282e);--ct:#f2f2f2;--cframe:rgba(220,220,225,.55);--cglow:rgba(210,30,40,.3)}
+/* Herói: neon roxo e azul */
+.t-lheroi{--cbg:linear-gradient(115deg,transparent 0 55%,rgba(255,90,230,.55) 55% 57%,transparent 57% 64%,rgba(90,210,255,.5) 64% 65.5%,transparent 65.5%),
+  radial-gradient(ellipse 70% 40% at 70% 25%,rgba(120,90,255,.55),transparent 70%),linear-gradient(160deg,#1a1450,#3b1d8a 45%,#0e1a4a 70%,#5a2aa8);--ct:#f4ecff;--cframe:rgba(190,160,255,.6);--cglow:rgba(255,90,230,.35);--cpat:none}
+/* Evento: cores do tema da semana (--ev1 fundo, --ev2 detalhe) com fitas */
+.t-evento{--cbg:linear-gradient(120deg,transparent 0 50%,color-mix(in srgb,var(--ev2) 85%,#fff) 50% 53%,transparent 53% 60%,color-mix(in srgb,var(--ev2) 60%,transparent) 60% 62%,transparent 62%),
+  radial-gradient(ellipse 60% 45% at 75% 25%,color-mix(in srgb,var(--ev2) 45%,transparent),transparent 70%),
+  linear-gradient(160deg,color-mix(in srgb,var(--ev1) 80%,#fff 5%),var(--ev1) 45%,color-mix(in srgb,var(--ev1) 70%,#000) 75%);--ct:#f6fbf8;--cframe:var(--ev2);--cglow:color-mix(in srgb,var(--ev2) 40%,transparent)}
+.p-evento{--pbg:linear-gradient(150deg,#0c4a4e,#e8c35f);--pt:#fff}
+/* Brilho que passa na carta grande (detalhes e abertura de pacote) */
+.card.lg::after,.card.xl::after{background:var(--cpat,none),linear-gradient(105deg,transparent 40%,rgba(255,255,255,.28) 50%,transparent 60%) -200% 0/250% 100% no-repeat;animation:cshine 4.5s ease-in-out infinite}
+@keyframes cshine{0%,55%{background-position:0 0,-200% 0}100%{background-position:0 0,200% 0}}

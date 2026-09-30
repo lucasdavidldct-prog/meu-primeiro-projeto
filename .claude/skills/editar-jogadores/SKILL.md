@@ -30,6 +30,16 @@ description: Adiciona, atualiza ou remove jogadores reais e lendas (Ídolos, Her
 - **Galo (CAM)**: ídolos do Atlético Mineiro nunca são removidos, mesmo quando pedirem para refazer as listas.
 - **Remoções**: ao tirar alguém, as cartas somem dos saves (`sanitizeState`). Lendas removidas devolvem moedas (`src/save/db.ts`); avise o usuário disso.
 
+## Cartas de evento semanais (`data/eventos.json`)
+- O usuário manda toda semana a imagem com as cartas do evento. Crie um item em `eventos` com:
+  - `id` (slug, ex. `destinado-gloria-3`), `nome`, `subtitulo`, `semana` (data) e `cores` [fundo, detalhe] no tema do evento;
+  - `cartas`: `{ "base": "<id da carta normal>", "overall": N }`.
+- Transferência na carta do evento: `"clube": "<sigla>"`. Troca de posição: `"posicao"`.
+- Jogador que não está no jogo: carta avulsa com `nome`, `nomeCurto`, `nacionalidade`, `idade`, `posicao`, `pe`, `overall`, `clubeTexto`, `playstyles`.
+- O motor garante carta de evento ≥ carta normal + 2; os atributos sobem pelo perfil da posição (estimativa própria, não copie os números da imagem).
+- O evento mais recente (último da lista) é o do pacote "Evento da semana".
+- Rode `npm test` (tests/eventos.test.ts confere tudo).
+
 ## Fluxo
 1. Edite os JSON. Para listas grandes, gere com um script no scratchpad em vez de editar à mão.
 2. Rode:

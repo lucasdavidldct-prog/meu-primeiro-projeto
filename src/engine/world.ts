@@ -2,7 +2,9 @@
 // O editor de elencos pode recarregar tudo com dados editados (loadWorld).
 import nacoesJson from '../../data/nacoes.json';
 import lendasJson from '../../data/lendas.json';
-import { ATR_GOL, ATR_LINHA, type JogadorData, type LendasData, type LigaData, type NacoesData } from './data/schema';
+import eventosJson from '../../data/eventos.json';
+import { ATR_GOL, ATR_LINHA, type EventosData, type JogadorData, type LendasData, type LigaData, type NacoesData } from './data/schema';
+import { PROFILE } from './positions';
 import type { BasePlayer, Club, Nation, Pos } from './types';
 
 // Imports estáticos (funcionam no Vite, nos testes e nos scripts com tsx).
@@ -17,6 +19,7 @@ import serieB from '../../data/ligas/serie-b.json';
 import conmebol from '../../data/ligas/conmebol.json';
 export const BUNDLED_LIGAS = [brasileirao, premierLeague, laliga, serieA, bundesliga, saudi, mls, serieB, conmebol] as unknown as LigaData[];
 export const BUNDLED_LENDAS = lendasJson as unknown as LendasData;
+export const BUNDLED_EVENTOS = eventosJson as unknown as EventosData;
 export const NACOES = nacoesJson as unknown as NacoesData;
 
 const LIGA_ORDEM = ['brasileirao', 'serie-b', 'premier-league', 'laliga', 'serie-a', 'bundesliga', 'saudi-pro-league', 'mls', 'conmebol'];
@@ -43,6 +46,8 @@ export const W = {
   /** Jogadores reais em atividade (fonte dos pacotes). */
   pool: [] as BasePlayer[],
   legends: [] as BasePlayer[],
+  /** Cartas de evento semanal (data/eventos.json). */
+  events: [] as BasePlayer[],
 };
 
 export function toPlayer(j: JogadorData, lg: string, club: string): BasePlayer {
@@ -76,6 +81,38 @@ export function loadWorld(ligas: LigaData[], lendas: LendasData = BUNDLED_LENDAS
   }
   W.legends = lendas.lendas.map(j => ({ ...toPlayer(j, 'ICO', 'ICO'), leg: true, hist: j.clubeHistorico, epoca: j.epoca, legClub: j.clube, legCat: j.categoria ?? 'idolo' }));
   for (const p of W.legends) W.players.set(p.id, p);
+  W.events = buildEvents(BUNDLED_EVENTOS);
+  for (const p of W.events) W.players.set(p.id, p);
+}
+
+/** Clube de mentira para cartas de evento de jogadores fora do jogo (o nome do clube real vai em `hist`). */
+const EXT_CLUB: ClubInfo = { id: 'EXT', n: 'Outro clube', s: 'EXT', c1: '#2a3340', c2: '#e6e6e6', lg: 'EXT', city: '' };
+
+/**
+ * Cartas de evento: cada uma parte da carta normal (clube, liga e química iguais), com o overall do evento
+ * — sempre pelo menos +2 acima da normal — e os atributos subindo mais nos que importam para a posição.
+ * Jogador fora do jogo vira carta avulsa, com atributos pelo perfil da posição.
+ */
+export function buildEvents(d: EventosData): BasePlayer[] {
+  const out: BasePlayer[] = [];
+  const hash = (s: string) => { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return (h % 1000) / 1000; };
+  for (const e of d.eventos) {
+    const ev = { id: e.id, n: e.subtitulo ? `${e.nome} · ${e.subtitulo}` : e.nome, cores: e.cores };
+    for (const c of e.cartas) {
+      const b = c.base ? W.players.get(c.base) : undefined;
+      if (b) {
+        const pos = c.posicao ?? b.pos, ovr = Math.min(99, Math.max(c.overall, b.ovr + 2)), delta = ovr - b.ovr;
+        const st = b.st.map((v, i) => Math.min(99, v + Math.round(delta * (PROFILE[pos][i] >= 1 ? 1.2 : PROFILE[pos][i] >= .8 ? .9 : .6))));
+        const club = c.clube && W.clubs.get(c.clube) ? c.clube : b.club, lg = W.clubs.get(club)?.lg ?? b.lg;
+        out.push({ ...b, id: `ev-${e.id}-${b.id}`, pos, alt: b.alt.filter(p => p !== pos), ovr, st, club, lg, ps: c.playstyles ?? b.ps, ev: { ...ev, base: b.id } });
+      } else if (c.nome && c.nomeCurto && c.nacionalidade) {
+        const pos = c.posicao ?? 'MC', id = `ev-${e.id}-${c.nomeCurto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+        const st = PROFILE[pos].map((w, i) => Math.max(25, Math.min(99, Math.round((w >= 1 ? c.overall + (w - 1) * 30 : c.overall - (1 - w) * 70) + (hash(id + i) - .5) * 5))));
+        out.push({ id, name: c.nome, short: c.nomeCurto, nat: c.nacionalidade, pos, alt: [], ovr: c.overall, lg: 'EXT', club: 'EXT', age: c.idade ?? 25, st, foot: c.pe ?? 'D', ps: c.playstyles ?? [], hist: c.clubeTexto, ev });
+      }
+    }
+  }
+  return out;
 }
 loadWorld(BUNDLED_LIGAS);
 
@@ -87,6 +124,7 @@ export const leagueById = (id: string): LeagueInfo | undefined => W.leagues.find
 
 export function clubOf(P: BasePlayer): ClubInfo {
   if (P.leg) return LEGEND_CLUB;
+  if (P.club === 'EXT') return { ...EXT_CLUB, n: P.hist ?? EXT_CLUB.n };
   return W.clubs.get(P.club) ?? { id: P.club, n: P.club, s: P.club, c1: '#555555', c2: '#dddddd', lg: P.lg, city: '' };
 }
 export const leagueName = (P: BasePlayer): string => (P.leg ? 'Ícones' : leagueById(P.lg)?.n ?? P.lg);

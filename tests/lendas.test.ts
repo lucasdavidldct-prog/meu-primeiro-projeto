@@ -10,7 +10,7 @@ describe('lendas: Ídolos, Heróis e Hall da Fama', () => {
     expect(W.legends.filter(p => p.legClub === 'CAM').length).toBeGreaterThanOrEqual(19);
     expect(byShort('Ibrahimović').legCat).toBe('idolo');
     expect(byShort('Quaresma').legCat).toBe('heroi');
-    expect(byShort('Akinfenwa').legCat).toBe('hall');
+    expect(byShort('Ben Arfa').legCat).toBe('hall');
     expect(byShort('Maradona').legCat).toBe('idolo');
     // Saíram da lista de ídolos (e não são do Galo)
     for (const s of ['Platini', 'Puskás', 'Di Stéfano', 'Sinclair', 'Formiga', 'Necib', 'Jill Scott']) expect(W.legends.find(p => p.short === s)).toBeUndefined();

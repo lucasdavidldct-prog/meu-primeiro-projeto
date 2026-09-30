@@ -26,6 +26,7 @@ O APK sai pelo GitHub Actions a cada push e é publicado na release `esquadrao-a
 - `src/ui/`: telas (HTML em string, ações via `data-act`). `src/three/` é o 3D, carregado sob demanda.
 - `data/`:
   - `ligas/*.json` e `lendas.json` (categorias `idolo` | `heroi` | `hall`), mais `nacoes.json`.
+  - `eventos.json`: cartas de evento semanais (o usuário manda a lista toda semana; veja a skill `editar-jogadores`).
   - `fotos.json` é mantido pelo CI (`npm run fotos`); não edite à mão.
 - Save em IndexedDB (`src/save/db.ts`). Jogadores removidos saem do save via `sanitizeState`; lendas removidas devolvem moedas.
 

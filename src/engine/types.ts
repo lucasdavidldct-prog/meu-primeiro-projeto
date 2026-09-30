@@ -1,6 +1,6 @@
 export type Pos = 'GOL' | 'ZAG' | 'LD' | 'LE' | 'VOL' | 'MC' | 'MEI' | 'MD' | 'ME' | 'PD' | 'PE' | 'ATA';
 export type Role = 'G' | 'D' | 'M' | 'A';
-export type Variant = 'base' | 'dest' | 'heroi' | 'fc' | 'elite' | 'lenda';
+export type Variant = 'base' | 'dest' | 'heroi' | 'fc' | 'elite' | 'lenda' | 'evento';
 export type Tier = 'bronze' | 'prata' | 'ouro' | Exclude<Variant, 'base'> | 'lheroi' | 'hall';
 export type StyleId = 'equilibrado' | 'posse' | 'contra' | 'pressao' | 'retranca';
 export type FormationId =
@@ -31,6 +31,8 @@ export interface BasePlayer {
   /** Playstyles (ids; sufixo + para a versão forte). */
   ps: string[];
   leg?: boolean;
+  /** Carta de evento semanal: id do evento, nome e cores do tema; `base` = id da carta normal. */
+  ev?: { id: string; n: string; cores: [string, string]; base?: string };
   /** Categoria da lenda: ídolo, herói ou hall da fama. */
   legCat?: 'idolo' | 'heroi' | 'hall';
   /** Lendas: clube em que marcou época, época e clube atual ligado (ex.: CAM). */

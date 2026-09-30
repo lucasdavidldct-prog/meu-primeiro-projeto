@@ -20,13 +20,14 @@ export function flagHTML(nat: string, cls = 'flag'): string {
 
 export function cardHTML(P: CardPlayer, size = 'sm', extra = ''): string {
   const c = clubOf(P), L = P.pos === 'GOL' ? STAT_G : STAT_L;
-  return `<div class="card ${size} t-${P.tier}" style="--k1:${c.c1};--k2:${c.c2}" title="${esc(P.name)} ${P.ovr}">${extra}
+  const ev = P.ev ? `;--ev1:${P.ev.cores[0]};--ev2:${P.ev.cores[1]}` : '';
+  return `<div class="card ${size} t-${P.tier}" style="--k1:${c.c1};--k2:${c.c2}${ev}" title="${esc(P.name)} ${P.ovr}">${extra}
    <div class="c-rib"><b class="c-ovr">${P.ovr}</b><span class="c-pos">${P.pos}</span>${flagHTML(P.nat)}${crestHTML(c, 'badge')}</div>
-   <div class="c-face">${faceSVG(c)}${photoHTML(P.id)}</div>
+   <div class="c-face">${faceSVG(c)}${photoHTML(P.ev?.base ?? P.id)}</div>
    ${plusOf(P.ps).length ? `<div class="c-ps">${psIcons(plusOf(P.ps))}</div>` : ''}
    <div class="c-name">${esc(P.short)}</div>
    <div class="c-stats">${P.st.map((s, i) => `<span><b>${s}</b>${L[i]}</span>`).join('')}</div>
-   ${isSpecial(P.tier) ? `<div class="c-tag">${TIER_N[P.tier]}</div>` : ''}
+   ${isSpecial(P.tier) ? `<div class="c-tag">${P.ev ? esc(P.ev.n.split(' · ')[0]) : TIER_N[P.tier]}</div>` : ''}
   </div>`;
 }
 

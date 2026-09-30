@@ -21,6 +21,10 @@ function jogadores(): Jog[] {
   }
   const { lendas } = JSON.parse(readFileSync('data/lendas.json', 'utf8')) as { lendas: Jog[] };
   for (const j of lendas) out.push({ ...j, lenda: true });
+  // Cartas de evento de jogadores fora do jogo (as outras usam a foto da carta normal)
+  const slug = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const { eventos } = JSON.parse(readFileSync('data/eventos.json', 'utf8')) as { eventos: { id: string; cartas: { base?: string; nome?: string; nomeCurto?: string; idade?: number }[] }[] };
+  for (const e of eventos) for (const c of e.cartas) if (!c.base && c.nome && c.nomeCurto) out.push({ id: `ev-${e.id}-${slug(c.nomeCurto)}`, nome: c.nome, nomeCurto: c.nomeCurto, idade: c.idade ?? 25 });
   return out;
 }
 
