@@ -13,7 +13,7 @@ import { FX, psLevel, teamFx, type PsId } from './playstyles';
 import { funcOf, orderFx, suggestOrder, type Order, type OrderFx } from './orders';
 
 export interface SideEntry {
-  P: BasePlayer; pos: Pos; base: number; inMin: number; yc: number; red: boolean; name: string;
+  P: BasePlayer; pos: Pos; base: number; inMin: number; yc: number; red: boolean; name: string; /** Machucou no jogo. */ inj?: boolean;
   /** Efeito da função/orientação do jogador e o id da função (para a narração). */
   ofx?: OrderFx; fn?: string;
   /** Números do jogo para a nota: gols, assistências, desarmes/bloqueios, defesas (goleiro), finalizações. */
@@ -93,6 +93,8 @@ export function sideOpp(t: OppTeam, boost = 0): Side {
 /** Cansaço de 0 a 1: começa aos 55 minutos em campo. Incansável reduz. */
 export const fatigue = (e: SideEntry, min: number): number =>
   clamp((min - e.inMin - 55 / (e.ofx?.tire ?? 1)) / 35, 0, 1) * FX.incansavel[psLevel(e.P, 'incansavel')] * (e.ofx?.tire ?? 1);
+/** Chance de lesão por minuto simulado, por time. */
+const INJ_P = .0022;
 export const effNow = (e: SideEntry, min: number): number => (e.red ? 0 : e.base * (1 - fatigue(e, min) * .08));
 
 type Play = 'score' | 'assist' | 'head' | 'long' | 'cross';
@@ -130,6 +132,8 @@ export class Match {
   min = 0;
   ev: MatchEvent[] = [];
   st = { poss: [0, 0], sh: [0, 0], on: [0, 0], yc: [0, 0], ck: [0, 0] };
+  /** Ocorrências do seu time (lado A) para a carreira: amarelos, expulsões e lesões (id do jogador). */
+  inc = { y: [] as string[], r: [] as string[], les: [] as { id: string; name: string; jogos: number }[] };
   ht = false;
   over = false;
   momentsLeft: number;
@@ -200,6 +204,7 @@ export class Match {
     if (!this.over) await this.freeKicks();
     if (!this.over) this.ambient(pA, rA, rB);
     this.cards();
+    this.injuries();
     this.aiManage();
     return 'tick';
   }
@@ -211,9 +216,35 @@ export class Match {
       const pr = .02 * (side.style === 'pressao' ? 1.4 : 1);
       if (R() < pr) {
         const e = weightedPlayer(side, FOUL_W);
-        if (R() < .06) { e.red = true; this.addEv(si, 'card-r', tx('rc2', { p: e.name })); }
-        else if (e.yc) { e.red = true; this.addEv(si, 'card-r', tx('rc', { p: e.name })); }
-        else { e.yc = 1; this.st.yc[si]++; this.addEv(si, 'card-y', tx('yc', { p: e.name })); }
+        // Quem já tem amarelo se cuida: na maioria das vezes tira o pé da dividida
+        if (e.yc && R() < .8) continue;
+        if (R() < .03) { e.red = true; if (si === 0) this.inc.r.push(e.P.id); this.addEv(si, 'card-r', tx('rc2', { p: e.name })); }
+        else if (e.yc) { e.red = true; if (si === 0) this.inc.r.push(e.P.id); this.addEv(si, 'card-r', tx('rc', { p: e.name })); }
+        else { e.yc = 1; this.st.yc[si]++; if (si === 0) this.inc.y.push(e.P.id); this.addEv(si, 'card-y', tx('yc', { p: e.name })); }
+      }
+    }
+  }
+
+  /** Lesões: raras (~1 a cada 5 jogos por time). Quem se machuca sai; sem substituição, fica em campo rendendo pouco. */
+  private injuries(): void {
+    for (const [side, si] of [[this.A, 0], [this.B, 1]] as const) {
+      if (R() >= INJ_P) continue;
+      const ok = side.xi.filter(e => !e.red && !e.inj);
+      if (!ok.length) continue;
+      const e = ok[Math.floor(R() * ok.length)], jogos = [1, 1, 1, 2, 2, 3, 4][Math.floor(R() * 7)];
+      e.inj = true;
+      if (si === 0) this.inc.les.push({ id: e.P.id, name: e.name, jogos });
+      // Troca pelo melhor reserva para a posição; se não der, ele segue em campo mancando
+      const cands = side.bench.map((P, j) => ({ P, j })).filter(c => !side.xi.some(x => !x.red && x.P.id === c.P.id));
+      if (side.subs > 0 && cands.length) {
+        const best = cands.reduce((a, b) => (effOvr(b.P, e.pos, 1) > effOvr(a.P, e.pos, 1) ? b : a));
+        this.addEv(si, 'info', `Lesão: ${e.name} sente e sai de campo${si === 0 ? ` (fora por ${jogos} jogo${jogos > 1 ? 's' : ''})` : ''}. Entra ${best.P.short}.`);
+        side.bench.splice(best.j, 1); side.bench.push(e.P);
+        Object.assign(e, { P: best.P, name: best.P.short, base: effOvr(best.P, e.pos, 1), inMin: this.min, yc: 0, inj: false, sx: undefined });
+        side.subs--;
+      } else {
+        e.base *= .6;
+        this.addEv(si, 'info', `Lesão: ${e.name} se machuca e segue em campo no sacrifício.`);
       }
     }
   }
@@ -221,7 +252,9 @@ export class Match {
   /** Multiplicador das chances de `att` pelo espaço que `def` deixa atrás (mais forte se `att` joga no contra-ataque). */
   private exposed(def: Side, att: Side): number {
     const x = this.exposure(def) * (att.style === 'contra' ? 1.6 : 1);
-    return clamp(1 + .045 * x, .82, 1.3);
+    // Com gente a menos, sobra espaço para o rival
+    const reds = def.xi.filter(e => e.red).length;
+    return clamp(1 + .045 * x, .82, 1.3) * (1 + .14 * reds);
   }
 
   /** Narração do jogo corrido (lances de construção, escanteios, impedimentos) com os nomes e funções dos jogadores. */

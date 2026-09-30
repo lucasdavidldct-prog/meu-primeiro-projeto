@@ -103,7 +103,7 @@ export function gkEff(e: RateEntry): number {
   return e.eff + offsets(P).gk;
 }
 
-/** Força por setor, ponderada pela posição e pela função de cada jogador; expulsões pesam 5% cada. */
+/** Força por setor, ponderada pela posição e pela função de cada jogador; expulsões pesam 13% cada. */
 export function rate(entries: RateEntry[]): Ratings {
   const f = (W: Record<Pos, number>, ref: number, k: Sector) => {
     let s = 0, w = 0;
@@ -111,7 +111,7 @@ export function rate(entries: RateEntry[]): Ratings {
     return w ? (s / w) * Math.pow(w / ref, .3) : 30;
   };
   const gk = entries.find(e => e.pos === 'GOL' && !e.red);
-  const reds = entries.filter(e => e.red).length, pen = Math.pow(.95, reds);
+  const reds = entries.filter(e => e.red).length, pen = Math.pow(.87, reds);
   return { att: f(W_ATT, REF.att, 'att') * pen, def: f(W_DEF, REF.def, 'def') * pen, mid: f(W_MID, REF.mid, 'mid') * pen, gk: gk ? gkEff(gk) : 30 };
 }
 

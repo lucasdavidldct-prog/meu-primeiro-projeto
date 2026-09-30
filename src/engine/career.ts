@@ -42,6 +42,24 @@ export interface Career {
   stats?: Record<string, { g: number; a: number; j: number; n: number }>;
   /** Fase alcançada na Libertadores desta temporada (para o histórico e os prêmios). */
   libReached: string | null;
+  /** Jogadores fora (id do jogador): suspensos ou lesionados, com quantos jogos faltam. */
+  fora?: Record<string, { t: 'susp' | 'les'; n: number }>;
+  /** Amarelos acumulados (3 = suspensão de 1 jogo). */
+  amarelos?: Record<string, number>;
+}
+
+/** Aplica cartões e lesões da partida: quem estava fora cumpre um jogo; expulsão e 3º amarelo suspendem; lesão tira de 1 a 4 jogos. */
+export function applyIncidents(C: Career, inc: { y: string[]; r: string[]; les: { id: string; jogos: number }[] }): string[] {
+  const fora = C.fora ??= {}, am = C.amarelos ??= {}, avisos: string[] = [];
+  for (const id of Object.keys(fora)) if (--fora[id].n <= 0) delete fora[id];
+  for (const id of inc.r) { fora[id] = { t: 'susp', n: 1 }; delete am[id]; avisos.push(id + '|vermelho'); }
+  for (const id of inc.y) {
+    if (inc.r.includes(id)) continue;
+    am[id] = (am[id] ?? 0) + 1;
+    if (am[id] >= 3) { fora[id] = { t: 'susp', n: 1 }; delete am[id]; avisos.push(id + '|amarelos'); }
+  }
+  for (const l of inc.les) { fora[l.id] = { t: 'les', n: Math.max(fora[l.id]?.n ?? 0, l.jogos) }; avisos.push(l.id + '|lesao'); }
+  return avisos;
 }
 
 export interface Fixture {

@@ -1,11 +1,11 @@
 import { inPos } from '../engine/cards';
 import { type Nota, Match, effNow, fatigue, freeKickTaker, matchReward, penaltyShootout, penaltyTaker, sideFromTeam, sideOpp, simulate, type Shootout, type Side } from '../engine/match';
-import { allClubs } from '../engine/world';
+import { allClubs, getPlayer } from '../engine/world';
 import { clubStrength } from '../engine/squads';
 import { clamp } from '../engine/rng';
 import { oppFromClub, type OppTeam } from '../engine/season';
-import { needsPens, recordResult, type Fixture } from '../engine/career';
-import { cardByUid, orderAt, teamInfo } from '../engine/state';
+import { applyIncidents, needsPens, recordResult, type Fixture } from '../engine/career';
+import { cardByUid, orderAt, replaceUnavailable, teamInfo } from '../engine/state';
 import { MENT, STYLES, STYLE_IDS } from '../engine/tactics';
 import type { CardPlayer, StyleId } from '../engine/types';
 import { cardHTML } from './card';
@@ -42,13 +42,17 @@ export function difficulty(home: 0 | 1 | null): { boost: number; keeper: number;
   return { boost, keeper, moments: Math.max(1, moments), gk: [2, 2, 1, 1][d] };
 }
 
-interface Live { m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; /** Sugestões de troca recusadas (nome de quem sairia). */ naoTrocar: Set<string>; avisado?: string; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout; notas?: Nota[] }
+interface Live { desfalques?: string[]; m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; /** Sugestões de troca recusadas (nome de quem sairia). */ naoTrocar: Set<string>; avisado?: string; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout; notas?: Nota[] }
 let L: Live | null = null;
 const DELAYS = [0, 650, 300, 110];
 
 /** Seu time pronto para jogar (ou null se faltam titulares). */
 function userSide(): Side | null {
-  const S = app.S, T = teamInfo(S);
+  const S = app.S;
+  // Suspensos e lesionados não jogam: o time troca sozinho e avisa
+  const trocas = replaceUnavailable(S);
+  if (trocas.length) { saveNow(); toast(`Fora deste jogo (suspenso/lesionado): ${trocas.join(', ')}`); }
+  const T = teamInfo(S);
   if (!T.full) { toast('Complete os 11 titulares antes de jogar'); app.tab = 'squad'; render(); return null; }
   const bench = S.squad.bench.filter(Boolean).map(u => cardByUid(S, u)!) as CardPlayer[];
   const ord = T.slots.map((sl, i) => orderAt(S, i, T.xi[i], sl.p));
@@ -59,12 +63,12 @@ function userSide(): Side | null {
 }
 
 /** Aplica o resultado: moedas, retrospecto, pênaltis no mata-mata e registro na carreira. */
-function finalize(m: Match, fx: Fixture | null): { coins: number; pens?: Shootout } {
+function finalize(m: Match, fx: Fixture | null): { coins: number; pens?: Shootout; desfalques: string[] } {
   const S = app.S, g = m.A.goals, o = m.B.goals;
   const coins = matchReward(g, o, m.momGoals, fx ? fx.mult : 1, !!fx);
   const res = g > o ? 'w' : g === o ? 'd' : 'l';
   S.coins += coins; S.rec[res]++; S.rec.gf += g; S.rec.ga += o;
-  let pens: Shootout | undefined;
+  let pens: Shootout | undefined, desfalques: string[] = [];
   if (fx && S.career) {
     // Números da temporada: gols, assistências, jogos e notas de quem esteve em campo
     const st = S.career.stats ??= {}, nums = m.userNumbers();
@@ -72,11 +76,16 @@ function finalize(m: Match, fx: Fixture | null): { coins: number; pens?: Shootou
       const r = st[n.name] ??= { g: 0, a: 0, j: 0, n: 0 };
       r.j++; r.n += n.nota; r.g += nums[n.name]?.g ?? 0; r.a += nums[n.name]?.a ?? 0;
     }
+    // Cartões e lesões valem para os próximos jogos
+    desfalques = applyIncidents(S.career, m.inc).map(a => {
+      const [id, k] = a.split('|'), n = getPlayer(id)?.short ?? id, f = S.career!.fora?.[id];
+      return k === 'lesao' ? `🚑 ${n} lesionado: fora por ${f?.n ?? 1} jogo(s)` : k === 'vermelho' ? `🟥 ${n} expulso: suspenso no próximo jogo` : `🟨 ${n} levou o 3º amarelo: suspenso no próximo jogo`;
+    });
     if (needsPens(fx, g, o)) pens = penaltyShootout(m.A, m.B);
     recordResult(S.career, g, o, pens ? [pens.a, pens.b] : undefined);
   }
   saveNow();
-  return { coins, pens };
+  return { coins, pens, desfalques };
 }
 
 export function startMatch(opp: OppTeam, fx: Fixture | null): void {
@@ -121,7 +130,7 @@ function loop(): void {
 function endMatch(): void {
   if (!L) return;
   const r = finalize(L.m, L.fx);
-  L.reward = r.coins; L.pens = r.pens; L.notas = L.m.notas();
+  L.reward = r.coins; L.pens = r.pens; L.notas = L.m.notas(); L.desfalques = r.desfalques;
   if (r.pens) L.m.addEv(r.pens.winner ? 1 : 0, 'info', `Pênaltis: ${L.m.A.name} ${r.pens.a} × ${r.pens.b} ${L.m.B.name}.`);
 }
 
@@ -145,7 +154,7 @@ export async function quickPlay(opp: OppTeam, fx: Fixture): Promise<void> {
     <p class="small muted" style="margin-top:-4px">${esc(fx.label)} · ${esc(m.B.name)}</p>
     ${r.pens ? `<p><b>Pênaltis: ${r.pens.a} × ${r.pens.b}</b> — ${r.pens.winner === 0 ? 'classificado!' : 'eliminado.'}</p>` : ''}
     <div class="scorers" style="font-size:13px"><div>${m.A.scorers.map(esc).join('<br>') || '—'}</div><div>${m.B.scorers.map(esc).join('<br>') || '—'}</div></div>
-    <p>+${fmt(r.coins)} moedas.</p>${notasHTML(m.notas(), m.B.s)}<button class="btn pri block" data-act="closeSheet">Continuar</button>`);
+    ${r.desfalques.length ? `<div class="desf">${r.desfalques.map(esc).join('<br>')}</div>` : ''}<p>+${fmt(r.coins)} moedas.</p>${notasHTML(m.notas(), m.B.s)}<button class="btn pri block" data-act="closeSheet">Continuar</button>`);
 }
 
 export function renderMatch(): void {
@@ -164,6 +173,7 @@ export function renderMatch(): void {
    <div class="scorers"><div>${A.scorers.map(esc).join('<br>')}</div><div>${B.scorers.map(esc).join('<br>')}</div></div>
    ${M.over ? `<div class="ht"><h2 style="margin:0 0 4px">${res}${L.pens ? ` · pênaltis ${L.pens.a} × ${L.pens.b}` : ''}</h2>
      ${L.pens ? `<p class="small" style="margin:0 0 6px">${L.pens.winner === 0 ? '<b class="up">Classificado nos pênaltis!</b>' : '<b class="down">Eliminado nos pênaltis.</b>'}</p><details class="small muted" style="margin-bottom:8px"><summary>Cobranças</summary>${L.pens.log.map(esc).join('<br>')}</details>` : ''}
+     ${L.desfalques?.length ? `<div class="desf">${L.desfalques.map(esc).join('<br>')}</div>` : ''}
      <p style="margin:0 0 10px">+${fmt(L.reward ?? 0)} moedas${L.fx ? ' · ' + esc(L.fx.label) : ' · amistoso'}.</p>
      ${L.notas ? notasHTML(L.notas, B.s) : ''}
      <button class="btn pri block" data-act="closeMatch">Continuar</button></div>` : ''}

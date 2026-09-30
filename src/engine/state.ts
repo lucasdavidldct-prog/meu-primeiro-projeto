@@ -170,9 +170,35 @@ function optimizeXI(S: GameState, all: OwnedCard[]): void {
 }
 
 /** Escala o melhor time: monta por posição e depois otimiza pela Força (química e posição incluídas). */
+/** Jogador suspenso ou lesionado na carreira (pelo id do jogador, vale para qualquer versão da carta). */
+export const outOf = (S: GameState, pid: string): { t: 'susp' | 'les'; n: number } | undefined => S.career?.fora?.[pid];
+
+/**
+ * Tira do time quem está suspenso ou lesionado: cada vaga recebe o melhor disponível (reservas primeiro, depois a coleção)
+ * que joga naquela posição. Devolve os nomes trocados ("sai → entra").
+ */
+export function replaceUnavailable(S: GameState): string[] {
+  const slots = squadSlots(S), out: string[] = [];
+  const inXI = () => new Set(S.squad.xi.filter(Boolean).map(u => cardByUid(S, u)?.id));
+  S.squad.xi.forEach((u, i) => {
+    const P = u ? cardByUid(S, u) : null;
+    if (!P || !outOf(S, P.id)) return;
+    const used = inXI(), pos = slots[i].p;
+    const cands = allCards(S).filter(c => !used.has(c.id) && !outOf(S, c.id) && (c.pos === 'GOL') === (pos === 'GOL'));
+    const benchU = new Set(S.squad.bench);
+    const best = cands.sort((a, b) => (effOvr(b, pos, 1) + (benchU.has(b.u) ? 2 : 0)) - (effOvr(a, pos, 1) + (benchU.has(a.u) ? 2 : 0)))[0];
+    if (!best) return;
+    const bj = S.squad.bench.indexOf(best.u);
+    if (bj >= 0) S.squad.bench[bj] = u;
+    S.squad.xi[i] = best.u;
+    out.push(`${P.short} → ${best.short}`);
+  });
+  return out;
+}
+
 export function autoLineup(S: GameState): void {
   const slots = squadSlots(S);
-  const all = allCards(S);
+  const all = allCards(S).filter(P => !outOf(S, P.id));
   const usedU = new Set<number>(), usedP = new Set<string>(), xi: number[] = Array(11).fill(0);
   const order = slots.map((_, i) => i).sort((a, b) => (slots[a].p === 'GOL' ? -1 : 0) - (slots[b].p === 'GOL' ? -1 : 0));
   for (const pass of [0, 1, 2]) for (const i of order) {

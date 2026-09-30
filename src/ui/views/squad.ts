@@ -2,7 +2,7 @@ import { inPos } from '../../engine/cards';
 import { FORM_IDS } from '../../engine/positions';
 import { clamp } from '../../engine/rng';
 import { SCALE_OFFSET } from '../../engine/chemistry';
-import { cardByUid, teamInfo, teamStrength } from '../../engine/state';
+import { cardByUid, outOf, teamInfo, teamStrength } from '../../engine/state';
 import { MENT, STYLES, STYLE_IDS } from '../../engine/tactics';
 import { cardHTML, pips } from '../card';
 import { app } from '../ctx';
@@ -11,6 +11,8 @@ import { esc } from '../dom';
 export function viewSquad(): string {
   const S = app.S, sel = app.sel;
   const T = teamInfo(S), { xi, chem, slots, r } = T;
+  // Selo de suspenso (🟥) ou lesionado (🚑) com quantos jogos faltam
+  const fora = (id: string) => { const o = outOf(S, id); return o ? `<span class="out-b ${o.t}" title="${o.t === 'susp' ? 'Suspenso' : 'Lesionado'}: ${o.n} jogo(s)">${o.t === 'susp' ? '🟥' : '🚑'}${o.n}</span>` : ''; };
   const bar = (l: string, raw: number) => { const v = raw - SCALE_OFFSET; return `<div class="bar">${l}<i><b style="width:${clamp((v - 45) / 50 * 100, 4, 100)}%"></b></i><span>${Math.round(v)}</span></div>`; };
   let pitch = `<div class="pitch"><svg class="lines" viewBox="0 0 100 140" preserveAspectRatio="none" fill="none" stroke="rgba(255,255,255,.28)" stroke-width=".5"><rect x="3" y="3" width="94" height="134"/><path d="M3 70h94"/><circle cx="50" cy="70" r="11"/><rect x="24" y="3" width="52" height="19"/><rect x="37" y="3" width="26" height="7"/><rect x="24" y="118" width="52" height="19"/><rect x="37" y="130" width="26" height="7"/></svg>`;
   slots.forEach((s, i) => {
@@ -21,13 +23,13 @@ export function viewSquad(): string {
       : ` style="left:${s.x}%;top:${top}%"`;
     if (P) {
       const oop = !inPos(P, s.p);
-      pitch += `<button class="slot" data-act="slot" data-i="${i}" data-u="${P.u}"${selc} aria-label="${s.p}: ${esc(P.name)}">${cardHTML(P)}<span class="lbl ${oop ? 'oop' : ''}">${s.p} ${pips(chem.per[i])}</span></button>`;
+      pitch += `<button class="slot" data-act="slot" data-i="${i}" data-u="${P.u}"${selc} aria-label="${s.p}: ${esc(P.name)}">${cardHTML(P, 'sm', fora(P.id))}<span class="lbl ${oop ? 'oop' : ''}">${s.p} ${pips(chem.per[i])}</span></button>`;
     } else pitch += `<button class="slot empty" data-act="slot" data-i="${i}"${selc}><span class="ph">${s.p}</span></button>`;
   });
   pitch += '</div>';
   const bench = S.squad.bench.map((u, i) => {
     const P = u ? cardByUid(S, u) : null;
-    return P ? `<button class="slot" data-act="bslot" data-i="${i}" data-u="${P.u}">${cardHTML(P)}<span class="lbl">RES ${P.pos}</span></button>`
+    return P ? `<button class="slot" data-act="bslot" data-i="${i}" data-u="${P.u}">${cardHTML(P, 'sm', fora(P.id))}<span class="lbl">RES ${P.pos}</span></button>`
       : `<button class="slot empty" data-act="bslot" data-i="${i}"><span class="ph">+</span></button>`;
   }).join('');
   return `
