@@ -1,5 +1,5 @@
 import { inPos } from '../engine/cards';
-import { type Nota, Match, effNow, fatigue, freeKickTaker, matchReward, penaltyShootout, penaltyTaker, sideFromTeam, sideOpp, simulate, type Shootout, type Side } from '../engine/match';
+import { type MomentKind, type Nota, Match, effNow, fatigue, freeKickTaker, matchReward, penaltyShootout, penaltyTaker, sideFromTeam, sideOpp, simulate, type Shootout, type Side } from '../engine/match';
 import { allClubs, getPlayer } from '../engine/world';
 import { clubStrength } from '../engine/squads';
 import { clamp } from '../engine/rng';
@@ -262,7 +262,7 @@ export async function trainingMoment(kind: 'ataque' | 'penalti' | 'falta' = 'ata
 }
 
 /** Só em desenvolvimento: abre um lance direto (usado nos testes de navegador). */
-export function devMoment(kind: 'ataque' | 'contra' | 'penalti' | 'falta' | 'goleiro', pen = false): Promise<unknown> {
+export function devMoment(kind: MomentKind, pen = false): Promise<unknown> {
   const S = app.S, T = teamInfo(S);
   const bench = S.squad.bench.filter(Boolean).map(u => cardByUid(S, u)!) as CardPlayer[];
   const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench });

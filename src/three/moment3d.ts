@@ -17,7 +17,9 @@ import { addLights, buildGoal, buildPitch, buildStadium, tickStadium } from './s
 import { endSound, planSound } from '../ui/sfx';
 
 const HELP3D = {
-  ataque: '<b>1 toque</b> no companheiro: passe rasteiro · <b>2 toques</b>: passe alto · toque no <b>campo</b>: conduzir · <b>desenhe um traço</b> até o gol para chutar · escolha o <b>tipo de chute</b> embaixo (Colocado, Forte, Rasteiro, Cavadinha) ou deixe no Auto · traço para o <b>espaço</b>: lançamento',
+  escanteio: '<b>Escanteio:</b> toque num companheiro na área para cruzar (bola alta). Depois, <b>desenhe o traço</b> para cabecear ou pegar de primeira. Na cobrança não tem impedimento.',
+  lateral: '<b>Lateral:</b> toque num companheiro perto para cobrar com a mão. Depois o lance segue normal. Cuidado com o <b>impedimento</b> (linha amarela).',
+  ataque: '<b>1 toque</b> no companheiro: passe rasteiro · <b>2 toques</b>: passe alto · toque no <b>campo</b>: conduzir · toque no <b>seu jogador</b>: finta (drible) · <b>desenhe um traço</b> até o gol para chutar · escolha o <b>tipo de chute</b> embaixo (Colocado, Forte, Rasteiro, Cavadinha) ou deixe no Auto · traço para o <b>espaço</b>: lançamento',
   penalti: '<b>Desenhe um traço</b> da bola até o canto: a direção escolhe o canto, a velocidade dá a força. Rápido demais vai por cima.',
   falta: '<b>Desenhe o traço</b> da bola até o gol: a direção mira, a <b>curva do traço</b> dá o efeito e a <b>velocidade</b> dá a força. Por cima ou em volta da barreira.',
 };
@@ -37,7 +39,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
         <canvas class="m3d-trail" id="m3dTrail"></canvas>
         <div class="m3d-top"><span class="mo-tag">${M.label}</span><b>${req.treino ? 'Treino de lances' : sc.title}</b><span class="acts" id="moActs"></span><button class="m3d-q" id="m3dQ" aria-label="Ajuda">?</button></div>
         <div class="m3d-label" id="m3dLabel"></div>
-        <div class="m3d-help show" id="m3dHelp">${HELP3D[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind]}</div>
+        <div class="m3d-help show" id="m3dHelp">${HELP3D[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind as keyof typeof HELP3D]}</div>
         <div class="m3d-replay" id="m3dReplay">REPLAY</div>
         ${!fk && !pen ? shotBarHTML() : ''}
       </div>
@@ -104,6 +106,9 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       wrap.appendChild(el); names.set(m.id, el);
     }
     const ring = carrierRing(); ring.scale.setScalar(SCALE); scene.add(ring);
+    // Linha de impedimento: faixa amarela na altura do penúltimo defensor
+    const offLine = new THREE.Mesh(new THREE.PlaneGeometry(68, .14), new THREE.MeshBasicMaterial({ color: 0xf2b640, transparent: true, opacity: .55, depthWrite: false }));
+    offLine.rotation.x = -Math.PI / 2; offLine.position.y = .025; offLine.renderOrder = 5; scene.add(offLine);
     const { ball: ballM, shadow: ballSh } = makeBall(); scene.add(ballM, ballSh);
     let preview: THREE.Mesh | null = null;
     const pvMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .85, depthTest: false });
@@ -128,6 +133,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       clearPreview(); cancelTap();
       helpEl.classList.remove('show');
       planSound(plan); anim = { plan, t0: performance.now() };
+      if (plan.say) flash(plan.say, plan.ok ? '#e8c35f' : '#f06a5a');
       if (plan.gk) { const g = sc.goalie(); g.tx = plan.gk.x; g.ty = plan.gk.y; gkState.dive = plan.gk.dive; gkState.t0 = performance.now() + plan.dur * .45; gkState.h = plan.gk.h; }
     }
     function endAnim(plan: Plan) {
@@ -284,6 +290,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       const c = sc.carrier, p = sc.prob(t), from = V(c.x, c.y - .5, .15);
       if (t.kind === 'pass') drawPath([from, V((c.x + t.m.x) / 2, (c.y + t.m.y) / 2, .6), V(t.m.x, t.m.y, .15)], p, `Passe ${Math.round(p * 100)}% · 2 toques = alto ${Math.round(sc.passP(t.m, true) * 100)}%`);
       else if (t.kind === 'drib') drawPath([from, V((c.x + t.x) / 2, (c.y + t.y) / 2, .1), V(t.x, t.y, .1)], p, `Conduzir ${Math.round(p * 100)}%`);
+      else if (t.kind === 'finta') drawPath([from, V(c.x + .8, c.y - 1.5, .1), V(c.x, c.y - 3.5, .1)], p, `Finta (drible) ${Math.round(p * 100)}%`);
     }
 
     // ---------- Câmera ----------
@@ -295,6 +302,12 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
         const b = sc.setup.ball, dx = b.x - 34, dy = b.y, L = Math.hypot(dx, dy), back = portrait ? 10 : 8;
         return portrait ? [V(b.x + dx / L * back, b.y + dy / L * back, 13), V(34 + dx * .2, 5, 0)]
           : [V(b.x + dx / L * back, b.y + dy / L * back, 4.4), V(34 + dx * .15, 0, .8)];
+      }
+      // Bola parada (escanteio/lateral): câmera alta atrás da cobrança, olhando para a área
+      if (sc.setPiece) {
+        const side = c.x < 34 ? -1 : 1;
+        return portrait ? [V(34 + side * 10, c.y + 18, 24), V(34 + side * 4, Math.max(6, c.y - 6), 0)]
+          : [V(34 + side * 16, c.y + 16, 12), V(34 + side * 3, Math.max(6, c.y - 4), 0)];
       }
       // Enquadra o portador, o gol e o meio do caminho; mais alto na tela em pé para ver os lados
       const cx = c.x * .8 + 34 * .2, depth = Math.max(c.y, 15); // perto do gol a câmera não avança mais (sem céu)
@@ -356,10 +369,13 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
         elN.classList.toggle('edge', off);
         tags.push({ el: elN, x, y });
       }
+      offLine.visible = !fk && !pen && !sc.setPiece && !finished;
+      if (offLine.visible) offLine.position.z = sc.offsideLine();
       // Chance do passe rasteiro ao lado de cada nome (atualiza quando a jogada para)
       if (!anim && !finished && !fk && !pen && (++pcTick % 12 === 0)) for (const [id, elN] of names) {
         const a = sc.mates.find(m => m.id === id)!, pc = elN.querySelector<HTMLElement>('.pc')!;
         if (a === sc.carrier) { pc.textContent = ''; continue; }
+        if (sc.isOffside(a)) { pc.textContent = ' impedido'; pc.style.color = '#f2b640'; continue; }
         // Mostra a melhor opção: rasteiro ou alto (↑ = com 2 toques, por cima)
         const p = sc.passP(a), pa = sc.passP(a, true), alto = pa > p + .08, v = alto ? pa : p;
         pc.textContent = ` ${Math.round(v * 100)}%${alto ? '↑' : ''}`; pc.style.color = probColor(v);

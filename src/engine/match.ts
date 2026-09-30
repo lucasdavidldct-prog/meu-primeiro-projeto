@@ -30,7 +30,7 @@ export interface Side {
 }
 export type EvType = 'info' | 'goal' | 'goal opp' | 'goal lance' | 'chance' | 'card-y' | 'card-r' | 'lance';
 export interface MatchEvent { l: string; side: 0 | 1; type: EvType; text: string }
-export type MomentKind = 'ataque' | 'contra' | 'penalti' | 'falta' | 'goleiro';
+export type MomentKind = 'ataque' | 'contra' | 'penalti' | 'falta' | 'goleiro' | 'escanteio' | 'lateral';
 export interface MomentRequest {
   kind: MomentKind;
   /** Cobrador (pênalti e falta). */
@@ -137,6 +137,8 @@ export class Match {
   ht = false;
   over = false;
   momentsLeft: number;
+  /** Escanteio/lateral a favor que vai virar lance jogável neste minuto. */
+  private bolaParada: 'escanteio' | 'lateral' | null = null;
   lastMom = -99;
   momGoals = 0;
   private aiDone: Record<string, boolean> = {};
@@ -203,6 +205,7 @@ export class Match {
     else if (rollB < cB / this.tackleKeep(A)) this.tackleEvent(A, B, 0);
     if (!this.over) await this.freeKicks();
     if (!this.over) this.ambient(pA, rA, rB);
+    if (!this.over && this.bolaParada) { const k = this.bolaParada; this.bolaParada = null; await this.playMoment(A, 0, { kind: k }); }
     this.cards();
     this.injuries();
     this.aiManage();
@@ -263,7 +266,13 @@ export class Match {
     const si: 0 | 1 = R() < pA ? 0 : 1, att = si ? this.B : this.A, def = si ? this.A : this.B;
     const who = (play: Play, W: Record<Pos, number> = ASSIST_W) => weightedPlayer(att, W, null, undefined, play);
     const roll = R();
-    if (roll < .18) { this.st.ck[si]++; this.addEv(si, 'info', tx('corner', { p: who('cross', CROSS_W).name })); return; }
+    if (roll < .18) {
+      this.st.ck[si]++; this.addEv(si, 'info', tx('corner', { p: who('cross', CROSS_W).name }));
+      // Parte dos seus escanteios vira lance jogável
+      if (si === 0 && this.canMoment(att) && R() < .35) this.bolaParada = 'escanteio';
+      return;
+    }
+    if (si === 0 && roll < .2 && this.canMoment(att)) { this.bolaParada = 'lateral'; return; }
     if (roll < .26) { this.addEv(si, 'info', tx('offside', { p: who('score', SCORE_W).name })); return; }
     const a = who('assist');
     const fn = a.fn ?? '';
@@ -327,8 +336,8 @@ export class Match {
   }
   private async playMoment(att: Side, si: 0 | 1, req: MomentRequest): Promise<void> {
     this.momentsLeft--; this.lastMom = this.min;
-    this.st.sh[si]++;
     const res = await this.onMoment!(this, req);
+    if (res.shot) this.st.sh[si]++;
     if (res.shot && res.onTarget) this.st.on[si]++;
     if (res.goal) {
       att.goals++; att.scorers.push(res.scorer + ' ' + this.label + (req.kind === 'penalti' ? ' (p)' : req.kind === 'falta' ? ' (f)' : '')); this.momGoals++;

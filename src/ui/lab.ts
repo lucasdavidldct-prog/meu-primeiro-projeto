@@ -22,7 +22,7 @@ const lab = {
   tally: {} as Record<string, [number, number][]>,
 };
 
-const LANCE_N: Record<MomentKind, string> = { ataque: 'Ataque', contra: 'Contra-ataque', falta: 'Falta', penalti: 'Pênalti', goleiro: 'Lance de goleiro' };
+const LANCE_N: Record<MomentKind, string> = { ataque: 'Ataque', contra: 'Contra-ataque', falta: 'Falta', penalti: 'Pênalti', goleiro: 'Lance de goleiro', escanteio: 'Escanteio', lateral: 'Lateral' };
 const basePlayer = () => (lab.u != null ? cardByUid(app.S, lab.u) ?? undefined : undefined);
 
 export function viewLab(): string {

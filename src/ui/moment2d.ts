@@ -8,7 +8,9 @@ import { endSound, planSound } from './sfx';
 import { awayKit } from '../engine/kits';
 
 export const HELP = {
-  ataque: '<b>1 toque</b> no companheiro: passe rasteiro · <b>2 toques</b>: passe alto · toque no <b>campo</b>: conduzir · <b>traço até o gol</b>: chute (tipo de chute: escolha embaixo do campo) ou toque dentro do gol · traço para o <b>espaço</b>: lançamento',
+  escanteio: '<b>Escanteio:</b> toque num companheiro na área para cruzar (bola alta). Depois, <b>desenhe o traço</b> para cabecear ou pegar de primeira. Na cobrança não tem impedimento.',
+  lateral: '<b>Lateral:</b> toque num companheiro perto para cobrar com a mão. Depois o lance segue normal. Cuidado com o <b>impedimento</b> (linha amarela).',
+  ataque: '<b>1 toque</b> no companheiro: passe rasteiro · <b>2 toques</b>: passe alto · toque no <b>campo</b>: conduzir · toque no <b>seu jogador</b>: finta (drible) · <b>traço até o gol</b>: chute (tipo de chute: escolha embaixo do campo) ou toque dentro do gol · traço para o <b>espaço</b>: lançamento',
   penalti: '<b>Desenhe um traço</b> até o canto (a velocidade dá a força) ou toque dentro do gol.',
   falta: '<b>Desenhe o traço</b> da bola até o gol: a direção mira, a <b>curva</b> dá o efeito e a <b>velocidade</b> dá a força.',
 };
@@ -23,7 +25,7 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
     ov.innerHTML = `<div class="mo-head"><span class="mo-tag">${M.label}</span><b>${sc.title}</b><span class="acts" id="moActs"></span></div>
       <canvas id="moCv"></canvas>
       ${!fk && !pen ? shotBarHTML() : ''}
-      <div class="mo-help" id="moHelp">${HELP[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind]}</div>
+      <div class="mo-help" id="moHelp">${HELP[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind as keyof typeof HELP]}</div>
       <div class="mo-msg" id="moMsg"></div>`;
     document.body.appendChild(ov);
     bindShotBar(ov, sc, d => { ov.querySelector<HTMLElement>('#moHelp')!.innerHTML = d; });
@@ -35,7 +37,8 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
     let ball: BallKey = sc.ballAt, anim: { plan: Plan; t0: number } | null = null, hover: Target | null = null, finished = false;
     function flash(text: string, color: string) { msgEl.textContent = text; msgEl.style.color = color; msgEl.classList.remove('show'); void msgEl.offsetWidth; msgEl.classList.add('show'); }
     function run(plan: Plan) {
-      planSound(plan); anim = { plan, t0: performance.now() }; hover = null;
+      planSound(plan); anim = { plan, t0: performance.now() };
+      if (plan.say) flash(plan.say, plan.ok ? '#e8c35f' : '#f06a5a'); hover = null;
       if (plan.gk) { const g = sc.goalie(); g.tx = plan.gk.x; g.ty = plan.gk.y; }
     }
     function endAnim(plan: Plan) {
@@ -142,17 +145,23 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
       ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(SX(GOAL.left), SY(-2.4), 7.32 * U, 2.4 * U);
       ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 1;
       for (let x = GOAL.left; x < 37.7; x += .6) { ctx.beginPath(); ctx.moveTo(SX(x), SY(-2.4)); ctx.lineTo(SX(x), SY(0)); ctx.stroke(); }
+      // Linha de impedimento (penúltimo defensor)
+      if (!fk && !pen && !sc.setPiece && !finished) {
+        const ly = SY(sc.offsideLine());
+        ctx.strokeStyle = 'rgba(242,182,64,.75)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]);
+        ctx.beginPath(); ctx.moveTo(0, ly); ctx.lineTo(Wd, ly); ctx.stroke(); ctx.setLineDash([]);
+      }
       for (let y = -2.4; y < 0; y += .6) { ctx.beginPath(); ctx.moveTo(SX(GOAL.left), SY(y)); ctx.lineTo(SX(GOAL.right), SY(y)); ctx.stroke(); }
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(SX(GOAL.left), SY(0)); ctx.lineTo(SX(GOAL.left), SY(-2.4)); ctx.lineTo(SX(GOAL.right), SY(-2.4)); ctx.lineTo(SX(GOAL.right), SY(0)); ctx.stroke();
       const c = sc.carrier;
       if (hover && !busy()) {
         const p = sc.prob(hover), col = probColor(p);
-        const tx2 = hover.kind === 'pass' ? hover.m.x : hover.kind === 'drib' || hover.kind === 'lanc' ? hover.x : hover.ax;
-        const ty2 = hover.kind === 'pass' ? hover.m.y : hover.kind === 'drib' || hover.kind === 'lanc' ? hover.y : -1.2;
+        const tx2 = hover.kind === 'pass' ? hover.m.x : hover.kind === 'drib' || hover.kind === 'lanc' ? hover.x : hover.kind === 'finta' ? c.x : hover.ax;
+        const ty2 = hover.kind === 'pass' ? hover.m.y : hover.kind === 'drib' || hover.kind === 'lanc' ? hover.y : hover.kind === 'finta' ? c.y - 3 : -1.2;
         ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.setLineDash(hover.kind === 'drib' ? [6, 6] : []);
         ctx.beginPath(); ctx.moveTo(SX(c.x), SY(c.y)); ctx.lineTo(SX(tx2), SY(ty2)); ctx.stroke(); ctx.setLineDash([]);
         if (hover.kind === 'shot') { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(SX(tx2), SY(ty2), .7 * U, 0, 7); ctx.fill(); }
-        label((hover.kind === 'pass' ? 'Passe ' : hover.kind === 'drib' ? 'Conduzir ' : hover.kind === 'lanc' ? 'Lançamento ' : 'Chute · gol ') + Math.round(p * 100) + '%', SX(tx2), SY(ty2) + (hover.kind === 'shot' ? U * 4.5 : -U * 3.2), col);
+        label((hover.kind === 'pass' ? 'Passe ' : hover.kind === 'drib' ? 'Conduzir ' : hover.kind === 'finta' ? 'Finta ' : hover.kind === 'lanc' ? 'Lançamento ' : 'Chute · gol ') + Math.round(p * 100) + '%', SX(tx2), SY(ty2) + (hover.kind === 'shot' ? U * 4.5 : -U * 3.2), col);
       }
       const rad = 1.7 * U;
       for (const f of sc.foes) { ctx.fillStyle = f.gk ? '#1f1f1f' : bKit[0]; ctx.strokeStyle = f.gk ? '#e8e8e8' : bKit[1]; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(SX(f.x), SY(f.y), rad, 0, 7); ctx.fill(); ctx.stroke(); }

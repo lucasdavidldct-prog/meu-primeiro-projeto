@@ -5,8 +5,8 @@ import { GOAL, analyzeGesture, attackMods, defenseMods, type DefenseMods, bezier
 import { effNow, pickShooter, type Match, type MomentKind, type MomentRequest, type MomentResult, type SideEntry } from './match';
 import { ROLE, slotsOf } from './positions';
 import { R, clamp, pick, rn, type Rng } from './rng';
-import { sub, type SubName } from './attrs';
-import { FX } from './playstyles';
+import { skillStars, sub, type SubName } from './attrs';
+import { FX, psLevel } from './playstyles';
 
 export interface Actor { id: number; x: number; y: number; tx: number; ty: number; e?: SideEntry; gk?: boolean; team: 0 | 1; num: number }
 /** Tipo de chute escolhido no lance ('auto' = o gesto decide: curvo = colocado, rápido = forte, curto e lento = cavadinha). */
@@ -18,11 +18,15 @@ export type Target =
   | { kind: 'pass'; m: Actor; alto?: boolean }
   /** Lançamento em profundidade: a bola vai para o espaço e o companheiro corre até ela. */
   | { kind: 'lanc'; m: Actor; x: number; y: number }
-  | { kind: 'drib'; x: number; y: number };
+  | { kind: 'drib'; x: number; y: number }
+  /** Finta: drible de habilidade para passar pelo marcador mais perto (toque no próprio jogador). */
+  | { kind: 'finta' };
 export interface BallKey { x: number; y: number; h: number }
 export interface Plan {
   kind: 'pass' | 'drib' | 'shot' | 'fk' | 'lanc';
   ok: boolean;
+  /** Nome da jogada para mostrar na tela (ex.: "Elástico!"). */
+  say?: string;
   /** Trajetória da bola (pontos igualmente espaçados no tempo). */
   ball: BallKey[];
   dur: number;
@@ -34,8 +38,10 @@ export interface Plan {
   end?: { res: MomentResult; text: string; color: string; goal: boolean };
 }
 
-export const TITLES: Record<MomentKind, string> = { ataque: 'Chance de ataque', contra: 'Contra-ataque!', penalti: 'Pênalti!', falta: 'Falta perigosa!', goleiro: 'Defenda!' };
+export const TITLES: Record<MomentKind, string> = { ataque: 'Chance de ataque', contra: 'Contra-ataque!', penalti: 'Pênalti!', falta: 'Falta perigosa!', goleiro: 'Defenda!', escanteio: 'Escanteio!', lateral: 'Lateral no ataque' };
 
+/** Subatributo de um jogador em campo (para escolher cobrador e cabeceadores). */
+const sub1 = (e: SideEntry, n: SubName) => (e.P.st && e.P.pos !== 'GOL' ? sub(e.P, n) : e.base);
 const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
 export function segD(p: Pt, a: Pt, b: Pt): number {
   const dx = b.x - a.x, dy = b.y - a.y, l = dx * dx + dy * dy;
@@ -68,6 +74,8 @@ export class LanceScene {
   readonly label: string;
   /** Título do lance (por onde a jogada nasceu). */
   title: string;
+  /** Bola parada (escanteio/lateral): a 1ª ação é obrigatoriamente um passe e não vale impedimento nela. */
+  setPiece = false;
   /** Tipo de chute escolhido pelo jogador no seletor do lance. */
   shotType: ShotType = 'auto';
   /** O portador recebeu um cruzamento/passe alto na área: finaliza de primeira. */
@@ -86,7 +94,7 @@ export class LanceScene {
     this.km = keeperMods(this.gkE?.P);
     this.dm = defenseMods(B.xi);
     this.setup = kind === 'falta' ? fkSetup(r) : null;
-    this.actions = kind === 'penalti' || kind === 'falta' ? 1 : req.treino ? 8 : 6;
+    this.actions = kind === 'penalti' || kind === 'falta' ? 1 : kind === 'escanteio' ? 3 : req.treino ? 8 : 6;
     const num = (e?: SideEntry) => (e ? (A.xi.indexOf(e) + 1 === 1 ? 1 : A.xi.indexOf(e) + 1) : 0);
     const mk = (x: number, y: number, team: 0 | 1, e?: SideEntry, gk = false, n = 0): Actor => ({ id: this.nid++, x, y, tx: x, ty: y, e, gk, team, num: n || num(e) });
     if (kind === 'penalti' || kind === 'falta') {
@@ -110,6 +118,26 @@ export class LanceScene {
           this.mates.push(mk(clamp(s.ball.x + gx * (6 + k * 5), 5, 63), clamp(s.wall.y - 3 + k * 2, 5, 40), 0, e));
         }
       }
+    } else if (kind === 'escanteio' || kind === 'lateral') {
+      // Bola parada: cobrador na bandeirinha (escanteio) ou na linha lateral (lateral), gente na área e marcação
+      this.setPiece = true;
+      const lado = r() < .5 ? -1 : 1, outs = A.xi.filter(e => !e.red && e.pos !== 'GOL');
+      const taker = req.taker ?? (kind === 'escanteio' ? outs.reduce((a, b) => (sub1(b, 'Cruzamento') > sub1(a, 'Cruzamento') ? b : a)) : outs.find(e => e.pos === (lado < 0 ? 'LE' : 'LD')) ?? outs[0]);
+      const bx = kind === 'escanteio' ? (lado < 0 ? .6 : 67.4) : (lado < 0 ? .4 : 67.6), by = kind === 'escanteio' ? .6 : rn(18, 32, r);
+      this.carrier = mk(bx, by, 0, taker);
+      this.mates = [this.carrier];
+      const aereos = outs.filter(e => e !== taker).sort((a, b) => sub1(b, 'Cabeceio') - sub1(a, 'Cabeceio'));
+      const nBox = kind === 'escanteio' ? 4 : 3;
+      aereos.slice(0, nBox).forEach((e, k) => this.mates.push(kind === 'escanteio'
+        ? mk(27 + k * 4.5 + rn(-1, 1, r), rn(5, 12, r), 0, e)
+        : mk(clamp(bx - lado * (6 + k * 7), 4, 64), clamp(by - 6 + k * 3 + rn(-2, 2, r), 8, 40), 0, e)));
+      // Na lateral, um apoio curto para receber de volta
+      if (kind === 'lateral') { const e = aereos[nBox]; if (e) this.mates.push(mk(clamp(bx - lado * 3.5, 3, 65), by + 3, 0, e)); }
+      const nums = [2, 3, 4, 5, 6, 8];
+      this.mates.slice(1).forEach((m, k) => this.foes.push(mk(clamp(m.x + rn(-1, 1, r), 3, 65), clamp(m.y - .9, 2, 42), 1, undefined, false, nums[k])));
+      if (kind === 'escanteio') this.foes.push(mk(34 + lado * 3, 1.2, 1, undefined, false, 7));
+      this.foes.push(mk(34, .8, 1, undefined, true, 1));
+      this.title = TITLES[kind];
     } else {
       const slots = slotsOf(A.form), counter = kind === 'contra', depth = counter ? rn(4, 9, r) : rn(0, 4, r);
       A.xi.forEach((e, i) => {
@@ -159,6 +187,19 @@ export class LanceScene {
     return { x: this.carrier.x + .5, y: this.carrier.y - .8, h: 0 };
   }
   field(): Actor[] { return this.foes.filter(f => !f.gk); }
+  /** Linha de impedimento: o penúltimo defensor (o goleiro conta). y menor = mais perto do gol. */
+  offsideLine(): number { const ys = this.foes.map(f => f.y).sort((a, b) => a - b); return ys[1] ?? 0; }
+  /** O companheiro está impedido se receber agora: à frente da bola e do penúltimo defensor (bola parada não vale). */
+  isOffside(m: Actor): boolean {
+    if (this.setPiece || this.kind === 'penalti' || this.kind === 'falta' || m === this.carrier) return false;
+    return m.y < this.offsideLine() - .25 && m.y < this.carrier.y - .25;
+  }
+  /** Passe para quem está impedido: o bandeirinha levanta a bandeira. */
+  private offsidePlan(m: Actor, alto: boolean): Plan {
+    this.done = true;
+    return { kind: 'pass', ok: false, ball: arc(this.ballAt, { x: m.x, y: m.y - .8 }, alto ? 2.4 : .3, 10), dur: 700, commit: () => {},
+      end: { res: { goal: false, shot: false, text: `${m.e?.name ?? 'o atacante'} estava impedido.` }, text: 'Impedimento!', color: '#f2b640', goal: false } };
+  }
   goalie(): Actor { return this.foes.find(f => f.gk)!; }
   private mods(m = this.carrier) { return attackMods(m.e!.P); }
   private stat(k: number, m = this.carrier) { return m.e!.P.st ? m.e!.P.st[k] : m.e!.base; }
@@ -167,6 +208,7 @@ export class LanceScene {
 
   // ---------- Probabilidades ----------
   passP(to: Actor, alto = false): number {
+    if (this.isOffside(to)) return 0;
     if (alto) return this.loftP(to);
     const c = this.carrier, Ln = dist(c, to), md0 = this.mods();
     let ok = 1;
@@ -198,6 +240,7 @@ export class LanceScene {
   }
   /** Lançamento: corrida do companheiro até o ponto contra o defensor mais próximo. */
   lancP(m: Actor, spot: Pt): number {
+    if (this.isOffside(m)) return 0;
     const c = this.carrier, md0 = this.mods(), pas = this.sb('Passe longo', 2);
     let ok = 1;
     const Rr = (1.8 + dist(c, spot) * .04 - (pas - 70) * .02) * md0.passRadius * this.dm.intercept;
@@ -216,6 +259,25 @@ export class LanceScene {
     for (const f of this.field()) { const d = segD(f, c, to); if (d < 3) ok *= 1 - d0 * (1 - d / 3); }
     return clamp(ok * clamp(1 - Math.max(0, dist(c, to) - this.mods().dribbleReach * .66) * .04, .6, 1), .03, .97);
   }
+  /** Marcador mais perto do portador (alvo da finta). */
+  private nearestFoe(): Actor | undefined { const c = this.carrier; return this.field().sort((a, b) => dist(a, c) - dist(b, c))[0]; }
+  /** Chance da finta: estrelas de drible, subatributos Drible e Agilidade, estilos (Firula, Drible Rápido) e a marcação. */
+  fintaP(): number {
+    const c = this.carrier, P = c.e!.P, f = this.nearestFoe();
+    if (!f) return .95;
+    const stars = skillStars(P), dri = this.sb('Drible', 3), agi = this.sb('Agilidade', 3);
+    const perto = dist(f, c) < 3.5 ? 1 : .6;
+    let ok = .42 + (stars - 3) * .08 + ((dri + agi) / 2 - 75) * .012;
+    ok *= 1 / Math.pow(FX.firula[psLevel(P, 'firula')] * FX.dribleMarcador[psLevel(P, 'drible-rapido')], .5);
+    ok /= this.dm.tackle;
+    return clamp(1 - (1 - ok) * perto, .08, .92);
+  }
+  /** Nome da finta conforme as estrelas de drible. */
+  private fintaNome(): string {
+    const s = skillStars(this.carrier.e!.P), r = this.r();
+    return s >= 5 ? (r < .34 ? 'Caneta' : r < .67 ? 'Chapéu' : 'Elástico') : s >= 4 ? (r < .5 ? 'Elástico' : 'Pedalada') : s >= 3 ? (r < .5 ? 'Pedalada' : 'Corte seco') : 'Corte seco';
+  }
+
   /** Trajetória (vista de cima) de um chute curvo até a linha do gol. */
   shotPath(ax: number, curve: number, n = 16): Pt[] {
     const c = this.carrier, reach = this.mods().curve;
@@ -272,8 +334,12 @@ export class LanceScene {
 
   /** Semântica de toque (2D e 3D): companheiro = passe, dentro do gol = chute, campo = conduzir. */
   target(wx: number, wy: number): Target | null {
+    // Na cobrança (escanteio/lateral) só dá para passar
+    if (this.setPiece) { let best: Actor | null = null, bd = 3.4; for (const m of this.mates) { if (m === this.carrier) continue; const d = Math.hypot(m.x - wx, m.y - wy); if (d < bd) { bd = d; best = m; } } return best ? { kind: 'pass', m: best, alto: this.kind === 'escanteio' } : null; }
     if (wy < 1.4 && wx > 28.5 && wx < 39.5) return { kind: 'shot', ax: clamp(wx, 30.6, 37.4), power: .65, curve: 0 };
     if (this.kind === 'penalti' || this.kind === 'falta') return null;
+    // Toque no próprio jogador com a bola: finta
+    if (Math.hypot(this.carrier.x - wx, this.carrier.y - wy) < 1.6) return { kind: 'finta' };
     let best: Actor | null = null, bd = 3.4;
     for (const m of this.mates) { if (m === this.carrier) continue; const d = Math.hypot(m.x - wx, m.y - wy); if (d < bd) { bd = d; best = m; } }
     if (best) return { kind: 'pass', m: best };
@@ -284,6 +350,7 @@ export class LanceScene {
   }
   /** Gesto de arrastar (em coordenadas do campo) → chute com direção, força e curva. */
   shotFromGesture(g: Gesture): Target | null {
+    if (this.setPiece) return null;
     const c = this.carrier, dx = Math.cos(g.angle), dy = Math.sin(g.angle);
     if (dy > -.2) return null;
     const ax = clamp(c.x + dx * (-c.y / dy), 22, 46), tipo = this.shotType;
@@ -292,7 +359,7 @@ export class LanceScene {
     return { kind: 'shot', ax, power: g.power, curve, tipo };
   }
   prob(t: Target): number {
-    return t.kind === 'pass' ? this.passP(t.m, t.alto) : t.kind === 'lanc' ? this.lancP(t.m, t) : t.kind === 'drib' ? this.dribP(t) : this.shotOdds(t.ax, t.power, t.curve, t.tipo).goal;
+    return t.kind === 'pass' ? this.passP(t.m, t.alto) : t.kind === 'lanc' ? this.lancP(t.m, t) : t.kind === 'drib' ? this.dribP(t) : t.kind === 'finta' ? this.fintaP() : this.shotOdds(t.ax, t.power, t.curve, t.tipo).goal;
   }
   /** Fim de um traço que não vai para o gol: perto de um companheiro = passe; no espaço = lançamento para quem estiver mais perto. */
   throughTarget(x: number, y: number): Target | null {
@@ -330,6 +397,9 @@ export class LanceScene {
     gk.tx = 34 + (c.x - 34) * .28;
     gk.ty = clamp(.6 + (Math.hypot(c.x - 34, c.y) < 14 ? 1.4 : .4), .5, 2.5);
     this.mates.forEach(m => { if (m === c) return; m.tx = clamp(m.x + rn(-1.5, 1.5, r), 3, 65); m.ty = clamp(m.y - rn(1, 3.5, r), 5, 44); });
+    // Atacantes se ajeitam na linha do penúltimo defensor; às vezes um fica adiantado (impedido) e cabe a você perceber
+    const line = this.foes.map(f => f.ty).sort((a, b) => a - b)[1] ?? 0;
+    this.mates.forEach(m => { if (m !== c && m.ty < line - .2 && r() < .75) m.ty = line + rn(.3, 1.3, r); });
   }
 
   private died(): Plan['end'] { return { res: { goal: false, shot: false, text: 'A defesa se fechou e a jogada morreu.' }, text: 'Recuou!', color: '#dddddd', goal: false }; }
@@ -337,6 +407,9 @@ export class LanceScene {
   /** Executa a ação: sorteia o resultado e devolve o plano de animação. */
   perform(t: Target): Plan {
     const r = this.r, c = this.carrier, from = this.ballAt, nm = c.e!.name;
+    // Bola parada: depois da cobrança, o lance segue normal (com impedimento)
+    if ((t.kind === 'pass' || t.kind === 'lanc') && this.isOffside(t.m)) { this.actions--; return this.offsidePlan(t.m, t.kind === 'pass' && !!t.alto); }
+    this.setPiece = false;
     if (t.kind === 'lanc') {
       this.actions--;
       const p = this.lancP(t.m, t), L = dist(c, t), dur = Math.min(1100, 380 + L * 22), m = t.m;
@@ -368,6 +441,24 @@ export class LanceScene {
       this.done = true;
       return { kind: 'pass', ok: false, ball: arc(from, to, t.alto ? 2.4 + L * .07 : .3, 10), dur: t.alto ? dur : 450, commit: () => {},
         end: { res: { goal: false, shot: false, text: t.alto ? `passe alto de ${nm} perdido na disputa.` : `passe de ${nm} interceptado.` }, text: t.alto ? 'Perdeu no alto!' : 'Interceptado!', color: '#f06a5a', goal: false } };
+    }
+    if (t.kind === 'finta') {
+      this.actions--;
+      const f = this.nearestFoe(), nome = this.fintaNome();
+      // Direção: passa pelo marcador rumo ao gol (4 a 6 m)
+      const gx = 34 - c.x, gy = -c.y, gl = Math.hypot(gx, gy) || 1, L = 4 + skillStars(c.e!.P) * .4;
+      const to = { x: clamp(c.x + gx / gl * L + (f ? (c.x - f.x) * .3 : 0), 2, 66), y: clamp(c.y + gy / gl * L, 2, 44) };
+      if (r() < this.fintaP()) {
+        c.tx = to.x; c.ty = to.y;
+        if (f) { f.tx = f.x + (f.x - c.x) * .4; f.ty = f.y + 2.2; } // o marcador fica para trás
+        return { kind: 'drib', ok: true, say: `${nome}!`, ball: arc(from, { x: to.x + .5, y: to.y - .8 }, nome === 'Chapéu' ? 1.8 : 0, 8), dur: 700,
+          commit: () => { c.x = to.x; c.y = to.y; if (f) { f.x = f.tx; f.y = f.ty; } this.firstTime = false; if (this.actions <= 0) this.done = true; },
+          end: this.actions <= 0 ? this.died() : undefined };
+      }
+      this.done = true;
+      if (f) { f.tx = c.x; f.ty = c.y - .6; }
+      return { kind: 'drib', ok: false, say: `${nome}…`, ball: arc(from, { x: c.x + .8, y: c.y - 1.4 }, 0, 6), dur: 500, commit: () => {},
+        end: { res: { goal: false, shot: false, text: `${nm} tentou o ${nome.toLowerCase()} e perdeu a bola.` }, text: 'Desarmado!', color: '#f06a5a', goal: false } };
     }
     if (t.kind === 'drib') {
       this.actions--;

@@ -40,7 +40,7 @@ export const LAB: Record<string, LabInfo> = {
     efeitos: [L('Erro na cavadinha (soma)', FX.cavadinhaErro, 'prob', 'menor'), L('Defesa do goleiro na cavadinha', FX.cavadinhaDefesa, 'mult', 'menor'), S('Gols nas finalizações', FX.cavadinhaSim, 'mult', 'maior')] },
   'cobranca-de-falta': { lado: 'ataque', pos: 'MEI', lances: ['falta', 'ataque'], dica: 'Na falta, curve o traço por cima/ao lado da barreira.',
     efeitos: [L('Alcance da curva', FX.curva, 'mult', 'maior'), L('Dispersão da cobrança', FX.faltaDispersao, 'm', 'menor'), S('Gol de falta direta', FX.falta, 'prob', 'maior'), S('Conversão de pênalti', FX.penaltiBatedor, 'add', 'maior')] },
-  'cabeceio': { lado: 'ataque', pos: 'ATA', lances: ['ataque'], dica: 'Cruze com 2 toques (passe alto) para ele dentro da área e finalize de primeira.',
+  'cabeceio': { lado: 'ataque', pos: 'ATA', lances: ['ataque', 'escanteio'], dica: 'Cruze com 2 toques (passe alto) para ele dentro da área e finalize de primeira.',
     efeitos: [L('Defesa do goleiro na cabeçada', FX.cabecaDefesa, 'mult', 'menor'), S('Chance de gol de cabeça', FX.cabeceio, 'mult', 'maior')] },
   // Passe
   'passe-preciso': { lado: 'ataque', pos: 'MC', lances: ['ataque'], dica: 'Toque em companheiros marcados: o passe passa mais.',
@@ -53,7 +53,7 @@ export const LAB: Record<string, LabInfo> = {
     efeitos: [L('Penalidade de distância no passe alto', FX.lancamento, 'mult', 'menor')] },
   'tiki-taka': { lado: 'ataque', pos: 'MC', lances: ['ataque'], dica: 'Toques curtos (até 15 m), mesmo com marcador perto.',
     efeitos: [L('Chance mínima do passe curto', FX.tikiTaka, 'prob', 'maior')] },
-  'cruzamento': { lado: 'ataque', pos: 'PD', lances: ['ataque'], dica: 'Vá até a ponta e cruze com passe alto (2 toques).',
+  'cruzamento': { lado: 'ataque', pos: 'PD', lances: ['ataque', 'escanteio'], dica: 'Vá até a ponta e cruze com passe alto (2 toques).',
     efeitos: [L('Acerto do cruzamento da ponta', [1, 1.12, 1.22], 'mult', 'maior'), S('Peso nas assistências de cabeça', FX.cruzamento, 'mult', 'maior')] },
   // Controle
   'primeiro-toque': { lado: 'ataque', pos: 'MEI', lances: ['ataque'], dica: 'Conduza perto dos marcadores.',
@@ -82,7 +82,7 @@ export const LAB: Record<string, LabInfo> = {
   // Físico
   'imposicao-fisica': { lado: 'defesa', pos: 'ZAG', lances: ['ataque'], dica: 'Os marcadores rivais têm o estilo: cruze (passe alto) para a área.',
     efeitos: [L('Disputa pelo alto do seu receptor', FX.defFisico, 'mult', 'menor')] },
-  'acrobatico': { lado: 'ataque', pos: 'ATA', lances: ['ataque'], dica: 'Cruze (passe alto) para ele e finalize de primeira (voleio).',
+  'acrobatico': { lado: 'ataque', pos: 'ATA', lances: ['ataque', 'escanteio'], dica: 'Cruze (passe alto) para ele e finalize de primeira (voleio).',
     efeitos: [L('Defesa do goleiro no voleio', FX.acrobaticoDefesa, 'mult', 'menor'), S('Gols de cabeça/voleio', FX.acrobaticoSim, 'mult', 'maior')] },
   'trivela': { lado: 'ataque', pos: 'PD', lances: ['ataque', 'falta'], dica: 'Chute ou bata falta com o traço bem curvo.',
     efeitos: [L('Alcance da curva', FX.trivelaCurva, 'mult', 'maior')] },
