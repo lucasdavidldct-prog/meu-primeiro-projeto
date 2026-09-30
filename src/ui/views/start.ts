@@ -17,7 +17,7 @@ export function viewStart(): string {
   <div class="panel" style="margin-top:14px">
     <div class="row" style="justify-content:space-between"><span>Temporada curta (só turno, 19 rodadas)</span><button class="chip" data-act="stShort" aria-pressed="${app.startShort}">${app.startShort ? 'Sim' : 'Não'}</button></div>
     <div class="row" style="justify-content:space-between;margin-top:10px"><span>Jogar a Libertadores já na 1ª temporada</span><button class="chip" data-act="stLib" aria-pressed="${app.startLib && !serieB}" ${serieB ? 'disabled' : ''}>${app.startLib && !serieB ? 'Sim' : 'Não'}</button></div>
-    <div class="row" style="justify-content:space-between;margin-top:10px"><span>Modo teste: começar com 1.000.000 moedas</span><button class="chip" data-act="stRich" aria-pressed="${app.startRich}">${app.startRich ? 'Sim' : 'Não'}</button></div>
+    <div class="row" style="justify-content:space-between;margin-top:10px"><span>Modo teste (+1.000.000 moedas)</span><button class="chip" data-act="stRich" aria-pressed="${app.startRich}">${app.startRich ? 'Sim' : 'Não'}</button></div>
     <p class="small muted" style="margin:8px 0 0">Sem essa opção, as vagas vêm só pela classificação: os 5 primeiros do Brasileirão (e o campeão da Libertadores) jogam a edição seguinte.${serieB ? ' Clubes da Série B começam brigando pelo acesso.' : ''}</p>
   </div>
   <button class="btn pri block" style="margin-top:14px" data-act="stGo">Começar carreira com ${esc(sel?.n ?? '')}</button>`;

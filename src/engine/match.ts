@@ -1,7 +1,7 @@
 // Motor de partida minuto a minuto (sem interface). A interface injeta onMoment
 // para transformar chances do usuário em lances jogáveis.
 import { calcChem, effOvr, rate, type Ratings } from './chemistry';
-import { slotsOf } from './positions';
+import { ROLE, slotsOf } from './positions';
 import { R, clamp, rn, wpick } from './rng';
 import type { OppTeam } from './season';
 import { STYLES, sv } from './tactics';
@@ -16,7 +16,11 @@ export interface SideEntry {
   P: BasePlayer; pos: Pos; base: number; inMin: number; yc: number; red: boolean; name: string;
   /** Efeito da função/orientação do jogador e o id da função (para a narração). */
   ofx?: OrderFx; fn?: string;
+  /** Números do jogo para a nota: gols, assistências, desarmes/bloqueios, defesas (goleiro), finalizações. */
+  sx?: { g: number; a: number; d: number; s: number; c: number };
 }
+const bump = (e: SideEntry | null | undefined, k: 'g' | 'a' | 'd' | 's' | 'c', n = 1) => { if (!e) return; (e.sx ??= { g: 0, a: 0, d: 0, s: 0, c: 0 })[k] += n; };
+export interface Nota { name: string; pos: Pos; nota: number; side: 0 | 1 }
 export interface Side {
   you: boolean; name: string; s: string; c1: string; c2: string;
   form: FormationId; style: StyleId; ment: number;
@@ -50,9 +54,9 @@ export const CALIB = {
   attExp: 2.1,        // peso da relação ataque/defesa na criação de chances (diferença de nível pesa mais)
   possExp: 2.8,       // peso do meio-campo na posse
   finExp: 1.5,        // peso da qualidade do finalizador contra o goleiro
-  home: 1.22,         // multiplicador de chances do mandante
-  away: .84,          // multiplicador de chances do visitante
-  homeMid: 1.02,      // a torcida empurra: meio-campo do mandante um pouco mais forte
+  home: 1.3,         // multiplicador de chances do mandante
+  away: .8,          // multiplicador de chances do visitante
+  homeMid: 1.03,      // a torcida empurra: meio-campo do mandante um pouco mais forte
 };
 
 const POSS_MOD: Record<StyleId, number> = { posse: .07, retranca: -.08, contra: -.06, pressao: .03, equilibrado: 0 };
@@ -249,6 +253,7 @@ export class Match {
       e => 1 + 2 * ps(e, 'desarme') + 1.5 * ps(e, 'interceptacao'));
     if (!ps(d, 'desarme') && !ps(d, 'interceptacao')) return;
     const a = weightedPlayer(att, SCORE_W);
+    bump(d, 'd');
     this.addEv(si, 'info', tx('tackle', { d: d.name, p: a.name }));
   }
 
@@ -263,11 +268,13 @@ export class Match {
     if (res.shot && res.onTarget) this.st.on[si]++;
     if (res.goal) {
       att.goals++; att.scorers.push(res.scorer + ' ' + this.label + (req.kind === 'penalti' ? ' (p)' : req.kind === 'falta' ? ' (f)' : '')); this.momGoals++;
+      bump(att.xi.find(e => e.name === res.scorer), 'g'); if (res.assist) bump(att.xi.find(e => e.name === res.assist), 'a');
       this.addEv(si, 'goal lance', `Lance jogado: GOL de ${res.scorer}!${res.assist ? ' Passe de ' + res.assist + '.' : ''}`);
     } else this.addEv(si, 'lance', `Lance jogado: ${res.text}`);
   }
 
-  private goal(att: Side, si: 0 | 1, shooter: SideEntry, text: string, suffix = ''): void {
+  private goal(att: Side, si: 0 | 1, shooter: SideEntry, text: string, suffix = '', assist?: SideEntry | null): void {
+    bump(shooter, 'g'); bump(assist, 'a');
     this.st.on[si]++; att.goals++; att.scorers.push(shooter.name + ' ' + this.label + suffix);
     this.addEv(si, si ? 'goal opp' : 'goal', text);
   }
@@ -285,7 +292,7 @@ export class Match {
       this.addEv(si, 'info', tx('fk', { p: taker.name }));
       const gp = FX.falta[lvl] * FX.reflexos[ps(gkE, 'reflexos')] * clamp((taker.P.st[2] + taker.P.st[1]) / 2 / 75, .8, 1.2);
       if (R() < gp) this.goal(att, si, taker, tx('fkGoal', { p: taker.name, gk }), ' (f)');
-      else if (R() < .35) { this.st.on[si]++; this.addEv(si, 'chance', tx('fkSave', { p: taker.name, gk })); }
+      else if (R() < .35) { this.st.on[si]++; bump(gkE, 's'); this.addEv(si, 'chance', tx('fkSave', { p: taker.name, gk })); }
       else this.addEv(si, 'chance', tx('fkMiss', { p: taker.name }));
     }
   }
@@ -320,7 +327,7 @@ export class Match {
       const bl = Math.min(.2, teamFx(def, 'bloqueio', FX.bloqueio));
       if (bl > 0 && R() < bl) {
         const d = weightedPlayer(def, { GOL: 0, ZAG: 1, LD: .5, LE: .5, VOL: .8, MC: .3, MEI: .1, MD: .2, ME: .2, PD: .05, PE: .05, ATA: .02 }, null, e => 1 + 3 * ps(e, 'bloqueio'));
-        if (ps(d, 'bloqueio')) { this.addEv(si, 'chance', tx('block', { d: d.name, p: shooter.name })); return; }
+        if (ps(d, 'bloqueio')) { bump(d, 'd'); this.addEv(si, 'chance', tx('block', { d: d.name, p: shooter.name })); return; }
       }
     }
     const q = R();
@@ -340,8 +347,8 @@ export class Match {
     const o = { p: shooter.name, gk };
     if (R() < gp) {
       const t = kind === 'longe' ? tx('goalLong', o) : kind === 'cabeca' ? tx('goalHead', o) : tx('goal', o);
-      this.goal(att, si, shooter, t + (assist ? ` ${kind === 'cabeca' ? 'Cruzamento' : 'Assistência'} de ${assist.name}.` : ''));
-    } else if (R() < .45) { this.st.on[si]++; this.addEv(si, 'chance', kind === 'cabeca' ? tx('saveHead', o) : tx('save', o)); }
+      this.goal(att, si, shooter, t + (assist ? ` ${kind === 'cabeca' ? 'Cruzamento' : 'Assistência'} de ${assist.name}.` : ''), '', assist);
+    } else if (R() < .45) { this.st.on[si]++; bump(gkE, 's'); bump(shooter, 'c', .5); this.addEv(si, 'chance', kind === 'cabeca' ? tx('saveHead', o) : tx('save', o)); }
     else if (R() < .08) this.addEv(si, 'chance', tx('post', o));
     else if (q > .45) this.addEv(si, 'chance', kind === 'longe' ? tx('missLong', o) : kind === 'cabeca' ? tx('missHead', o) : tx('miss', o));
   }
@@ -388,7 +395,7 @@ export class Match {
         const inn = cands.reduce((a, b) => (effOvr(b, o.pos, 1) > effOvr(a, o.pos, 1) ? b : a));
         B.bench.splice(B.bench.indexOf(inn), 1);
         this.addEv(1, 'info', `Substituição no ${B.name}: sai ${o.name}, entra ${inn.short}.`);
-        Object.assign(o, { P: inn, name: inn.short, inMin: m, yc: 0, base: effOvr(inn, o.pos, 1) });
+        Object.assign(o, { P: inn, name: inn.short, inMin: m, yc: 0, base: effOvr(inn, o.pos, 1), sx: undefined });
         B.subs--;
       }
     }
@@ -405,9 +412,29 @@ export class Match {
     this.addEv(0, 'info', `Substituição: sai ${e0.name}, entra ${P.short}.`);
     A.bench.push(e0.P);
     const ch = calcChem(A.xi.map(x => (x === e0 ? P : x.P)), A.form).per[outIdx];
-    Object.assign(e0, { P, name: P.short, base: effOvr(P, e0.pos, ch), inMin: this.min, yc: 0 });
+    Object.assign(e0, { P, name: P.short, base: effOvr(P, e0.pos, ch), inMin: this.min, yc: 0, sx: undefined });
     A.subs--;
     return { ok: true };
+  }
+
+  /** Notas de 0 a 10 dos jogadores (quem começou ou entrou), pelo que fizeram no jogo e pelo resultado. */
+  notas(): Nota[] {
+    const out: Nota[] = [];
+    for (const [side, si, other] of [[this.A, 0, this.B], [this.B, 1, this.A]] as const) {
+      const res = Math.sign(side.goals - other.goals), sof = other.goals;
+      for (const e of side.xi) {
+        const x = e.sx ?? { g: 0, a: 0, d: 0, s: 0, c: 0 };
+        const r = ROLE(e.pos);
+        let n = 6.2 + .12 * (e.base - 75) / 5 + 1.1 * x.g + .7 * x.a + .3 * x.d + .4 * x.s + .15 * x.c + .3 * res;
+        if (r === 'G') n -= .45 * sof; else if (r === 'D') n -= .2 * sof;
+        if (r === 'G' && sof === 0) n += .5; else if (r === 'D' && sof === 0) n += .3;
+        if (e.yc) n -= .3;
+        if (e.red) n -= 2;
+        n += (R() - .5) * .5;
+        out.push({ name: e.name, pos: e.pos, nota: Math.round(clamp(n, 3.5, 10) * 10) / 10, side: si });
+      }
+    }
+    return out;
   }
 
   setStyle(s: StyleId): void { this.A.style = s; this.addEv(0, 'info', `${this.A.name} muda para ${STYLES[s].n}.`); }

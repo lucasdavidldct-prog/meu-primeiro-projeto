@@ -86,7 +86,15 @@ export class LanceScene {
         const dx = 34 - s.ball.x, dy = -s.ball.y, L = Math.hypot(dx, dy), px = -dy / L, py = dx / L;
         for (let k = 0; k < 4; k++) { const o = (k - 1.5) * (s.wall.half * 2 / 3.2); this.foes.push(mk(s.wall.x + px * o, s.wall.y + py * o, 1, undefined, false, [4, 5, 6, 8][k])); }
         const gx = s.ball.x < 34 ? 1 : -1;
-        for (let k = 0; k < 2; k++) this.mates.push(mk(clamp(s.ball.x + gx * (6 + k * 5), 5, 63), clamp(s.wall.y - 3 + k * 2, 5, 40), 0, pickShooter(A)));
+        // Dois companheiros na área (sem repetir o cobrador nem um ao outro)
+        const used = new Set([taker]);
+        for (let k = 0; k < 2; k++) {
+          let e = pickShooter(A);
+          for (let t = 0; t < 12 && used.has(e); t++) e = pickShooter(A);
+          if (used.has(e)) e = A.xi.find(x => !x.red && x.pos !== 'GOL' && !used.has(x)) ?? e;
+          used.add(e);
+          this.mates.push(mk(clamp(s.ball.x + gx * (6 + k * 5), 5, 63), clamp(s.wall.y - 3 + k * 2, 5, 40), 0, e));
+        }
       }
     } else {
       const slots = slotsOf(A.form), counter = kind === 'contra', depth = counter ? rn(4, 9, r) : rn(0, 4, r);

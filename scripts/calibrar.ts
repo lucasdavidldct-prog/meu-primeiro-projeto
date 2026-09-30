@@ -1,7 +1,7 @@
 // npm run calibrar — simulação em massa para conferir se o motor está realista.
 // Alvo: ~2,3 gols por jogo entre times do mesmo nível, mando de campo pesando e goleadas só com diferença grande.
 import { CALIB, sideOpp, simulate } from '../src/engine/match';
-import { seedRng } from '../src/engine/rng';
+import { R, seedRng } from '../src/engine/rng';
 import { clubStrength, squadOf, aiTactics } from '../src/engine/squads';
 import { allClubs, type ClubInfo } from '../src/engine/world';
 
@@ -15,9 +15,9 @@ const team = (c: ClubInfo, opp: number) => { const t = aiTactics(c.id, opp); ret
 function pairs(diff: number, n: number): [ClubInfo, ClubInfo][] {
   const out: [ClubInfo, ClubInfo][] = [];
   for (let i = 0; out.length < n && i < n * 40; i++) {
-    const a = clubs[Math.floor(Math.random() * clubs.length)];
+    const a = clubs[Math.floor(R() * clubs.length)];
     const cands = clubs.filter(b => b !== a && Math.abs(a.s - b.s - diff) <= (diff === 0 ? 1 : 1.5));
-    if (cands.length) out.push([a.c, cands[Math.floor(Math.random() * cands.length)].c]);
+    if (cands.length) out.push([a.c, cands[Math.floor(R() * cands.length)].c]);
   }
   return out;
 }
@@ -42,7 +42,7 @@ console.log('Constantes:', JSON.stringify(CALIB), '\n');
 const eq = await run(pairs(0, N), null);
 console.log(`Mesmo nível, campo neutro: ${eq.avg.toFixed(2)} gols/jogo · pênaltis convertidos ${eq.pen.toFixed(2)}/jogo · gols de falta ${eq.fk.toFixed(2)}/jogo`);
 console.log(`  V ${eq.w} · E ${eq.d} · D ${eq.l}`);
-const hm = await run(pairs(0, Math.round(N / 2)), 0);
+const hm = await run(pairs(0, N), 0);
 console.log(`Mesmo nível, com mando: mandante V ${hm.w} · E ${hm.d} · D ${hm.l} (${hm.avg.toFixed(2)} gols/jogo)\n`);
 console.log('Diferença de força (mais forte primeiro, campo neutro):');
 const rows: { diff: number; wr: number; lr: number }[] = [];

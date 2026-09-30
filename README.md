@@ -145,6 +145,16 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Ajustes da primeira jogada de teste (1.2)
+
+- Uniforme reserva automático quando as cores se confundem (ex.: Galo x Botafogo), no 3D e no 2D (`src/engine/kits.ts`).
+- Narração: todo evento do adversário leva a sigla dele; nota de 0 a 10 para cada jogador e **Craque do jogo**.
+- Próximo jogo mostra a **Força** dos dois times na mesma escala.
+- Campinho do Time com o goleiro visível (não fica atrás dos zagueiros).
+- Lance 3D: chance do passe ao lado de cada nome, ajuda no topo (não cobre o jogador), falta e pênalti enquadrados
+  na tela em pé, sem jogador repetido na falta.
+- Mando mais forte (mandante ~50% V, 28% E, 22% D entre times iguais) e calibragem determinística.
+
 ## Lance 3D (controles estilo Score)
 
 - Tela cheia, câmera alta atrás do ataque. Nomes dos companheiros fora da tela ficam na borda e também podem ser tocados.

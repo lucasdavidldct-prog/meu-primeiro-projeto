@@ -1,7 +1,7 @@
 // Tela da carreira: próximo jogo, tabela, Libertadores, outras ligas e sala de troféus.
 import { MAIN_LEAGUES, groupStandings, leagueStandings, libUserStatus, nextFixture, phaseName, seasonOver, type CupTie, type Career } from '../../engine/career';
 import { oppFromId, type Standing } from '../../engine/season';
-import { teamInfo } from '../../engine/state';
+import { teamInfo, teamStrength } from '../../engine/state';
 import { STYLES, counterOf } from '../../engine/tactics';
 import { W } from '../../engine/world';
 import { app, userClub } from '../ctx';
@@ -61,7 +61,7 @@ export function viewSeason(): string {
     next = `<div class="panel"><h2 style="margin-top:0">Temporada ${C.year} encerrada</h2><p>Você terminou em <b>${pos}º lugar</b> no ${esc(C.league.name)}${C.lib ? ` · Libertadores: <b>${esc(libUserStatus(C.lib, C.club))}</b>` : ''}.</p><button class="btn pri block" data-act="endSeason">Receber prêmios e começar ${C.year + 1}</button></div>`;
   } else {
     const f = nextFixture(C)!, T = teamInfo(S), o = oppFromId(f.opp, T.ovr);
-    const you = `<div>${crestHTML(userClub(), 'team')}<div class="nm">${esc(S.name)}</div><div class="small muted">Geral ${T.ovr}</div></div>`;
+    const you = `<div>${crestHTML(userClub(), 'team')}<div class="nm">${esc(S.name)}</div><div class="small muted">Força ${teamStrength(T)} · ${S.squad.form}</div></div>`;
     const them = `<div>${crestHTML(clubC(f.opp), 'team')}<div class="nm">${esc(o.n)}</div><div class="small muted">Força ${o.str} · ${o.form}</div></div>`;
     const ko = f.ko && f.ko.leg === 1 ? `<div class="tip">Jogo de volta. Agregado: <b>${f.ko.agg[0]} × ${f.ko.agg[1]}</b>. Empate no agregado vai para os pênaltis.</div>` : f.ko?.phase === 'final' ? '<div class="tip">Final em jogo único, campo neutro. Empate vai para os pênaltis.</div>' : '';
     next = `<div class="panel"><div class="small muted" style="text-align:center;margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">${esc(f.label)}</div>

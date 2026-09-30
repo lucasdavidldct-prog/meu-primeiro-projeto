@@ -11,9 +11,10 @@ export function viewSquad(): string {
   const S = app.S, sel = app.sel;
   const T = teamInfo(S), { xi, chem, slots, r } = T;
   const bar = (l: string, v: number) => `<div class="bar">${l}<i><b style="width:${clamp((v - 45) / 50 * 100, 4, 100)}%"></b></i><span>${Math.round(v)}</span></div>`;
-  let pitch = `<div class="pitch"><svg class="lines" viewBox="0 0 100 128" preserveAspectRatio="none" fill="none" stroke="rgba(255,255,255,.28)" stroke-width=".5"><rect x="3" y="3" width="94" height="122"/><path d="M3 64h94"/><circle cx="50" cy="64" r="11"/><rect x="24" y="3" width="52" height="18"/><rect x="37" y="3" width="26" height="7"/><rect x="24" y="107" width="52" height="18"/><rect x="37" y="118" width="26" height="7"/></svg>`;
+  let pitch = `<div class="pitch"><svg class="lines" viewBox="0 0 100 140" preserveAspectRatio="none" fill="none" stroke="rgba(255,255,255,.28)" stroke-width=".5"><rect x="3" y="3" width="94" height="134"/><path d="M3 70h94"/><circle cx="50" cy="70" r="11"/><rect x="24" y="3" width="52" height="19"/><rect x="37" y="3" width="26" height="7"/><rect x="24" y="118" width="52" height="19"/><rect x="37" y="130" width="26" height="7"/></svg>`;
   slots.forEach((s, i) => {
-    const P = xi[i], top = 8 + (100 - s.y) * .84;
+    // Goleiro um pouco mais baixo para não ficar atrás dos zagueiros
+    const P = xi[i], top = s.p === 'GOL' ? 89.5 : 7 + (100 - s.y) * .83;
     const selc = sel && sel.kind === 'xi' && sel.i === i
       ? ` style="outline:2px solid var(--gold);outline-offset:3px;border-radius:6px;left:${s.x}%;top:${top}%"`
       : ` style="left:${s.x}%;top:${top}%"`;

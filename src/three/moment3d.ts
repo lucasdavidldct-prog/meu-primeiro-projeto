@@ -7,6 +7,7 @@ import { analyzeGesture, type Pt } from '../engine/lance';
 import { LanceScene, TITLES, type Actor, type BallKey, type Plan, type Target } from '../engine/lanceScene';
 import type { Match, MomentRequest, MomentResult } from '../engine/match';
 import { clamp } from '../engine/rng';
+import { awayKit } from '../engine/kits';
 import { esc } from '../ui/dom';
 import { probColor } from '../ui/moment2d';
 import { carrierRing, makeBall, makePlayer, type PlayerMesh } from './players';
@@ -59,14 +60,17 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     scene.fog = new THREE.Fog(0x070b12, 90, 190);
     addLights(scene);
     scene.add(buildPitch(), buildGoal(), buildStadium());
-    const camera = new THREE.PerspectiveCamera(portrait ? 64 : 48, W / H, .1, 500);
+    // Tela em pé: lente mais fechada na falta e no pênalti (enquadra gol e barreira sem mostrar céu)
+    const camera = new THREE.PerspectiveCamera(portrait ? (pen ? 50 : fk ? 52 : 64) : 48, W / H, .1, 500);
     // Na tela em pé os jogadores ficam um pouco maiores para serem fáceis de tocar
     const SCALE = portrait ? 1.3 : 1.1;
 
     const meshes = new Map<number, PlayerMesh>();
     const gkCol = ['#c6f432', '#111111'];
+    // Uniforme do rival: reserva se as cores se confundirem com as suas
+    const bKit = awayKit([A.c1, A.c2], [B.c1, B.c2]);
     const addActor = (a: Actor) => {
-      const colors = a.team === 0 ? [A.c1, A.c2] : a.gk ? gkCol : [B.c1, B.c2];
+      const colors = a.team === 0 ? [A.c1, A.c2] : a.gk ? gkCol : bKit;
       const pm = makePlayer(colors[0], colors[1], a.num || 9, { gk: a.gk, facing: a.team === 0 ? -1 : 1, seed: a.id });
       pm.root.position.copy(V(a.x, a.y));
       pm.root.scale.setScalar(SCALE);
@@ -78,7 +82,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     const names = new Map<number, HTMLElement>();
     for (const m of sc.mates) {
       const el = document.createElement('button');
-      el.className = 'm3d-name'; el.innerHTML = `<b>${m.e!.P.ovr}</b> ${esc(m.e!.name)}`;
+      el.className = 'm3d-name'; el.innerHTML = `<b>${m.e!.P.ovr}</b> ${esc(m.e!.name)}<i class="pc"></i>`;
       el.dataset.id = String(m.id);
       wrap.appendChild(el); names.set(m.id, el);
     }
@@ -267,10 +271,11 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
     function camTarget(): [THREE.Vector3, THREE.Vector3] {
       const c = sc.carrier;
-      if (pen) return portrait ? [V(34, 12 + 11, 5.2), V(34, 0, .9)] : [V(34, 12 + 8.5, 2.6), V(34, 0, 1.1)];
+      if (pen) return portrait ? [V(34, 12 + 8, 8), V(34, 1.5, 0)] : [V(34, 12 + 8.5, 2.6), V(34, 0, 1.1)];
       if (fk && sc.setup) {
-        const b = sc.setup.ball, dx = b.x - 34, dy = b.y, L = Math.hypot(dx, dy), back = portrait ? 11 : 8;
-        return [V(b.x + dx / L * back, b.y + dy / L * back, portrait ? 7 : 4.4), V(34 + dx * .15, 0, .8)];
+        const b = sc.setup.ball, dx = b.x - 34, dy = b.y, L = Math.hypot(dx, dy), back = portrait ? 10 : 8;
+        return portrait ? [V(b.x + dx / L * back, b.y + dy / L * back, 13), V(34 + dx * .2, 5, 0)]
+          : [V(b.x + dx / L * back, b.y + dy / L * back, 4.4), V(34 + dx * .15, 0, .8)];
       }
       // Enquadra o portador, o gol e o meio do caminho; mais alto na tela em pé para ver os lados
       const cx = c.x * .8 + 34 * .2, depth = c.y;
@@ -281,7 +286,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     { const [p, l] = camTarget(); camPos.copy(p); camLook.copy(l); }
 
     // ---------- Laço de animação ----------
-    let lastT = performance.now();
+    let lastT = performance.now(), pcTick = 11;
     function frame() {
       raf = requestAnimationFrame(frame);
       const now = performance.now(), dt = Math.min(.05, (now - lastT) / 1000);
@@ -331,6 +336,13 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
         elN.classList.toggle('on', a === sc.carrier);
         elN.classList.toggle('edge', off);
         tags.push({ el: elN, x, y });
+      }
+      // Chance do passe rasteiro ao lado de cada nome (atualiza quando a jogada para)
+      if (!anim && !finished && !fk && !pen && (++pcTick % 12 === 0)) for (const [id, elN] of names) {
+        const a = sc.mates.find(m => m.id === id)!, pc = elN.querySelector<HTMLElement>('.pc')!;
+        if (a === sc.carrier) { pc.textContent = ''; continue; }
+        const p = sc.passP(a);
+        pc.textContent = ` ${Math.round(p * 100)}%`; pc.style.color = probColor(p);
       }
       tags.sort((p, q) => p.y - q.y);
       for (let i = 1; i < tags.length; i++) for (let j = 0; j < i; j++)

@@ -230,3 +230,9 @@ export function sanitizeState(S: GameState): number {
   for (const u of gone) removeCard(S, u);
   return before - S.cards.length;
 }
+
+/** Força do seu time na mesma escala da "Força" dos clubes (para comparar com o adversário). */
+export function teamStrength(T: TeamInfo): number {
+  const v = T.slots.map((s, i) => effOvr(T.xi[i], s.p, 1) - 1);
+  return Math.round(v.reduce((a, b) => a + b, 0) / 11);
+}

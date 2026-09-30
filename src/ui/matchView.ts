@@ -1,5 +1,5 @@
 import { inPos } from '../engine/cards';
-import { Match, effNow, fatigue, freeKickTaker, matchReward, penaltyShootout, penaltyTaker, sideFromTeam, sideOpp, simulate, type Shootout, type Side } from '../engine/match';
+import { type Nota, Match, effNow, fatigue, freeKickTaker, matchReward, penaltyShootout, penaltyTaker, sideFromTeam, sideOpp, simulate, type Shootout, type Side } from '../engine/match';
 import { allClubs } from '../engine/world';
 import { clamp } from '../engine/rng';
 import { oppFromClub, type OppTeam } from '../engine/season';
@@ -33,7 +33,7 @@ export function difficulty(home: 0 | 1 | null): { boost: number; keeper: number;
   return { boost, keeper, moments: Math.max(1, moments) };
 }
 
-interface Live { m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout }
+interface Live { m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout; notas?: Nota[] }
 let L: Live | null = null;
 const DELAYS = [0, 650, 300, 110];
 
@@ -106,8 +106,16 @@ function loop(): void {
 function endMatch(): void {
   if (!L) return;
   const r = finalize(L.m, L.fx);
-  L.reward = r.coins; L.pens = r.pens;
+  L.reward = r.coins; L.pens = r.pens; L.notas = L.m.notas();
   if (r.pens) L.m.addEv(r.pens.winner ? 1 : 0, 'info', `Pênaltis: ${L.m.A.name} ${r.pens.a} × ${r.pens.b} ${L.m.B.name}.`);
+}
+
+/** Craque do jogo e notas do seu time. */
+function notasHTML(ns: Nota[], opp: string): string {
+  const best = ns.reduce((a, b) => (b.nota > a.nota ? b : a));
+  const cls = (n: number) => (n >= 7.5 ? 'up' : n < 6 ? 'down' : '');
+  return `<p style="margin:0 0 6px">⭐ Craque do jogo: <b>${esc(best.name)}</b>${best.side ? ' (' + esc(opp) + ')' : ''} · nota <b>${best.nota.toFixed(1)}</b></p>
+   <details class="small" style="margin-bottom:10px"><summary>Notas do seu time</summary><div class="notas">${ns.filter(n => n.side === 0).sort((a, b) => b.nota - a.nota).map(n => `<span><i>${n.pos}</i> ${esc(n.name)} <b class="${cls(n.nota)}">${n.nota.toFixed(1)}</b></span>`).join('')}</div></details>`;
 }
 
 /** Simula o jogo do usuário sem assistir (sem lances jogáveis). */
@@ -122,7 +130,7 @@ export async function quickPlay(opp: OppTeam, fx: Fixture): Promise<void> {
     <p class="small muted" style="margin-top:-4px">${esc(fx.label)} · ${esc(m.B.name)}</p>
     ${r.pens ? `<p><b>Pênaltis: ${r.pens.a} × ${r.pens.b}</b> — ${r.pens.winner === 0 ? 'classificado!' : 'eliminado.'}</p>` : ''}
     <div class="scorers" style="font-size:13px"><div>${m.A.scorers.map(esc).join('<br>') || '—'}</div><div>${m.B.scorers.map(esc).join('<br>') || '—'}</div></div>
-    <p>+${fmt(r.coins)} moedas.</p><button class="btn pri block" data-act="closeSheet">Continuar</button>`);
+    <p>+${fmt(r.coins)} moedas.</p>${notasHTML(m.notas(), m.B.s)}<button class="btn pri block" data-act="closeSheet">Continuar</button>`);
 }
 
 export function renderMatch(): void {
@@ -141,7 +149,9 @@ export function renderMatch(): void {
    <div class="scorers"><div>${A.scorers.map(esc).join('<br>')}</div><div>${B.scorers.map(esc).join('<br>')}</div></div>
    ${M.over ? `<div class="ht"><h2 style="margin:0 0 4px">${res}${L.pens ? ` · pênaltis ${L.pens.a} × ${L.pens.b}` : ''}</h2>
      ${L.pens ? `<p class="small" style="margin:0 0 6px">${L.pens.winner === 0 ? '<b class="up">Classificado nos pênaltis!</b>' : '<b class="down">Eliminado nos pênaltis.</b>'}</p><details class="small muted" style="margin-bottom:8px"><summary>Cobranças</summary>${L.pens.log.map(esc).join('<br>')}</details>` : ''}
-     <p style="margin:0 0 10px">+${fmt(L.reward ?? 0)} moedas${L.fx ? ' · ' + esc(L.fx.label) : ' · amistoso'}.</p><button class="btn pri block" data-act="closeMatch">Continuar</button></div>` : ''}
+     <p style="margin:0 0 10px">+${fmt(L.reward ?? 0)} moedas${L.fx ? ' · ' + esc(L.fx.label) : ' · amistoso'}.</p>
+     ${L.notas ? notasHTML(L.notas, B.s) : ''}
+     <button class="btn pri block" data-act="closeMatch">Continuar</button></div>` : ''}
    ${M.ht && !M.over ? `<div class="ht"><b>Intervalo.</b> <span class="muted small">Ajuste o time e volte para o segundo tempo.</span><div class="row" style="margin-top:10px"><button class="btn pri" style="flex:1" data-act="secondHalf">Começar 2º tempo</button><button class="btn" data-act="subs">Substituições (${A.subs})</button></div></div>` : ''}
    ${!M.over ? `<div class="mctl">
      <button class="chip" data-act="mPause" aria-pressed="${L.paused}">${L.paused ? 'Continuar' : 'Pausar'}</button>
@@ -155,7 +165,7 @@ export function renderMatch(): void {
      <span class="small" style="min-width:110px;text-align:center">${MENT[A.ment + 2]}</span>
      <button class="chip" data-act="mMent" data-d="1" aria-label="Mais ofensivo">+</button>
    </div>` : ''}
-   <div class="feed">${M.ev.map(e => `<div class="ev ${e.type} ${e.side ? 'opp' : ''}"><span class="m">${e.l}</span><span class="t">${e.side && e.type !== 'info' ? '<b style="color:var(--opp)">' + esc(B.s) + '</b> ' : ''}${esc(e.text)}</span></div>`).join('')}</div>
+   <div class="feed">${M.ev.map(e => `<div class="ev ${e.type} ${e.side ? 'opp' : ''}"><span class="m">${e.l}</span><span class="t">${e.side ? '<b style="color:var(--opp)">' + esc(B.s) + '</b> ' : ''}${esc(e.text)}</span></div>`).join('')}</div>
    <div class="mstats">${ms('Posse %', poss, 100 - poss)}${ms('Finalizações', M.st.sh[0], M.st.sh[1])}${ms('No alvo', M.st.on[0], M.st.on[1])}${ms('Escanteios', M.st.ck[0], M.st.ck[1])}${ms('Amarelos', M.st.yc[0], M.st.yc[1])}</div>
   </div>`;
   const st = ov.querySelector<HTMLSelectElement>('#mStyle');

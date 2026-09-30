@@ -4,6 +4,7 @@ import { LanceScene, TITLES, type BallKey, type Plan, type Target } from '../eng
 import type { Match, MomentRequest, MomentResult } from '../engine/match';
 import { clamp } from '../engine/rng';
 import { endSound, planSound } from './sfx';
+import { awayKit } from '../engine/kits';
 
 export const HELP = {
   ataque: 'Toque num <b>companheiro</b> para passar · dentro do <b>gol</b> para chutar · no <b>campo</b> para conduzir. Arraste para ver a chance de dar certo e solte para executar.',
@@ -15,6 +16,7 @@ export const probColor = (p: number): string => (p >= .6 ? '#56d086' : p >= .35 
 export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult> {
   return new Promise(resolve => {
     const sc = new LanceScene(M, req), B = M.B, kind = req.kind, fk = kind === 'falta', pen = kind === 'penalti';
+    const bKit = awayKit([M.A.c1, M.A.c2], [M.B.c1, M.B.c2]);
     const ov = document.createElement('div');
     ov.className = 'moment';
     ov.innerHTML = `<div class="mo-head"><span class="mo-tag">${M.label}</span><b>${TITLES[kind]}</b><span class="acts" id="moActs"></span></div>
@@ -125,7 +127,7 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
         }
       }
       const rad = 1.7 * U;
-      for (const f of sc.foes) { ctx.fillStyle = f.gk ? '#1f1f1f' : B.c1; ctx.strokeStyle = f.gk ? '#e8e8e8' : B.c2; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(SX(f.x), SY(f.y), rad, 0, 7); ctx.fill(); ctx.stroke(); }
+      for (const f of sc.foes) { ctx.fillStyle = f.gk ? '#1f1f1f' : bKit[0]; ctx.strokeStyle = f.gk ? '#e8e8e8' : bKit[1]; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(SX(f.x), SY(f.y), rad, 0, 7); ctx.fill(); ctx.stroke(); }
       ctx.textAlign = 'center';
       for (const m of sc.mates) {
         if (m === c) { ctx.strokeStyle = 'rgba(232,195,95,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(SX(m.x), SY(m.y), rad + U * (0.8 + .3 * Math.sin(now / 200)), 0, 7); ctx.stroke(); }
