@@ -48,6 +48,22 @@ baixadas em JSON para substituir o arquivo.
 Escudos: o jogo gera escudos com as cores e a sigla. Para usar uma imagem sua, salve `public/escudos/<SIGLA>.png`
 (ex.: `CAM.png`).
 
+## Playstyles
+
+Cada jogador tem de 0 a 4 playstyles; craques (overall 80+) podem ter a versão **+**. Eles aparecem como ícones
+na carta e com nome e descrição no detalhe do jogador, e mudam o jogo:
+
+- **Simulação:** chute de longe, finalização, cabeceio (e zagueiros que cortam pelo alto), cobrança de falta,
+  cruzamento e passe em profundidade (quem dá a assistência), desarme e interceptação (tiram chances do rival),
+  bloqueio, incansável (menos cansaço), velocista (contra-ataque), goleiros com reflexos, saída do gol e
+  pegador de pênalti.
+- **Lances jogáveis:** precisão do passe, alcance e chance de vencer o marcador no drible, erro e distância do
+  chute, curva e dispersão na falta, defesa do goleiro.
+- **Lance de falta:** só aparece quando o seu time tem um cobrador com Cobrança de Falta. Arraste em direção ao
+  gol: a direção mira, o comprimento dá a força e a curva do traço dá o efeito.
+
+Os números de cada efeito ficam em `src/engine/playstyles.ts` (tabela `FX`).
+
 ## Save
 
 O progresso fica no IndexedDB do navegador. Em **Clube → Save** dá para exportar o save em JSON e importar de volta,
@@ -57,7 +73,7 @@ inclusive em outro aparelho.
 
 1. ✅ Estrutura do projeto e migração do jogo atual
 2. ✅ Base de dados real e editor de elencos
-3. Playstyles
+3. ✅ Playstyles
 4. Carreira e competições
 5. Lances 3D
 6. Polimento

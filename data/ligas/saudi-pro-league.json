@@ -12,25 +12,25 @@
       "cidade": "Riad",
       "cores": ["#fcd116","#0033a0"],
       "elenco": [
-        {"id":"nas-bento","nome":"Bento Matheus Krepski","nomeCurto":"Bento","nacionalidade":"BRA","idade":27,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"MER":86,"MAN":83,"CHU":71,"REF":93,"VEL":64,"POS":84},"playstyles":["reflexos"]},
+        {"id":"nas-bento","nome":"Bento Matheus Krepski","nomeCurto":"Bento","nacionalidade":"BRA","idade":27,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"MER":86,"MAN":83,"CHU":71,"REF":89,"VEL":64,"POS":84},"playstyles":["reflexos"]},
         {"id":"nas-al-aqidi","nome":"Nawaf Al-Aqidi","nomeCurto":"Al-Aqidi","nacionalidade":"ARS","idade":26,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":73,"atributos":{"MER":77,"MAN":74,"CHU":72,"REF":80,"VEL":55,"POS":80},"playstyles":[]},
         {"id":"nas-inigo-martinez","nome":"Íñigo Martínez","nomeCurto":"Íñigo Martínez","nacionalidade":"ESP","idade":35,"posicao":"ZAG","posicoesAlt":[],"pe":"E","overall":79,"atributos":{"RIT":65,"FIN":46,"PAS":81,"DRI":68,"DEF":86,"FIS":82},"playstyles":["passe-em-profundidade"]},
-        {"id":"nas-simakan","nome":"Mohamed Simakan","nomeCurto":"Simakan","nacionalidade":"FRA","idade":26,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":69,"FIN":42,"PAS":69,"DRI":68,"DEF":97,"FIS":89},"playstyles":["velocista"]},
+        {"id":"nas-simakan","nome":"Mohamed Simakan","nomeCurto":"Simakan","nacionalidade":"FRA","idade":26,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":69,"FIN":42,"PAS":69,"DRI":68,"DEF":91,"FIS":88},"playstyles":["velocista"]},
         {"id":"nas-lajami","nome":"Ali Lajami","nomeCurto":"Lajami","nacionalidade":"ARS","idade":30,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":59,"FIN":32,"PAS":59,"DRI":58,"DEF":85,"FIS":77},"playstyles":[]},
         {"id":"nas-al-amri","nome":"Abdulelah Al-Amri","nomeCurto":"Al-Amri","nacionalidade":"ARS","idade":29,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":72,"atributos":{"RIT":58,"FIN":35,"PAS":66,"DRI":55,"DEF":86,"FIS":82},"playstyles":[]},
         {"id":"nas-boushal","nome":"Nawaf Boushal","nomeCurto":"Boushal","nacionalidade":"ARS","idade":27,"posicao":"LE","posicoesAlt":[],"pe":"E","overall":71,"atributos":{"RIT":80,"FIN":48,"PAS":67,"DRI":70,"DEF":75,"FIS":66},"playstyles":[]},
         {"id":"nas-al-ghannam","nome":"Sultan Al-Ghannam","nomeCurto":"Al-Ghannam","nacionalidade":"ARS","idade":32,"posicao":"LD","posicoesAlt":[],"pe":"D","overall":72,"atributos":{"RIT":74,"FIN":50,"PAS":71,"DRI":68,"DEF":75,"FIS":77},"playstyles":[]},
-        {"id":"nas-samu-costa","nome":"Samuel Costa","nomeCurto":"Samu Costa","nacionalidade":"POR","idade":25,"posicao":"VOL","posicoesAlt":["MC"],"pe":"D","overall":80,"atributos":{"RIT":73,"FIN":59,"PAS":81,"DRI":76,"DEF":94,"FIS":85},"playstyles":["desarme","incansavel"]},
-        {"id":"nas-otavio","nome":"Otávio Edmilson da Silva Monteiro","nomeCurto":"Otávio","nacionalidade":"POR","idade":31,"posicao":"MC","posicoesAlt":["MEI"],"pe":"D","overall":79,"atributos":{"RIT":68,"FIN":75,"PAS":93,"DRI":83,"DEF":70,"FIS":76},"playstyles":["passe-preciso"]},
+        {"id":"nas-samu-costa","nome":"Samuel Costa","nomeCurto":"Samu Costa","nacionalidade":"POR","idade":25,"posicao":"VOL","posicoesAlt":["MC"],"pe":"D","overall":80,"atributos":{"RIT":73,"FIN":59,"PAS":81,"DRI":76,"DEF":90,"FIS":85},"playstyles":["desarme","incansavel"]},
+        {"id":"nas-otavio","nome":"Otávio Edmilson da Silva Monteiro","nomeCurto":"Otávio","nacionalidade":"POR","idade":31,"posicao":"MC","posicoesAlt":["MEI"],"pe":"D","overall":79,"atributos":{"RIT":68,"FIN":75,"PAS":89,"DRI":83,"DEF":70,"FIS":76},"playstyles":["passe-preciso"]},
         {"id":"nas-al-khaibari","nome":"Abdullah Al-Khaibari","nomeCurto":"Al-Khaibari","nacionalidade":"ARS","idade":30,"posicao":"VOL","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":57,"FIN":50,"PAS":71,"DRI":66,"DEF":80,"FIS":78},"playstyles":[]},
         {"id":"nas-ghareeb","nome":"Abdulrahman Ghareeb","nomeCurto":"Ghareeb","nacionalidade":"ARS","idade":29,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":72,"atributos":{"RIT":86,"FIN":73,"PAS":69,"DRI":80,"DEF":33,"FIS":62},"playstyles":[]},
-        {"id":"nas-ayman-yahya","nome":"Ayman Yahya","nomeCurto":"Ayman Yahya","nacionalidade":"ARS","idade":25,"posicao":"PD","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":87,"FIN":71,"PAS":64,"DRI":79,"DEF":34,"FIS":60},"playstyles":[]},
-        {"id":"nas-angelo","nome":"Ângelo Gabriel Borges Damaceno","nomeCurto":"Ángelo","nacionalidade":"BRA","idade":21,"posicao":"PD","posicoesAlt":[],"pe":"E","overall":77,"atributos":{"RIT":90,"FIN":76,"PAS":77,"DRI":88,"DEF":38,"FIS":67},"playstyles":["drible-rapido"]},
-        {"id":"nas-coman","nome":"Kingsley Coman","nomeCurto":"Coman","nacionalidade":"FRA","idade":30,"posicao":"PE","posicoesAlt":["PD"],"pe":"D","overall":82,"atributos":{"RIT":99,"FIN":80,"PAS":77,"DRI":88,"DEF":47,"FIS":69},"playstyles":["drible-rapido","velocista"]},
-        {"id":"nas-joao-felix","nome":"João Félix Sequeira","nomeCurto":"João Félix","nacionalidade":"POR","idade":26,"posicao":"MEI","posicoesAlt":["ATA"],"pe":"D","overall":82,"atributos":{"RIT":81,"FIN":79,"PAS":89,"DRI":97,"DEF":50,"FIS":66},"playstyles":["primeiro-toque","cobranca-de-falta"]},
-        {"id":"nas-mane","nome":"Sadio Mané","nomeCurto":"Mané","nacionalidade":"SEN","idade":34,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":96,"FIN":80,"PAS":73,"DRI":88,"DEF":45,"FIS":71},"playstyles":["finalizacao-precisa"]},
-        {"id":"nas-c-ronaldo","nome":"Cristiano Ronaldo dos Santos Aveiro","nomeCurto":"C. Ronaldo","nacionalidade":"POR","idade":41,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":84,"atributos":{"RIT":78,"FIN":98,"PAS":76,"DRI":83,"DEF":44,"FIS":87},"playstyles":["finalizacao-precisa+","cabeceio+","cobranca-de-falta","chute-de-longe"]},
-        {"id":"nas-wesley","nome":"Wesley Gassova Ribeiro Cardoso","nomeCurto":"Wesley","nacionalidade":"BRA","idade":21,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":91,"FIN":75,"PAS":67,"DRI":82,"DEF":38,"FIS":64},"playstyles":[]}
+        {"id":"nas-ayman-yahya","nome":"Ayman Yahya","nomeCurto":"Ayman Yahya","nacionalidade":"ARS","idade":25,"posicao":"PD","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":86,"FIN":71,"PAS":64,"DRI":79,"DEF":34,"FIS":60},"playstyles":[]},
+        {"id":"nas-angelo","nome":"Ângelo Gabriel Borges Damaceno","nomeCurto":"Ángelo","nacionalidade":"BRA","idade":21,"posicao":"PD","posicoesAlt":[],"pe":"E","overall":77,"atributos":{"RIT":88,"FIN":76,"PAS":77,"DRI":87,"DEF":38,"FIS":67},"playstyles":["drible-rapido"]},
+        {"id":"nas-coman","nome":"Kingsley Coman","nomeCurto":"Coman","nacionalidade":"FRA","idade":30,"posicao":"PE","posicoesAlt":["PD"],"pe":"D","overall":82,"atributos":{"RIT":92,"FIN":80,"PAS":77,"DRI":87,"DEF":47,"FIS":69},"playstyles":["drible-rapido","velocista"]},
+        {"id":"nas-joao-felix","nome":"João Félix Sequeira","nomeCurto":"João Félix","nacionalidade":"POR","idade":26,"posicao":"MEI","posicoesAlt":["ATA"],"pe":"D","overall":82,"atributos":{"RIT":81,"FIN":79,"PAS":87,"DRI":91,"DEF":50,"FIS":66},"playstyles":["primeiro-toque","cobranca-de-falta"]},
+        {"id":"nas-mane","nome":"Sadio Mané","nomeCurto":"Mané","nacionalidade":"SEN","idade":34,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":91,"FIN":80,"PAS":73,"DRI":87,"DEF":45,"FIS":71},"playstyles":["finalizacao-precisa"]},
+        {"id":"nas-c-ronaldo","nome":"Cristiano Ronaldo dos Santos Aveiro","nomeCurto":"C. Ronaldo","nacionalidade":"POR","idade":41,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":84,"atributos":{"RIT":78,"FIN":91,"PAS":76,"DRI":83,"DEF":44,"FIS":86},"playstyles":["finalizacao-precisa+","cabeceio+","cobranca-de-falta","chute-de-longe"]},
+        {"id":"nas-wesley","nome":"Wesley Gassova Ribeiro Cardoso","nomeCurto":"Wesley","nacionalidade":"BRA","idade":21,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":88,"FIN":75,"PAS":67,"DRI":82,"DEF":38,"FIS":64},"playstyles":[]}
       ]
     },
     {
@@ -40,26 +40,26 @@
       "cidade": "Riad",
       "cores": ["#0055a5","#ffffff"],
       "elenco": [
-        {"id":"hil-bono","nome":"Yassine Bounou","nomeCurto":"Bono","nacionalidade":"MAR","idade":35,"posicao":"GOL","posicoesAlt":[],"pe":"E","overall":84,"atributos":{"MER":90,"MAN":91,"CHU":75,"REF":94,"VEL":70,"POS":84},"playstyles":["reflexos","pegador-de-penalti+"]},
+        {"id":"hil-bono","nome":"Yassine Bounou","nomeCurto":"Bono","nacionalidade":"MAR","idade":35,"posicao":"GOL","posicoesAlt":[],"pe":"E","overall":84,"atributos":{"MER":88,"MAN":88,"CHU":75,"REF":90,"VEL":70,"POS":84},"playstyles":["reflexos","pegador-de-penalti+"]},
         {"id":"hil-al-owais","nome":"Mohammed Al-Owais","nomeCurto":"Al-Owais","nacionalidade":"ARS","idade":35,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"MER":81,"MAN":78,"CHU":68,"REF":83,"VEL":61,"POS":79},"playstyles":[]},
-        {"id":"hil-koulibaly","nome":"Kalidou Koulibaly","nomeCurto":"Koulibaly","nacionalidade":"SEN","idade":35,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":81,"atributos":{"RIT":68,"FIN":49,"PAS":68,"DRI":65,"DEF":92,"FIS":96},"playstyles":["desarme","imposicao-fisica"]},
-        {"id":"hil-tambakti","nome":"Hassan Tambakti","nomeCurto":"Tambakti","nacionalidade":"ARS","idade":27,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":63,"FIN":36,"PAS":64,"DRI":63,"DEF":89,"FIS":81},"playstyles":[]},
+        {"id":"hil-koulibaly","nome":"Kalidou Koulibaly","nomeCurto":"Koulibaly","nacionalidade":"SEN","idade":35,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":81,"atributos":{"RIT":68,"FIN":49,"PAS":68,"DRI":65,"DEF":89,"FIS":91},"playstyles":["desarme","imposicao-fisica"]},
+        {"id":"hil-tambakti","nome":"Hassan Tambakti","nomeCurto":"Tambakti","nacionalidade":"ARS","idade":27,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":63,"FIN":36,"PAS":64,"DRI":63,"DEF":87,"FIS":81},"playstyles":[]},
         {"id":"hil-al-bulaihi","nome":"Ali Al-Bulaihi","nomeCurto":"Al-Bulaihi","nacionalidade":"ARS","idade":37,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":58,"FIN":35,"PAS":59,"DRI":55,"DEF":86,"FIS":82},"playstyles":[]},
-        {"id":"hil-theo-hernandez","nome":"Theo Bernard François Hernández","nomeCurto":"Theo Hernández","nacionalidade":"FRA","idade":29,"posicao":"LE","posicoesAlt":[],"pe":"E","overall":84,"atributos":{"RIT":96,"FIN":61,"PAS":77,"DRI":84,"DEF":86,"FIS":81},"playstyles":["velocista+","cruzamento"]},
+        {"id":"hil-theo-hernandez","nome":"Theo Bernard François Hernández","nomeCurto":"Theo Hernández","nacionalidade":"FRA","idade":29,"posicao":"LE","posicoesAlt":[],"pe":"E","overall":84,"atributos":{"RIT":91,"FIN":61,"PAS":77,"DRI":84,"DEF":86,"FIS":81},"playstyles":["velocista+","cruzamento"]},
         {"id":"hil-al-shahrani","nome":"Yasser Al-Shahrani","nomeCurto":"Al-Shahrani","nacionalidade":"ARS","idade":34,"posicao":"LE","posicoesAlt":[],"pe":"E","overall":70,"atributos":{"RIT":77,"FIN":43,"PAS":67,"DRI":68,"DEF":78,"FIS":70},"playstyles":[]},
         {"id":"hil-al-harbi","nome":"Moteb Al-Harbi","nomeCurto":"Al-Harbi","nacionalidade":"ARS","idade":26,"posicao":"LD","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":78,"FIN":44,"PAS":69,"DRI":70,"DEF":77,"FIS":76},"playstyles":[]},
-        {"id":"hil-ruben-neves","nome":"Rúben Diogo da Silva Neves","nomeCurto":"Rúben Neves","nacionalidade":"POR","idade":29,"posicao":"VOL","posicoesAlt":["MC"],"pe":"D","overall":84,"atributos":{"RIT":71,"FIN":68,"PAS":93,"DRI":86,"DEF":89,"FIS":87},"playstyles":["passe-em-profundidade+","chute-de-longe","cobranca-de-falta"]},
-        {"id":"hil-milinkovic-savic","nome":"Sergej Milinković-Savić","nomeCurto":"Milinković-Savić","nacionalidade":"SER","idade":31,"posicao":"MC","posicoesAlt":["MEI"],"pe":"D","overall":84,"atributos":{"RIT":79,"FIN":80,"PAS":94,"DRI":84,"DEF":79,"FIS":87},"playstyles":["cabeceio","finalizacao-precisa"]},
+        {"id":"hil-ruben-neves","nome":"Rúben Diogo da Silva Neves","nomeCurto":"Rúben Neves","nacionalidade":"POR","idade":29,"posicao":"VOL","posicoesAlt":["MC"],"pe":"D","overall":84,"atributos":{"RIT":71,"FIN":68,"PAS":89,"DRI":86,"DEF":87,"FIS":86},"playstyles":["passe-em-profundidade+","chute-de-longe","cobranca-de-falta"]},
+        {"id":"hil-milinkovic-savic","nome":"Sergej Milinković-Savić","nomeCurto":"Milinković-Savić","nacionalidade":"SER","idade":31,"posicao":"MC","posicoesAlt":["MEI"],"pe":"D","overall":84,"atributos":{"RIT":79,"FIN":80,"PAS":90,"DRI":84,"DEF":79,"FIS":86},"playstyles":["cabeceio","finalizacao-precisa"]},
         {"id":"hil-kanno","nome":"Mohamed Kanno","nomeCurto":"Kanno","nacionalidade":"ARS","idade":32,"posicao":"VOL","posicoesAlt":["MC"],"pe":"D","overall":73,"atributos":{"RIT":63,"FIN":60,"PAS":76,"DRI":68,"DEF":84,"FIS":83},"playstyles":[]},
         {"id":"hil-n-al-dawsari","nome":"Nasser Al-Dawsari","nomeCurto":"N. Al-Dawsari","nacionalidade":"ARS","idade":27,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":63,"FIN":67,"PAS":81,"DRI":75,"DEF":65,"FIS":68},"playstyles":[]},
-        {"id":"hil-malcom","nome":"Malcom Filipe Silva de Oliveira","nomeCurto":"Malcom","nacionalidade":"BRA","idade":29,"posicao":"PD","posicoesAlt":[],"pe":"E","overall":83,"atributos":{"RIT":92,"FIN":78,"PAS":86,"DRI":97,"DEF":47,"FIS":69},"playstyles":["drible-rapido","chute-de-longe"]},
+        {"id":"hil-malcom","nome":"Malcom Filipe Silva de Oliveira","nomeCurto":"Malcom","nacionalidade":"BRA","idade":29,"posicao":"PD","posicoesAlt":[],"pe":"E","overall":83,"atributos":{"RIT":89,"FIN":78,"PAS":86,"DRI":91,"DEF":47,"FIS":69},"playstyles":["drible-rapido","chute-de-longe"]},
         {"id":"hil-salem-al-dawsari","nome":"Salem Al-Dawsari","nomeCurto":"Salem Al-Dawsari","nacionalidade":"ARS","idade":35,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":84,"FIN":74,"PAS":77,"DRI":85,"DEF":37,"FIS":63},"playstyles":["drible-rapido"]},
-        {"id":"hil-kaio-cesar","nome":"Kaio César Silva Ramos","nomeCurto":"Kaio César","nacionalidade":"BRA","idade":22,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":89,"FIN":76,"PAS":73,"DRI":84,"DEF":43,"FIS":65},"playstyles":[]},
-        {"id":"hil-martinelli","nome":"Gabriel Teodoro Martinelli Silva","nomeCurto":"Martinelli","nacionalidade":"BRA","idade":25,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":84,"atributos":{"RIT":97,"FIN":84,"PAS":80,"DRI":91,"DEF":51,"FIS":73},"playstyles":["velocista+","drible-rapido"]},
-        {"id":"hil-summerville","nome":"Crysencio Summerville","nomeCurto":"Summerville","nacionalidade":"HOL","idade":25,"posicao":"PE","posicoesAlt":["PD"],"pe":"D","overall":81,"atributos":{"RIT":99,"FIN":79,"PAS":75,"DRI":93,"DEF":46,"FIS":68},"playstyles":["drible-rapido"]},
-        {"id":"hil-watkins","nome":"Ollie Watkins","nomeCurto":"Watkins","nacionalidade":"ING","idade":30,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":84,"atributos":{"RIT":81,"FIN":97,"PAS":71,"DRI":88,"DEF":47,"FIS":86},"playstyles":["finalizacao-precisa","velocista"]},
-        {"id":"hil-darwin-nunez","nome":"Darwin Gabriel Núñez Ribeiro","nomeCurto":"Darwin Núñez","nacionalidade":"URU","idade":27,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":82,"atributos":{"RIT":88,"FIN":92,"PAS":76,"DRI":85,"DEF":40,"FIS":79},"playstyles":["velocista","cabeceio"]},
-        {"id":"hil-marcos-leonardo","nome":"Marcos Leonardo Santos Almeida","nomeCurto":"Marcos Leonardo","nacionalidade":"BRA","idade":23,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":79,"atributos":{"RIT":72,"FIN":92,"PAS":69,"DRI":83,"DEF":38,"FIS":81},"playstyles":["finalizacao-precisa"]}
+        {"id":"hil-kaio-cesar","nome":"Kaio César Silva Ramos","nomeCurto":"Kaio César","nacionalidade":"BRA","idade":22,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":87,"FIN":76,"PAS":73,"DRI":84,"DEF":43,"FIS":65},"playstyles":[]},
+        {"id":"hil-martinelli","nome":"Gabriel Teodoro Martinelli Silva","nomeCurto":"Martinelli","nacionalidade":"BRA","idade":25,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":84,"atributos":{"RIT":91,"FIN":84,"PAS":80,"DRI":88,"DEF":51,"FIS":73},"playstyles":["velocista+","drible-rapido"]},
+        {"id":"hil-summerville","nome":"Crysencio Summerville","nomeCurto":"Summerville","nacionalidade":"HOL","idade":25,"posicao":"PE","posicoesAlt":["PD"],"pe":"D","overall":81,"atributos":{"RIT":92,"FIN":79,"PAS":75,"DRI":89,"DEF":46,"FIS":68},"playstyles":["drible-rapido"]},
+        {"id":"hil-watkins","nome":"Ollie Watkins","nomeCurto":"Watkins","nacionalidade":"ING","idade":30,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":84,"atributos":{"RIT":81,"FIN":91,"PAS":71,"DRI":87,"DEF":47,"FIS":86},"playstyles":["finalizacao-precisa","velocista"]},
+        {"id":"hil-darwin-nunez","nome":"Darwin Gabriel Núñez Ribeiro","nomeCurto":"Darwin Núñez","nacionalidade":"URU","idade":27,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":82,"atributos":{"RIT":87,"FIN":89,"PAS":76,"DRI":85,"DEF":40,"FIS":79},"playstyles":["velocista","cabeceio"]},
+        {"id":"hil-marcos-leonardo","nome":"Marcos Leonardo Santos Almeida","nomeCurto":"Marcos Leonardo","nacionalidade":"BRA","idade":23,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":79,"atributos":{"RIT":72,"FIN":89,"PAS":69,"DRI":83,"DEF":38,"FIS":81},"playstyles":["finalizacao-precisa"]}
       ]
     },
     {
@@ -69,21 +69,21 @@
       "cidade": "Jidá",
       "cores": ["#fcd116","#000000"],
       "elenco": [
-        {"id":"itt-rajkovic","nome":"Predrag Rajković","nomeCurto":"Rajković","nacionalidade":"SER","idade":31,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"MER":83,"MAN":87,"CHU":75,"REF":90,"VEL":61,"POS":85},"playstyles":["reflexos"]},
-        {"id":"itt-danilo-pereira","nome":"Danilo Luís Hélio Pereira","nomeCurto":"Danilo Pereira","nacionalidade":"POR","idade":35,"posicao":"ZAG","posicoesAlt":["VOL"],"pe":"D","overall":78,"atributos":{"RIT":69,"FIN":39,"PAS":69,"DRI":65,"DEF":95,"FIS":84},"playstyles":["cabeceio"]},
-        {"id":"itt-kadesh","nome":"Hassan Kadesh","nomeCurto":"Kadesh","nacionalidade":"ARS","idade":34,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":55,"FIN":32,"PAS":63,"DRI":59,"DEF":88,"FIS":77},"playstyles":[]},
-        {"id":"itt-mitaj","nome":"Mario Mitaj","nomeCurto":"Mitaj","nacionalidade":"ALB","idade":23,"posicao":"LE","posicoesAlt":[],"pe":"E","overall":76,"atributos":{"RIT":89,"FIN":50,"PAS":69,"DRI":79,"DEF":77,"FIS":68},"playstyles":[]},
+        {"id":"itt-rajkovic","nome":"Predrag Rajković","nomeCurto":"Rajković","nacionalidade":"SER","idade":31,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"MER":83,"MAN":86,"CHU":75,"REF":88,"VEL":61,"POS":85},"playstyles":["reflexos"]},
+        {"id":"itt-danilo-pereira","nome":"Danilo Luís Hélio Pereira","nomeCurto":"Danilo Pereira","nacionalidade":"POR","idade":35,"posicao":"ZAG","posicoesAlt":["VOL"],"pe":"D","overall":78,"atributos":{"RIT":69,"FIN":39,"PAS":69,"DRI":65,"DEF":90,"FIS":84},"playstyles":["cabeceio"]},
+        {"id":"itt-kadesh","nome":"Hassan Kadesh","nomeCurto":"Kadesh","nacionalidade":"ARS","idade":34,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":55,"FIN":32,"PAS":63,"DRI":59,"DEF":87,"FIS":77},"playstyles":[]},
+        {"id":"itt-mitaj","nome":"Mario Mitaj","nomeCurto":"Mitaj","nacionalidade":"ALB","idade":23,"posicao":"LE","posicoesAlt":[],"pe":"E","overall":76,"atributos":{"RIT":87,"FIN":50,"PAS":69,"DRI":79,"DEF":77,"FIS":68},"playstyles":[]},
         {"id":"itt-al-shanqeeti","nome":"Muhannad Al-Shanqeeti","nomeCurto":"Al-Shanqeeti","nacionalidade":"ARS","idade":27,"posicao":"LD","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":85,"FIN":43,"PAS":65,"DRI":72,"DEF":73,"FIS":68},"playstyles":[]},
-        {"id":"itt-sharahili","nome":"Ahmed Sharahili","nomeCurto":"Sharahili","nacionalidade":"ARS","idade":32,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":69,"atributos":{"RIT":54,"FIN":34,"PAS":62,"DRI":54,"DEF":87,"FIS":79},"playstyles":[]},
-        {"id":"itt-kante","nome":"N'Golo Kanté","nomeCurto":"Kanté","nacionalidade":"FRA","idade":35,"posicao":"VOL","posicoesAlt":["MC"],"pe":"D","overall":82,"atributos":{"RIT":70,"FIN":66,"PAS":84,"DRI":75,"DEF":93,"FIS":87},"playstyles":["incansavel+","desarme+","interceptacao"]},
-        {"id":"itt-fabinho","nome":"Fábio Henrique Tavares","nomeCurto":"Fabinho","nacionalidade":"BRA","idade":32,"posicao":"VOL","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":71,"FIN":60,"PAS":79,"DRI":77,"DEF":94,"FIS":88},"playstyles":["interceptacao","desarme"]},
-        {"id":"itt-aouar","nome":"Houssem Aouar","nomeCurto":"Aouar","nacionalidade":"ARL","idade":28,"posicao":"MC","posicoesAlt":["MEI"],"pe":"D","overall":79,"atributos":{"RIT":69,"FIN":73,"PAS":94,"DRI":81,"DEF":71,"FIS":74},"playstyles":["passe-em-profundidade"]},
+        {"id":"itt-sharahili","nome":"Ahmed Sharahili","nomeCurto":"Sharahili","nacionalidade":"ARS","idade":32,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":69,"atributos":{"RIT":54,"FIN":34,"PAS":62,"DRI":54,"DEF":86,"FIS":79},"playstyles":[]},
+        {"id":"itt-kante","nome":"N'Golo Kanté","nomeCurto":"Kanté","nacionalidade":"FRA","idade":35,"posicao":"VOL","posicoesAlt":["MC"],"pe":"D","overall":82,"atributos":{"RIT":70,"FIN":66,"PAS":84,"DRI":75,"DEF":89,"FIS":86},"playstyles":["incansavel+","desarme+","interceptacao"]},
+        {"id":"itt-fabinho","nome":"Fábio Henrique Tavares","nomeCurto":"Fabinho","nacionalidade":"BRA","idade":32,"posicao":"VOL","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":71,"FIN":60,"PAS":79,"DRI":77,"DEF":90,"FIS":87},"playstyles":["interceptacao","desarme"]},
+        {"id":"itt-aouar","nome":"Houssem Aouar","nomeCurto":"Aouar","nacionalidade":"ARL","idade":28,"posicao":"MC","posicoesAlt":["MEI"],"pe":"D","overall":79,"atributos":{"RIT":69,"FIN":73,"PAS":90,"DRI":81,"DEF":71,"FIS":74},"playstyles":["passe-em-profundidade"]},
         {"id":"itt-al-julaydan","nome":"Ahmed Al-Julaydan","nomeCurto":"Al-Julaydan","nacionalidade":"ARS","idade":27,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":68,"atributos":{"RIT":66,"FIN":60,"PAS":74,"DRI":71,"DEF":66,"FIS":67},"playstyles":[]},
-        {"id":"itt-diaby","nome":"Moussa Diaby","nomeCurto":"Diaby","nacionalidade":"FRA","idade":27,"posicao":"PD","posicoesAlt":[],"pe":"E","overall":82,"atributos":{"RIT":95,"FIN":82,"PAS":79,"DRI":90,"DEF":49,"FIS":71},"playstyles":["velocista+","drible-rapido"]},
-        {"id":"itt-bergwijn","nome":"Steven Bergwijn","nomeCurto":"Bergwijn","nacionalidade":"HOL","idade":29,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":96,"FIN":80,"PAS":79,"DRI":87,"DEF":43,"FIS":69},"playstyles":["drible-rapido"]},
-        {"id":"itt-roger-fernandes","nome":"Roger Fernandes","nomeCurto":"Roger Fernandes","nacionalidade":"GNB","idade":20,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":83,"FIN":73,"PAS":76,"DRI":91,"DEF":43,"FIS":62},"playstyles":["drible-rapido"]},
-        {"id":"itt-benzema","nome":"Karim Mostafa Benzema","nomeCurto":"Benzema","nacionalidade":"FRA","idade":38,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":84,"atributos":{"RIT":83,"FIN":96,"PAS":74,"DRI":88,"DEF":47,"FIS":83},"playstyles":["finalizacao-precisa+","primeiro-toque+","passe-em-profundidade"]},
-        {"id":"itt-en-nesyri","nome":"Youssef En-Nesyri","nomeCurto":"En-Nesyri","nacionalidade":"MAR","idade":29,"posicao":"ATA","posicoesAlt":[],"pe":"E","overall":80,"atributos":{"RIT":74,"FIN":89,"PAS":74,"DRI":77,"DEF":42,"FIS":88},"playstyles":["cabeceio+"]},
+        {"id":"itt-diaby","nome":"Moussa Diaby","nomeCurto":"Diaby","nacionalidade":"FRA","idade":27,"posicao":"PD","posicoesAlt":[],"pe":"E","overall":82,"atributos":{"RIT":90,"FIN":82,"PAS":79,"DRI":88,"DEF":49,"FIS":71},"playstyles":["velocista+","drible-rapido"]},
+        {"id":"itt-bergwijn","nome":"Steven Bergwijn","nomeCurto":"Bergwijn","nacionalidade":"HOL","idade":29,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":91,"FIN":80,"PAS":79,"DRI":86,"DEF":43,"FIS":69},"playstyles":["drible-rapido"]},
+        {"id":"itt-roger-fernandes","nome":"Roger Fernandes","nomeCurto":"Roger Fernandes","nacionalidade":"GNB","idade":20,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":83,"FIN":73,"PAS":76,"DRI":88,"DEF":43,"FIS":62},"playstyles":["drible-rapido"]},
+        {"id":"itt-benzema","nome":"Karim Mostafa Benzema","nomeCurto":"Benzema","nacionalidade":"FRA","idade":38,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":84,"atributos":{"RIT":83,"FIN":91,"PAS":74,"DRI":87,"DEF":47,"FIS":83},"playstyles":["finalizacao-precisa+","primeiro-toque+","passe-em-profundidade"]},
+        {"id":"itt-en-nesyri","nome":"Youssef En-Nesyri","nomeCurto":"En-Nesyri","nacionalidade":"MAR","idade":29,"posicao":"ATA","posicoesAlt":[],"pe":"E","overall":80,"atributos":{"RIT":74,"FIN":87,"PAS":74,"DRI":77,"DEF":42,"FIS":87},"playstyles":["cabeceio+"]},
         {"id":"itt-saleh-al-shehri","nome":"Saleh Al-Shehri","nomeCurto":"Saleh Al-Shehri","nacionalidade":"ARS","idade":33,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":65,"FIN":81,"PAS":63,"DRI":73,"DEF":31,"FIS":70},"playstyles":[]},
         {"id":"itt-al-sqoor","nome":"Fawaz Al-Sqoor","nomeCurto":"Al-Sqoor","nacionalidade":"ARS","idade":30,"posicao":"LD","posicoesAlt":[],"pe":"D","overall":67,"atributos":{"RIT":69,"FIN":42,"PAS":67,"DRI":68,"DEF":75,"FIS":67},"playstyles":[]}
       ]
@@ -95,19 +95,19 @@
       "cidade": "Jidá",
       "cores": ["#007a33","#ffffff"],
       "elenco": [
-        {"id":"ahl-mendy","nome":"Édouard Mendy","nomeCurto":"Mendy","nacionalidade":"SEN","idade":34,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":81,"atributos":{"MER":86,"MAN":83,"CHU":72,"REF":94,"VEL":66,"POS":83},"playstyles":["reflexos"]},
-        {"id":"ahl-demiral","nome":"Merih Demiral","nomeCurto":"Demiral","nacionalidade":"TUR","idade":28,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":81,"atributos":{"RIT":69,"FIN":50,"PAS":68,"DRI":65,"DEF":93,"FIS":97},"playstyles":["cabeceio","desarme"]},
-        {"id":"ahl-ibanez","nome":"Roger Ibañez da Silva","nomeCurto":"Ibañez","nacionalidade":"BRA","idade":27,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":71,"FIN":44,"PAS":71,"DRI":63,"DEF":92,"FIS":91},"playstyles":[]},
+        {"id":"ahl-mendy","nome":"Édouard Mendy","nomeCurto":"Mendy","nacionalidade":"SEN","idade":34,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":81,"atributos":{"MER":86,"MAN":83,"CHU":72,"REF":90,"VEL":66,"POS":83},"playstyles":["reflexos"]},
+        {"id":"ahl-demiral","nome":"Merih Demiral","nomeCurto":"Demiral","nacionalidade":"TUR","idade":28,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":81,"atributos":{"RIT":69,"FIN":50,"PAS":68,"DRI":65,"DEF":89,"FIS":91},"playstyles":["cabeceio","desarme"]},
+        {"id":"ahl-ibanez","nome":"Roger Ibañez da Silva","nomeCurto":"Ibañez","nacionalidade":"BRA","idade":27,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":71,"FIN":44,"PAS":71,"DRI":63,"DEF":89,"FIS":88},"playstyles":[]},
         {"id":"ahl-majrashi","nome":"Ali Majrashi","nomeCurto":"Majrashi","nacionalidade":"ARS","idade":26,"posicao":"LD","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":79,"FIN":47,"PAS":67,"DRI":70,"DEF":74,"FIS":65},"playstyles":[]},
         {"id":"ahl-al-johani","nome":"Ziyad Al-Johani","nomeCurto":"Al-Johani","nacionalidade":"ARS","idade":25,"posicao":"VOL","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":63,"FIN":52,"PAS":70,"DRI":68,"DEF":86,"FIS":80},"playstyles":[]},
         {"id":"ahl-kessie","nome":"Franck Kessié","nomeCurto":"Kessié","nacionalidade":"CIV","idade":29,"posicao":"MC","posicoesAlt":["VOL"],"pe":"D","overall":81,"atributos":{"RIT":75,"FIN":72,"PAS":85,"DRI":82,"DEF":75,"FIS":86},"playstyles":["imposicao-fisica","chute-de-longe"]},
-        {"id":"ahl-atangana","nome":"Valentin Atangana Edoa","nomeCurto":"Atangana","nacionalidade":"FRA","idade":21,"posicao":"VOL","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":64,"FIN":60,"PAS":78,"DRI":69,"DEF":92,"FIS":86},"playstyles":[]},
-        {"id":"ahl-millot","nome":"Enzo Millot","nomeCurto":"Millot","nacionalidade":"FRA","idade":24,"posicao":"MEI","posicoesAlt":["MC"],"pe":"D","overall":81,"atributos":{"RIT":81,"FIN":79,"PAS":90,"DRI":91,"DEF":52,"FIS":68},"playstyles":["drible-rapido"]},
-        {"id":"ahl-spertsyan","nome":"Eduard Spertsyan","nomeCurto":"Spertsyan","nacionalidade":"ARM","idade":26,"posicao":"MEI","posicoesAlt":[],"pe":"E","overall":80,"atributos":{"RIT":74,"FIN":77,"PAS":93,"DRI":92,"DEF":50,"FIS":65},"playstyles":["passe-em-profundidade"]},
-        {"id":"ahl-mahrez","nome":"Riyad Mahrez","nomeCurto":"Mahrez","nacionalidade":"ARL","idade":35,"posicao":"PD","posicoesAlt":[],"pe":"E","overall":82,"atributos":{"RIT":94,"FIN":80,"PAS":80,"DRI":98,"DEF":49,"FIS":71},"playstyles":["drible-rapido+","cobranca-de-falta","cruzamento"]},
-        {"id":"ahl-trincao","nome":"Francisco Trincão","nomeCurto":"Trincão","nacionalidade":"POR","idade":26,"posicao":"PD","posicoesAlt":["PE"],"pe":"E","overall":82,"atributos":{"RIT":93,"FIN":83,"PAS":80,"DRI":95,"DEF":46,"FIS":72},"playstyles":["chute-de-longe","drible-rapido"]},
-        {"id":"ahl-galeno","nome":"Wenderson Rodrigues do Nascimento Galeno","nomeCurto":"Galeno","nacionalidade":"BRA","idade":29,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":81,"atributos":{"RIT":96,"FIN":80,"PAS":80,"DRI":88,"DEF":45,"FIS":71},"playstyles":["velocista","drible-rapido"]},
-        {"id":"ahl-toney","nome":"Ivan Toney","nomeCurto":"Toney","nacionalidade":"ING","idade":30,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":83,"atributos":{"RIT":77,"FIN":99,"PAS":75,"DRI":85,"DEF":43,"FIS":82},"playstyles":["finalizacao-precisa+","cabeceio"]},
+        {"id":"ahl-atangana","nome":"Valentin Atangana Edoa","nomeCurto":"Atangana","nacionalidade":"FRA","idade":21,"posicao":"VOL","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":64,"FIN":60,"PAS":78,"DRI":69,"DEF":89,"FIS":86},"playstyles":[]},
+        {"id":"ahl-millot","nome":"Enzo Millot","nomeCurto":"Millot","nacionalidade":"FRA","idade":24,"posicao":"MEI","posicoesAlt":["MC"],"pe":"D","overall":81,"atributos":{"RIT":81,"FIN":79,"PAS":88,"DRI":88,"DEF":52,"FIS":68},"playstyles":["drible-rapido"]},
+        {"id":"ahl-spertsyan","nome":"Eduard Spertsyan","nomeCurto":"Spertsyan","nacionalidade":"ARM","idade":26,"posicao":"MEI","posicoesAlt":[],"pe":"E","overall":80,"atributos":{"RIT":74,"FIN":77,"PAS":89,"DRI":89,"DEF":50,"FIS":65},"playstyles":["passe-em-profundidade"]},
+        {"id":"ahl-mahrez","nome":"Riyad Mahrez","nomeCurto":"Mahrez","nacionalidade":"ARL","idade":35,"posicao":"PD","posicoesAlt":[],"pe":"E","overall":82,"atributos":{"RIT":90,"FIN":80,"PAS":80,"DRI":91,"DEF":49,"FIS":71},"playstyles":["drible-rapido+","cobranca-de-falta","cruzamento"]},
+        {"id":"ahl-trincao","nome":"Francisco Trincão","nomeCurto":"Trincão","nacionalidade":"POR","idade":26,"posicao":"PD","posicoesAlt":["PE"],"pe":"E","overall":82,"atributos":{"RIT":89,"FIN":83,"PAS":80,"DRI":90,"DEF":46,"FIS":72},"playstyles":["chute-de-longe","drible-rapido"]},
+        {"id":"ahl-galeno","nome":"Wenderson Rodrigues do Nascimento Galeno","nomeCurto":"Galeno","nacionalidade":"BRA","idade":29,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":81,"atributos":{"RIT":91,"FIN":80,"PAS":80,"DRI":87,"DEF":45,"FIS":71},"playstyles":["velocista","drible-rapido"]},
+        {"id":"ahl-toney","nome":"Ivan Toney","nomeCurto":"Toney","nacionalidade":"ING","idade":30,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":83,"atributos":{"RIT":77,"FIN":92,"PAS":75,"DRI":85,"DEF":43,"FIS":82},"playstyles":["finalizacao-precisa+","cabeceio"]},
         {"id":"ahl-al-buraikan","nome":"Firas Al-Buraikan","nomeCurto":"Al-Buraikan","nacionalidade":"ARS","idade":26,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":73,"atributos":{"RIT":70,"FIN":86,"PAS":61,"DRI":78,"DEF":36,"FIS":75},"playstyles":[]}
       ]
     },
@@ -118,16 +118,16 @@
       "cidade": "Khobar",
       "cores": ["#e30613","#ffcf00"],
       "elenco": [
-        {"id":"qad-casteels","nome":"Koen Casteels","nomeCurto":"Casteels","nacionalidade":"BEL","idade":34,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"MER":83,"MAN":87,"CHU":75,"REF":90,"VEL":61,"POS":85},"playstyles":["reflexos"]},
-        {"id":"qad-gaston-alvarez","nome":"Gastón Álvarez","nomeCurto":"Gastón Álvarez","nacionalidade":"URU","idade":26,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":64,"FIN":37,"PAS":72,"DRI":64,"DEF":90,"FIS":89},"playstyles":[]},
+        {"id":"qad-casteels","nome":"Koen Casteels","nomeCurto":"Casteels","nacionalidade":"BEL","idade":34,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"MER":83,"MAN":86,"CHU":75,"REF":88,"VEL":61,"POS":85},"playstyles":["reflexos"]},
+        {"id":"qad-gaston-alvarez","nome":"Gastón Álvarez","nomeCurto":"Gastón Álvarez","nacionalidade":"URU","idade":26,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":64,"FIN":37,"PAS":72,"DRI":64,"DEF":88,"FIS":88},"playstyles":[]},
         {"id":"qad-thakri","nome":"Jehad Thakri","nomeCurto":"Thakri","nacionalidade":"ARS","idade":25,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":61,"FIN":31,"PAS":61,"DRI":57,"DEF":82,"FIS":78},"playstyles":[]},
         {"id":"qad-nandez","nome":"Nahitan Nández","nomeCurto":"Nández","nacionalidade":"URU","idade":30,"posicao":"LD","posicoesAlt":["MC"],"pe":"D","overall":79,"atributos":{"RIT":81,"FIN":57,"PAS":78,"DRI":75,"DEF":82,"FIS":84},"playstyles":["incansavel"]},
-        {"id":"qad-al-juwayr","nome":"Musab Al-Juwayr","nomeCurto":"Al-Juwayr","nacionalidade":"ARS","idade":23,"posicao":"MC","posicoesAlt":["MEI"],"pe":"D","overall":74,"atributos":{"RIT":62,"FIN":69,"PAS":88,"DRI":78,"DEF":71,"FIS":70},"playstyles":[]},
+        {"id":"qad-al-juwayr","nome":"Musab Al-Juwayr","nomeCurto":"Al-Juwayr","nacionalidade":"ARS","idade":23,"posicao":"MC","posicoesAlt":["MEI"],"pe":"D","overall":74,"atributos":{"RIT":62,"FIN":69,"PAS":87,"DRI":78,"DEF":71,"FIS":70},"playstyles":[]},
         {"id":"qad-e-fernandez","nome":"Ezequiel Fernández","nomeCurto":"E. Fernández","nacionalidade":"ARG","idade":24,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":79,"atributos":{"RIT":77,"FIN":71,"PAS":86,"DRI":83,"DEF":72,"FIS":80},"playstyles":["incansavel"]},
-        {"id":"qad-bonsu-baah","nome":"Christopher Bonsu Baah","nomeCurto":"Bonsu Baah","nacionalidade":"GAN","idade":22,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":90,"FIN":77,"PAS":74,"DRI":85,"DEF":39,"FIS":68},"playstyles":["drible-rapido"]},
-        {"id":"qad-aboulshamat","nome":"Mohammed Abu Al-Shamat","nomeCurto":"Aboulshamat","nacionalidade":"ARS","idade":25,"posicao":"PD","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":88,"FIN":65,"PAS":64,"DRI":79,"DEF":35,"FIS":61},"playstyles":[]},
-        {"id":"qad-quinones","nome":"Julián Quiñones","nomeCurto":"Quiñones","nacionalidade":"MEX","idade":29,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":74,"FIN":97,"PAS":71,"DRI":81,"DEF":38,"FIS":84},"playstyles":["finalizacao-precisa","cabeceio"]},
-        {"id":"qad-retegui","nome":"Mateo Retegui","nomeCurto":"Retegui","nacionalidade":"ITA","idade":27,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":82,"atributos":{"RIT":75,"FIN":95,"PAS":72,"DRI":86,"DEF":41,"FIS":84},"playstyles":["finalizacao-precisa+","cabeceio"]}
+        {"id":"qad-bonsu-baah","nome":"Christopher Bonsu Baah","nomeCurto":"Bonsu Baah","nacionalidade":"GAN","idade":22,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":88,"FIN":77,"PAS":74,"DRI":85,"DEF":39,"FIS":68},"playstyles":["drible-rapido"]},
+        {"id":"qad-aboulshamat","nome":"Mohammed Abu Al-Shamat","nomeCurto":"Aboulshamat","nacionalidade":"ARS","idade":25,"posicao":"PD","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":87,"FIN":65,"PAS":64,"DRI":79,"DEF":35,"FIS":61},"playstyles":[]},
+        {"id":"qad-quinones","nome":"Julián Quiñones","nomeCurto":"Quiñones","nacionalidade":"MEX","idade":29,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":80,"atributos":{"RIT":74,"FIN":91,"PAS":71,"DRI":81,"DEF":38,"FIS":84},"playstyles":["finalizacao-precisa","cabeceio"]},
+        {"id":"qad-retegui","nome":"Mateo Retegui","nomeCurto":"Retegui","nacionalidade":"ITA","idade":27,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":82,"atributos":{"RIT":75,"FIN":90,"PAS":72,"DRI":86,"DEF":41,"FIS":84},"playstyles":["finalizacao-precisa+","cabeceio"]}
       ]
     },
     {
@@ -138,10 +138,10 @@
       "cores": ["#009a44","#e30613"],
       "elenco": [
         {"id":"ett-paulo-victor","nome":"Paulo Victor","nomeCurto":"Paulo Victor","nacionalidade":"BRA","idade":31,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"MER":78,"MAN":82,"CHU":71,"REF":86,"VEL":56,"POS":80},"playstyles":[]},
-        {"id":"ett-hendry","nome":"Jack Hendry","nomeCurto":"Hendry","nacionalidade":"ESC","idade":31,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":66,"FIN":36,"PAS":67,"DRI":63,"DEF":92,"FIS":88},"playstyles":[]},
-        {"id":"ett-medran","nome":"Álvaro Medrán","nomeCurto":"Medrán","nacionalidade":"ESP","idade":32,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":66,"FIN":66,"PAS":91,"DRI":81,"DEF":70,"FIS":69},"playstyles":["passe-preciso"]},
-        {"id":"ett-dembele","nome":"Moussa Dembélé","nomeCurto":"Dembélé","nacionalidade":"FRA","idade":30,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":71,"FIN":91,"PAS":68,"DRI":82,"DEF":37,"FIS":80},"playstyles":["finalizacao-precisa"]},
-        {"id":"ett-wijnaldum","nome":"Georginio Wijnaldum","nomeCurto":"Wijnaldum","nacionalidade":"HOL","idade":35,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":72,"FIN":69,"PAS":87,"DRI":80,"DEF":72,"FIS":76},"playstyles":["incansavel"]},
+        {"id":"ett-hendry","nome":"Jack Hendry","nomeCurto":"Hendry","nacionalidade":"ESC","idade":31,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":66,"FIN":36,"PAS":67,"DRI":63,"DEF":89,"FIS":87},"playstyles":[]},
+        {"id":"ett-medran","nome":"Álvaro Medrán","nomeCurto":"Medrán","nacionalidade":"ESP","idade":32,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":66,"FIN":66,"PAS":88,"DRI":81,"DEF":70,"FIS":69},"playstyles":["passe-preciso"]},
+        {"id":"ett-dembele","nome":"Moussa Dembélé","nomeCurto":"Dembélé","nacionalidade":"FRA","idade":30,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":71,"FIN":88,"PAS":68,"DRI":82,"DEF":37,"FIS":80},"playstyles":["finalizacao-precisa"]},
+        {"id":"ett-wijnaldum","nome":"Georginio Wijnaldum","nomeCurto":"Wijnaldum","nacionalidade":"HOL","idade":35,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":72,"FIN":69,"PAS":86,"DRI":80,"DEF":72,"FIS":76},"playstyles":["incansavel"]},
         {"id":"ett-al-hamdan","nome":"Abdullah Al-Hamdan","nomeCurto":"Al-Hamdan","nacionalidade":"ARS","idade":27,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":69,"FIN":85,"PAS":59,"DRI":76,"DEF":33,"FIS":72},"playstyles":[]}
       ]
     },
@@ -152,11 +152,11 @@
       "cidade": "Riad",
       "cores": ["#ffffff","#000000"],
       "elenco": [
-        {"id":"sha-hoedt","nome":"Wesley Hoedt","nomeCurto":"Hoedt","nacionalidade":"HOL","idade":32,"posicao":"ZAG","posicoesAlt":[],"pe":"E","overall":75,"atributos":{"RIT":64,"FIN":37,"PAS":64,"DRI":63,"DEF":90,"FIS":82},"playstyles":[]},
-        {"id":"sha-carrasco","nome":"Yannick Carrasco","nomeCurto":"Carrasco","nacionalidade":"BEL","idade":33,"posicao":"PE","posicoesAlt":["MEI"],"pe":"D","overall":79,"atributos":{"RIT":86,"FIN":79,"PAS":80,"DRI":91,"DEF":41,"FIS":70},"playstyles":["drible-rapido","chute-de-longe"]},
+        {"id":"sha-hoedt","nome":"Wesley Hoedt","nomeCurto":"Hoedt","nacionalidade":"HOL","idade":32,"posicao":"ZAG","posicoesAlt":[],"pe":"E","overall":75,"atributos":{"RIT":64,"FIN":37,"PAS":64,"DRI":63,"DEF":88,"FIS":82},"playstyles":[]},
+        {"id":"sha-carrasco","nome":"Yannick Carrasco","nomeCurto":"Carrasco","nacionalidade":"BEL","idade":33,"posicao":"PE","posicoesAlt":["MEI"],"pe":"D","overall":79,"atributos":{"RIT":86,"FIN":79,"PAS":80,"DRI":88,"DEF":41,"FIS":70},"playstyles":["drible-rapido","chute-de-longe"]},
         {"id":"sha-brownhill","nome":"Josh Brownhill","nomeCurto":"Brownhill","nacionalidade":"ING","idade":30,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":68,"FIN":69,"PAS":84,"DRI":81,"DEF":70,"FIS":78},"playstyles":[]},
-        {"id":"sha-hamdallah","nome":"Abderrazak Hamdallah","nomeCurto":"Hamdallah","nacionalidade":"MAR","idade":35,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":70,"FIN":93,"PAS":67,"DRI":77,"DEF":34,"FIS":80},"playstyles":["finalizacao-precisa"]},
-        {"id":"sha-bonaventura","nome":"Giacomo Bonaventura","nomeCurto":"Bonaventura","nacionalidade":"ITA","idade":37,"posicao":"MEI","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":67,"FIN":74,"PAS":92,"DRI":81,"DEF":43,"FIS":62},"playstyles":[]}
+        {"id":"sha-hamdallah","nome":"Abderrazak Hamdallah","nomeCurto":"Hamdallah","nacionalidade":"MAR","idade":35,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":70,"FIN":89,"PAS":67,"DRI":77,"DEF":34,"FIS":80},"playstyles":["finalizacao-precisa"]},
+        {"id":"sha-bonaventura","nome":"Giacomo Bonaventura","nomeCurto":"Bonaventura","nacionalidade":"ITA","idade":37,"posicao":"MEI","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":67,"FIN":74,"PAS":89,"DRI":81,"DEF":43,"FIS":62},"playstyles":[]}
       ]
     },
     {
@@ -167,10 +167,10 @@
       "cores": ["#fcd116","#0033a0"],
       "elenco": [
         {"id":"taa-mailson","nome":"Mailson","nomeCurto":"Mailson","nacionalidade":"BRA","idade":31,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":73,"atributos":{"MER":78,"MAN":79,"CHU":70,"REF":82,"VEL":58,"POS":79},"playstyles":[]},
-        {"id":"taa-girotto","nome":"Andrei Girotto","nomeCurto":"Girotto","nacionalidade":"BRA","idade":34,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":72,"atributos":{"RIT":61,"FIN":34,"PAS":61,"DRI":60,"DEF":87,"FIS":79},"playstyles":[]},
-        {"id":"taa-el-mahdioui","nome":"Aschraf El Mahdioui","nomeCurto":"El Mahdioui","nacionalidade":"MAR","idade":30,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":62,"FIN":69,"PAS":87,"DRI":77,"DEF":66,"FIS":72},"playstyles":[]},
+        {"id":"taa-girotto","nome":"Andrei Girotto","nomeCurto":"Girotto","nacionalidade":"BRA","idade":34,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":72,"atributos":{"RIT":61,"FIN":34,"PAS":61,"DRI":60,"DEF":86,"FIS":79},"playstyles":[]},
+        {"id":"taa-el-mahdioui","nome":"Aschraf El Mahdioui","nomeCurto":"El Mahdioui","nacionalidade":"MAR","idade":30,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":62,"FIN":69,"PAS":86,"DRI":77,"DEF":66,"FIS":72},"playstyles":[]},
         {"id":"taa-barrow","nome":"Musa Barrow","nomeCurto":"Barrow","nacionalidade":"GAM","idade":27,"posicao":"PE","posicoesAlt":["ATA"],"pe":"D","overall":77,"atributos":{"RIT":83,"FIN":83,"PAS":69,"DRI":82,"DEF":42,"FIS":72},"playstyles":[]},
-        {"id":"taa-roger-martinez","nome":"Roger Martínez","nomeCurto":"Roger Martínez","nacionalidade":"COL","idade":32,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":72,"FIN":88,"PAS":63,"DRI":80,"DEF":38,"FIS":77},"playstyles":[]}
+        {"id":"taa-roger-martinez","nome":"Roger Martínez","nomeCurto":"Roger Martínez","nacionalidade":"COL","idade":32,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":72,"FIN":87,"PAS":63,"DRI":80,"DEF":38,"FIS":77},"playstyles":[]}
       ]
     },
     {
@@ -180,9 +180,9 @@
       "cidade": "Al-Ahsa",
       "cores": ["#0055a5","#ffffff"],
       "elenco": [
-        {"id":"fat-denayer","nome":"Jason Denayer","nomeCurto":"Denayer","nacionalidade":"BEL","idade":31,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":73,"atributos":{"RIT":62,"FIN":39,"PAS":63,"DRI":59,"DEF":90,"FIS":79},"playstyles":[]},
-        {"id":"fat-batna","nome":"Mourad Batna","nomeCurto":"Batna","nacionalidade":"MAR","idade":36,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":73,"atributos":{"RIT":85,"FIN":68,"PAS":72,"DRI":87,"DEF":38,"FIS":64},"playstyles":[]},
-        {"id":"fat-matias-vargas","nome":"Matías Vargas","nomeCurto":"Matías Vargas","nacionalidade":"ARG","idade":29,"posicao":"MEI","posicoesAlt":[],"pe":"E","overall":74,"atributos":{"RIT":75,"FIN":70,"PAS":84,"DRI":89,"DEF":44,"FIS":57},"playstyles":[]},
+        {"id":"fat-denayer","nome":"Jason Denayer","nomeCurto":"Denayer","nacionalidade":"BEL","idade":31,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":73,"atributos":{"RIT":62,"FIN":39,"PAS":63,"DRI":59,"DEF":88,"FIS":79},"playstyles":[]},
+        {"id":"fat-batna","nome":"Mourad Batna","nomeCurto":"Batna","nacionalidade":"MAR","idade":36,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":73,"atributos":{"RIT":85,"FIN":68,"PAS":72,"DRI":86,"DEF":38,"FIS":64},"playstyles":[]},
+        {"id":"fat-matias-vargas","nome":"Matías Vargas","nomeCurto":"Matías Vargas","nacionalidade":"ARG","idade":29,"posicao":"MEI","posicoesAlt":[],"pe":"E","overall":74,"atributos":{"RIT":75,"FIN":70,"PAS":84,"DRI":87,"DEF":44,"FIS":57},"playstyles":[]},
         {"id":"fat-bendebka","nome":"Sofiane Bendebka","nomeCurto":"Bendebka","nacionalidade":"ARL","idade":34,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":65,"FIN":66,"PAS":81,"DRI":71,"DEF":67,"FIS":75},"playstyles":[]}
       ]
     },
@@ -193,7 +193,7 @@
       "cidade": "Saihat",
       "cores": ["#fcd116","#009a44"],
       "elenco": [
-        {"id":"kha-fortounis","nome":"Kostas Fortounis","nomeCurto":"Fortounis","nacionalidade":"GRE","idade":33,"posicao":"MEI","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":71,"FIN":71,"PAS":89,"DRI":85,"DEF":47,"FIS":59},"playstyles":["cobranca-de-falta"]},
+        {"id":"kha-fortounis","nome":"Kostas Fortounis","nomeCurto":"Fortounis","nacionalidade":"GRE","idade":33,"posicao":"MEI","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":71,"FIN":71,"PAS":87,"DRI":85,"DEF":47,"FIS":59},"playstyles":["cobranca-de-falta"]},
         {"id":"kha-masouras","nome":"Georgios Masouras","nomeCurto":"Masouras","nacionalidade":"GRE","idade":32,"posicao":"PD","posicoesAlt":[],"pe":"D","overall":73,"atributos":{"RIT":86,"FIN":70,"PAS":70,"DRI":85,"DEF":35,"FIS":61},"playstyles":[]},
         {"id":"kha-king","nome":"Joshua King","nomeCurto":"King","nacionalidade":"NOR","idade":34,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":70,"FIN":83,"PAS":61,"DRI":75,"DEF":29,"FIS":72},"playstyles":[]}
       ]
@@ -215,7 +215,7 @@
       "cidade": "Riad",
       "cores": ["#e30613","#000000"],
       "elenco": [
-        {"id":"riy-selemani","nome":"Faïz Selemani","nomeCurto":"Selemani","nacionalidade":"COM","idade":32,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":87,"FIN":67,"PAS":64,"DRI":82,"DEF":36,"FIS":58},"playstyles":[]}
+        {"id":"riy-selemani","nome":"Faïz Selemani","nomeCurto":"Selemani","nacionalidade":"COM","idade":32,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":71,"atributos":{"RIT":86,"FIN":67,"PAS":64,"DRI":82,"DEF":36,"FIS":58},"playstyles":[]}
       ]
     },
     {
@@ -245,9 +245,9 @@
       "cidade": "NEOM",
       "cores": ["#00a3e0","#0a2240"],
       "elenco": [
-        {"id":"neo-lacazette","nome":"Alexandre Lacazette","nomeCurto":"Lacazette","nacionalidade":"FRA","idade":35,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":70,"FIN":90,"PAS":67,"DRI":81,"DEF":36,"FIS":79},"playstyles":["finalizacao-precisa"]},
-        {"id":"neo-benrahma","nome":"Saïd Benrahma","nomeCurto":"Benrahma","nacionalidade":"ARL","idade":31,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":85,"FIN":71,"PAS":79,"DRI":90,"DEF":38,"FIS":67},"playstyles":["drible-rapido"]},
-        {"id":"neo-l-rodriguez","nome":"Luciano Rodríguez","nomeCurto":"L. Rodríguez","nacionalidade":"URU","idade":23,"posicao":"PD","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":93,"FIN":73,"PAS":70,"DRI":81,"DEF":42,"FIS":64},"playstyles":[]}
+        {"id":"neo-lacazette","nome":"Alexandre Lacazette","nomeCurto":"Lacazette","nacionalidade":"FRA","idade":35,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":70,"FIN":88,"PAS":67,"DRI":81,"DEF":36,"FIS":79},"playstyles":["finalizacao-precisa"]},
+        {"id":"neo-benrahma","nome":"Saïd Benrahma","nomeCurto":"Benrahma","nacionalidade":"ARL","idade":31,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":85,"FIN":71,"PAS":79,"DRI":88,"DEF":38,"FIS":67},"playstyles":["drible-rapido"]},
+        {"id":"neo-l-rodriguez","nome":"Luciano Rodríguez","nomeCurto":"L. Rodríguez","nacionalidade":"URU","idade":23,"posicao":"PD","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":89,"FIN":73,"PAS":70,"DRI":81,"DEF":42,"FIS":64},"playstyles":[]}
       ]
     },
     {

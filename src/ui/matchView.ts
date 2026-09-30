@@ -1,7 +1,8 @@
 import { inPos } from '../engine/cards';
-import { Match, effNow, fatigue, matchReward, sideFromTeam, sideOpp } from '../engine/match';
+import { Match, effNow, fatigue, freeKickTaker, matchReward, penaltyTaker, sideFromTeam, sideOpp } from '../engine/match';
+import { allClubs } from '../engine/world';
 import { clamp } from '../engine/rng';
-import { DIVS, finishRound, type OppTeam } from '../engine/season';
+import { DIVS, finishRound, oppFromClub, type OppTeam } from '../engine/season';
 import { cardByUid, teamInfo } from '../engine/state';
 import { MENT, STYLES, STYLE_IDS } from '../engine/tactics';
 import type { CardPlayer, StyleId } from '../engine/types';
@@ -121,6 +122,17 @@ function openSubs(): void {
     });
   };
   draw();
+}
+
+/** Só em desenvolvimento: abre um lance direto (usado nos testes de navegador). */
+export function devMoment(kind: 'ataque' | 'contra' | 'penalti' | 'falta'): Promise<unknown> {
+  const S = app.S, T = teamInfo(S);
+  const bench = S.squad.bench.filter(Boolean).map(u => cardByUid(S, u)!) as CardPlayer[];
+  const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench });
+  const opp = allClubs()[0];
+  const m = new Match(A, sideOpp(oppFromClub(opp)));
+  const taker = kind === 'falta' ? freeKickTaker(A) : kind === 'penalti' ? penaltyTaker(A) : undefined;
+  return runMoment2D(m, { kind, taker });
 }
 
 export const matchActions = {

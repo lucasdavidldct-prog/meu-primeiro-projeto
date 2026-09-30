@@ -12,6 +12,7 @@ import { flushSave, loadSave } from './save/db';
 import { loadEditedLigas } from './save/dados';
 import { applyEdits } from './engine/world';
 import { startApp } from './ui/app';
+import { devMoment } from './ui/matchView';
 
 async function boot(): Promise<void> {
   // Correções feitas no Editor de elencos (quando não há servidor local) valem por cima dos arquivos.
@@ -21,5 +22,6 @@ async function boot(): Promise<void> {
   try { S = await loadSave(); } catch (e) { console.warn('Não foi possível ler o save', e); }
   if (!S) { S = newGame(); await flushSave(S).catch(e => console.warn('Não foi possível salvar', e)); }
   startApp(S);
+  if (import.meta.env.DEV) Object.assign(window, { __esquadrao: { devMoment } });
 }
 void boot();
