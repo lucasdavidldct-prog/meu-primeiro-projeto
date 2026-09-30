@@ -19,16 +19,16 @@ import { runKeeper2D } from './keeper2d';
 import { webglAvailable } from '../three/support';
 import { haptic, sfx } from './sfx';
 
-/** Lance 3D (carregado sob demanda), ou 2D se desligado nas configurações, sem WebGL ou se o 3D falhar. */
+/** Lance 3D (carregado sob demanda); o 2D só entra sozinho se o aparelho não tiver WebGL ou se o 3D falhar. */
 export async function runMoment(m: Match, req: Parameters<typeof runMoment2D>[1]): Promise<Awaited<ReturnType<typeof runMoment2D>>> {
   if (req.kind === 'goleiro') {
-    if (app.S.lance3d !== false && webglAvailable()) {
+    if (webglAvailable()) {
       try { const { runKeeper3D } = await import('../three/keeper3d'); return await runKeeper3D(m, req); }
       catch (e) { console.warn('Lance de goleiro 3D indisponível, usando 2D', e); }
     }
     return runKeeper2D(m, req);
   }
-  if (app.S.lance3d !== false && webglAvailable()) {
+  if (webglAvailable()) {
     try { const { runMoment3D } = await import('../three/moment3d'); return await runMoment3D(m, req); }
     catch (e) { console.warn('Lance 3D indisponível, usando 2D', e); }
   }

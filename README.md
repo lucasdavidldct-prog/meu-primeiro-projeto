@@ -161,6 +161,7 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Elencos salvos** (até 5, com formação e tática) e **número da camisa** editável.
 - **Estatísticas** do time (gols, assistências, finalizações, desarmes, erros, defesas) e da liga (artilharia e assistências), **melhores por posição** e **guia tático** que simula o seu elenco.
 - Fotos: lendas que estavam sem foto são procuradas de novo automaticamente.
+- Lances sempre em **3D** (a opção 2D saiu do Clube; ela só aparece sozinha em aparelho sem suporte a 3D).
 
 ## Versão 1.7
 

@@ -37,7 +37,7 @@ export interface GameState {
   rec: { w: number; d: number; l: number; gf: number; ga: number; packs: number };
   lastFree: string;
   moments: boolean;
-  /** Lances em 3D (false = canvas 2D, para aparelhos mais fracos). */
+  /** Antigo seletor 3D/2D (sem uso: os lances são sempre em 3D; o 2D só entra sozinho em aparelho sem WebGL). */
   lance3d?: boolean;
   /** Qualidade gráfica dos lances 3D (padrão: conforme o aparelho). */
   graficos?: 'alta' | 'media' | 'leve';
