@@ -31,6 +31,7 @@ import { initNative, isNative, shareFile } from './native';
 import { initSquadDrag } from './squadDrag';
 import { bindMarket, marketActions } from './market';
 import { labActions, viewLab } from './lab';
+import { guiaActions, viewRanking, viewTaticas } from './guias';
 import { cardDetailActions, showCard } from './cardDetail';
 import { slotMenuHTML } from './slotMenu';
 import { definirMinhaFoto, fotoDe, removerMinhaFoto, temFotoCommons } from './fotos';
@@ -40,12 +41,12 @@ function renderApp(): void {
   const S = app.S;
   document.getElementById('coins')!.textContent = fmt(S.coins);
   document.getElementById('clubName')!.textContent = S.name;
-  if (!S.career && app.tab !== 'editor' && app.tab !== 'lab') app.tab = 'start';
+  if (!S.career && app.tab !== 'editor' && app.tab !== 'lab' && app.tab !== 'ranking') app.tab = 'start';
   document.getElementById('crest')!.outerHTML = `<span id="crest" class="crest-head">${crestHTML(userClub())}</span>`;
-  const tabNow = app.tab === 'editor' || app.tab === 'lab' ? 'club' : app.tab;
+  const tabNow = app.tab === 'editor' || app.tab === 'lab' || app.tab === 'ranking' || app.tab === 'taticas' ? 'club' : app.tab;
   document.querySelectorAll<HTMLElement>('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.t === tabNow ? 'true' : 'false'));
   const v = document.getElementById('view')!;
-  v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : app.tab === 'editor' ? viewEditor() : app.tab === 'lab' ? viewLab() : app.tab === 'start' ? viewStart() : viewSeason();
+  v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : app.tab === 'editor' ? viewEditor() : app.tab === 'lab' ? viewLab() : app.tab === 'ranking' ? viewRanking() : app.tab === 'taticas' ? viewTaticas() : app.tab === 'start' ? viewStart() : viewSeason();
   if (app.tab === 'editor') bindEditorInputs(v);
   if (app.tab === 'store') bindMarket(v);
 }
@@ -123,6 +124,7 @@ const ACT: Record<string, Handler> = {
     if (!r.ok) return;
     save(); render(); toast(r.faltando ? `Elenco carregado (${r.faltando} vaga(s) vazia(s): carta vendida)` : `Elenco "${app.S.elencos![+d.i!].nome}" carregado`);
   },
+  statSort(d) { app.statSort = d.k ?? 'g'; render(); },
   presetDel(d) { app.S.elencos?.splice(+d.i!, 1); save(); render(); },
   form(d) { setFormation(app.S, d.f as FormationId); save(); render(); },
   style(d) { app.S.tac.style = d.s as StyleId; save(); render(); },
@@ -278,6 +280,7 @@ const ACT: Record<string, Handler> = {
   storeTab(d) { app.storeTab = d.t as 'pacotes' | 'mercado'; render(); },
   ...editorActions,
   ...(labActions as unknown as Record<string, Handler>),
+  ...(guiaActions as unknown as Record<string, Handler>),
   ...(cardDetailActions as unknown as Record<string, Handler>),
 };
 

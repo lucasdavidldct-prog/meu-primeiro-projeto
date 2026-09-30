@@ -3,7 +3,7 @@ import type { GameState } from '../engine/state';
 import { flushSave, scheduleSave } from '../save/db';
 import { W } from '../engine/world';
 
-export type Tab = 'squad' | 'store' | 'club' | 'season' | 'editor' | 'start' | 'lab';
+export type Tab = 'squad' | 'store' | 'club' | 'season' | 'editor' | 'start' | 'lab' | 'ranking' | 'taticas';
 export const app = {
   S: null as unknown as GameState,
   tab: 'squad' as Tab,
@@ -11,7 +11,9 @@ export const app = {
   clubFilter: 'todos',
   clubSort: 'ovr' as 'ovr' | 'rec',
   /** Aba interna da tela da carreira. */
-  careerView: 'tabela' as 'tabela' | 'lib' | 'outras' | 'trofeus',
+  careerView: 'tabela' as 'tabela' | 'lib' | 'outras' | 'trofeus' | 'stats',
+  /** Coluna de ordenação da tabela de estatísticas do time. */
+  statSort: 'g' as string,
   otherLeague: 'premier-league',
   startLiga: 'brasileirao',
   startClub: 'CAM',

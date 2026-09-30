@@ -507,3 +507,28 @@ table tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
 .preset{display:inline-flex}
 .preset .chip:first-child{border-radius:99px 0 0 99px}
 .preset .chip.x{border-radius:0 99px 99px 0;border-left:0;padding:7px 10px}
+/* Estatísticas */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.kpi{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:linear-gradient(180deg,#152821,var(--panel));border:1px solid var(--line)}
+.kpi span{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi em{font-style:normal;font-family:var(--f-disp);font-weight:800;font-size:24px;color:var(--gold);line-height:1}
+.stat-t th button{font:inherit;font-weight:800;color:var(--muted);padding:2px 4px;border-radius:6px}
+.stat-t th button[aria-pressed="true"]{color:#1d1403;background:var(--gold)}
+.stat-t td.cur{color:var(--gold);font-weight:800}
+.stat-t td,.stat-t th{text-align:center;padding:6px 4px}
+.stat-t td:first-child,.stat-t th:first-child{text-align:left;white-space:nowrap}
+.ranks{padding:6px 12px}
+.rank{display:grid;grid-template-columns:22px 24px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.rank i{font-style:normal;color:var(--muted);font-weight:800;text-align:center}
+.rank b{font-family:var(--f-disp);font-size:20px}
+.rank.me span{color:var(--gold);font-weight:700}
+.rank .crest-box.badge{width:20px;height:24px}
+.rk-row{display:grid;grid-template-columns:22px auto 1fr auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.rk-row i{font-style:normal;color:var(--muted);font-weight:800;text-align:center}
+.rk-row em{font-style:normal;font-family:var(--f-disp);font-weight:800;font-size:24px;color:var(--gold)}
+.tt{padding:4px 10px}
+.tt-row{display:grid;grid-template-columns:1fr 62px 62px 56px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+.tt-row span{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.tt-h{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tt-h span{font-weight:800}

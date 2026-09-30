@@ -44,6 +44,8 @@ export function viewClub(): string {
   <div class="chips">${[['todos', 'Todos'], ['GOL', 'Goleiros'], ['DEF', 'Defesa'], ['MEI', 'Meio'], ['ATA', 'Ataque'], ['esp', 'Especiais']].map(([k, n]) => `<button class="chip" data-act="cf" data-f="${k}" aria-pressed="${k === f}">${n}</button>`).join('')}
    <button class="chip" data-act="cs" aria-pressed="false">Ordem: ${app.clubSort === 'ovr' ? 'Geral' : 'Recentes'}</button></div>
   <div class="grid" style="margin-top:12px">${list.map(P => `<button class="rv-item" data-act="card" data-u="${P.u}"><div style="position:relative">${cardHTML(P, 'md', inSq.has(P.u) ? '<span class="dup" style="background:var(--good);color:#082014">TIME</span>' : '')}</div>${cardCaption(P)}</button>`).join('') || '<p class="empty-note">Nenhuma carta aqui.</p>'}</div>
+  <h3>Guias</h3>
+  <div class="row" style="gap:8px"><button class="btn" style="flex:1" data-act="openRanking">🏆 Melhores por posição</button><button class="btn" style="flex:1" data-act="openTaticas">🧠 Guia tático</button></div>
   <h3>Modo teste</h3>
   <div class="panel"><p class="small muted" style="margin:0 0 10px">Para testar pacotes e o jogo sem precisar juntar moedas.</p>
     <button class="btn block" data-act="testCoins">+1.000.000 moedas</button>

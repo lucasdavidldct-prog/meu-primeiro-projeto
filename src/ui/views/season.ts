@@ -4,7 +4,7 @@ import { MAIN_LEAGUES, groupStandings, leagueStandings, libUserStatus, nextFixtu
 import { oppFromId, type Standing } from '../../engine/season';
 import { teamInfo, teamStrength } from '../../engine/state';
 import { STYLES, counterOf } from '../../engine/tactics';
-import { W } from '../../engine/world';
+import { W, getPlayer } from '../../engine/world';
 import { app, userClub } from '../ctx';
 import { crestHTML } from '../crest';
 import { esc } from '../dom';
@@ -54,6 +54,27 @@ function viewTrophies(C: Career): string {
   ${C.history.length ? `<div class="panel tbl-wrap" style="padding:6px 8px"><table><thead><tr><th>Ano</th><th>Divisão</th><th>Pos.</th><th>Pts</th><th>Libertadores</th><th>Artilheiro</th></tr></thead><tbody>${C.history.slice().reverse().map(h => `<tr><td>${h.year}</td><td style="text-align:left">Série ${h.div}</td><td>${h.pos}º</td><td>${h.pts}</td><td>${h.lib ? esc(h.lib) : '—'}</td><td style="text-align:left">${h.art ? esc(h.art) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-note">Nenhuma temporada encerrada ainda.</p>'}`;
 }
 
+/** Estatísticas: seu time (ordenável) e a artilharia/assistências da liga. */
+type StatK = 'j' | 'g' | 'a' | 'f' | 'd' | 'e' | 's' | 'n';
+const STAT_COLS: [StatK, string, string][] = [['j', 'J', 'Jogos'], ['g', 'G', 'Gols'], ['a', 'A', 'Assistências'], ['f', 'Fin', 'Finalizações'], ['d', 'Des', 'Desarmes e interceptações'], ['e', 'Err', 'Erros (bola perdida que virou chance do rival)'], ['s', 'Def', 'Defesas (goleiro)'], ['n', 'Nota', 'Nota média']];
+function viewStats(C: Career): string {
+  const k = (app.statSort ?? 'g') as StatK;
+  const rows = Object.entries(C.stats ?? {}).map(([nome, r]) => ({ nome, j: r.j, g: r.g, a: r.a, f: r.f ?? 0, d: r.d ?? 0, e: r.e ?? 0, s: r.s ?? 0, n: r.j ? r.n / r.j : 0 }))
+    .sort((x, y) => (y[k] - x[k]) * (k === 'e' ? -1 : 1) || y.g - x.g);
+  const lider = (kk: StatK, rot: string) => { const r = [...rows].sort((x, y) => y[kk] - x[kk])[0]; return r && r[kk] ? `<div class="kpi"><span>${rot}</span><b>${esc(r.nome)}</b><em>${kk === 'n' ? r[kk].toFixed(1) : r[kk]}</em></div>` : ''; };
+  const art = Object.entries(C.league.art ?? {}).map(([id, r]) => ({ id, ...r, P: getPlayer(id) })).filter(x => x.P);
+  const top = (kk: 'g' | 'a') => art.filter(x => x[kk]).sort((x, y) => y[kk] - x[kk] || y.a - x.a).slice(0, 10);
+  const lista = (kk: 'g' | 'a') => top(kk).map((x, i) => `<div class="rank${x.c === C.club ? ' me' : ''}"><i>${i + 1}</i>${crestHTML(clubC(x.c), 'badge')}<span>${esc(x.P!.short)} <small class="muted">${esc(clubC(x.c).n)}</small></span><b>${x[kk]}</b></div>`).join('') || '<p class="small muted">Ainda sem gols na liga.</p>';
+  return `<h3 style="margin-top:4px">Destaques do seu time</h3>
+    <div class="kpis">${lider('g', 'Artilheiro')}${lider('a', 'Garçom')}${lider('d', 'Mais desarmes')}${lider('s', 'Mais defesas')}${lider('n', 'Melhor nota')}</div>
+    <h3>Seu time na temporada</h3>
+    ${rows.length ? `<div class="tbl-wrap"><table class="stat-t"><thead><tr><th>Jogador</th>${STAT_COLS.map(([c, a, t]) => `<th title="${t}"><button data-act="statSort" data-k="${c}" aria-pressed="${c === k}">${a}</button></th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r => `<tr><td>${esc(r.nome)}</td>${STAT_COLS.map(([c]) => `<td class="${c === k ? 'cur' : ''}">${c === 'n' ? r.n.toFixed(1) : r[c]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <p class="small muted">Toque no título da coluna para ordenar. Err = bolas perdidas que viraram chance do rival.</p>` : '<p class="small muted">Jogue uma partida para ver os números.</p>'}
+    <h3>Artilharia · ${esc(C.league.name)}</h3><div class="panel ranks">${lista('g')}</div>
+    <h3>Assistências · ${esc(C.league.name)}</h3><div class="panel ranks">${lista('a')}</div>`;
+}
+
 export function viewSeason(): string {
   const S = app.S, C = S.career!;
   let next: string;
@@ -74,12 +95,12 @@ export function viewSeason(): string {
      <div class="row" style="margin-top:12px"><button class="btn pri" style="flex:1" data-act="play">Jogar partida</button><button class="btn" data-act="simPlay">Simular</button><button class="btn" data-act="friendly">Amistoso</button></div></div>`;
   }
   const v = app.careerView;
-  const body = v === 'lib' ? viewLib(C) : v === 'outras' ? viewOthers(C) : v === 'trofeus' ? viewTrophies(C)
+  const body = v === 'lib' ? viewLib(C) : v === 'outras' ? viewOthers(C) : v === 'trofeus' ? viewTrophies(C) : v === 'stats' ? viewStats(C)
     : `${table(C, leagueStandings(C.league), C.div === 'A' ? { lib: 5, down: 4 } : { up: 4, down: 4 })}
        ${C.league.last.length ? `<h3>Última rodada</h3><div class="panel" style="padding:8px 12px">${C.league.last.map(m => `<div class="res"><span>${esc(nm(C, m.h))}</span><b>${m.gh} × ${m.ga}</b><span>${esc(nm(C, m.a))}</span></div>`).join('')}</div>` : ''}`;
   return `<h2>${esc(C.league.name)} <span class="muted" style="font-size:18px">· ${C.year}</span></h2>
   <p class="small muted" style="margin-top:-4px">${C.div === 'A' ? 'Os 5 primeiros vão para a Libertadores; os 4 últimos caem.' : 'Os 4 primeiros sobem para a Série A; os 4 últimos caem.'}${C.short ? ' Temporada curta (só turno).' : ''}</p>
   ${next}
-  <div class="chips" style="margin-top:16px">${[['tabela', 'Tabela'], ['lib', 'Libertadores'], ['outras', 'Outras ligas'], ['trofeus', 'Troféus']].map(([k, n]) => `<button class="chip" data-act="cv" data-v="${k}" aria-pressed="${k === v}">${n}</button>`).join('')}</div>
+  <div class="chips" style="margin-top:16px">${[['tabela', 'Tabela'], ['stats', 'Estatísticas'], ['lib', 'Libertadores'], ['outras', 'Outras ligas'], ['trofeus', 'Troféus']].map(([k, n]) => `<button class="chip" data-act="cv" data-v="${k}" aria-pressed="${k === v}">${n}</button>`).join('')}</div>
   <div style="margin-top:10px">${body}</div>`;
 }

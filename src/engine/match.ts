@@ -18,9 +18,12 @@ export interface SideEntry {
   /** Efeito da função/orientação do jogador e o id da função (para a narração). */
   ofx?: OrderFx; fn?: string;
   /** Números do jogo para a nota: gols, assistências, desarmes/bloqueios, defesas (goleiro), finalizações. */
-  sx?: { g: number; a: number; d: number; s: number; c: number };
+  /** Números no jogo: gols, assistências, desarmes/interceptações, defesas (goleiro), chances, erros (bola perdida que virou chance) e finalizações. */
+  sx?: { g: number; a: number; d: number; s: number; c: number; e?: number; f?: number };
 }
-const bump = (e: SideEntry | null | undefined, k: 'g' | 'a' | 'd' | 's' | 'c', n = 1) => { if (!e) return; (e.sx ??= { g: 0, a: 0, d: 0, s: 0, c: 0 })[k] += n; };
+const bump = (e: SideEntry | null | undefined, k: 'g' | 'a' | 'd' | 's' | 'c' | 'e' | 'f', n = 1) => { if (!e) return; const x = (e.sx ??= { g: 0, a: 0, d: 0, s: 0, c: 0 }); x[k] = (x[k] ?? 0) + n; };
+/** Quem perde a bola que vira chance do rival (meio e defesa mais expostos). */
+const ERR_W: Record<Pos, number> = { GOL: .15, ZAG: 1, LD: 1, LE: 1, VOL: 1.2, MC: 1.3, MEI: 1.1, MD: 1, ME: 1, PD: .8, PE: .8, ATA: .6 };
 export interface Nota { name: string; pos: Pos; nota: number; side: 0 | 1 }
 export interface Side {
   you: boolean; name: string; s: string; c1: string; c2: string;
@@ -205,8 +208,13 @@ export class Match {
     const rollA = R(), rollB = R();
     if (rollA < cA) await this.shot(A, B, rA, 0);
     else if (rollA < cA / this.tackleKeep(B)) this.tackleEvent(B, A, 1);
+    else if (rollA < cA * 2.4) bump(this.desarmador(B), 'd'); // jogada cortada antes de virar chance (só estatística)
+    // Chance do rival: às vezes nasce de uma bola perdida por alguém do seu time (erro)
+    if (rollB < cB && R() < .4) bump(weightedPlayer(A, ERR_W), 'e');
+    if (rollA < cA && R() < .4) bump(weightedPlayer(B, ERR_W), 'e');
     if (!this.over && rollB < cB) await this.shot(B, A, rB, 1);
     else if (rollB < cB / this.tackleKeep(A)) this.tackleEvent(A, B, 0);
+    else if (rollB < cB * 2.4) bump(this.desarmador(A), 'd');
     if (!this.over) await this.freeKicks();
     if (!this.over) this.ambient(pA, rA, rB);
     if (!this.over && this.bolaParada) { const k = this.bolaParada; this.bolaParada = null; await this.playMoment(A, 0, { kind: k }); }
@@ -305,12 +313,16 @@ export class Match {
     return m;
   }
   /** Narra um desarme que matou a jogada (só às vezes, para não poluir). */
+  private desarmador(def: Side): SideEntry {
+    return weightedPlayer(def, { GOL: 0, ZAG: 1, LD: .8, LE: .8, VOL: 1.2, MC: .6, MEI: .2, MD: .4, ME: .4, PD: .1, PE: .1, ATA: .05 }, null,
+      e => (1 + 2 * ps(e, 'desarme') + 1.5 * ps(e, 'interceptacao') + 1.5 * ps(e, 'antecipacao') + ps(e, 'contencao')) * ((e.P.st?.[4] ?? 60) / 70) ** 2);
+  }
   private tackleEvent(def: Side, att: Side, si: 0 | 1): void {
-    const d = weightedPlayer(def, { GOL: 0, ZAG: 1, LD: .8, LE: .8, VOL: 1.2, MC: .6, MEI: .2, MD: .4, ME: .4, PD: .1, PE: .1, ATA: .05 }, null,
-      e => 1 + 2 * ps(e, 'desarme') + 1.5 * ps(e, 'interceptacao') + 1.5 * ps(e, 'antecipacao') + ps(e, 'contencao'));
+    const d = this.desarmador(def);
+    bump(d, 'd');
+    // Só narra quem tem estilo de defesa (os outros desarmes contam na estatística em silêncio)
     if (!ps(d, 'desarme') && !ps(d, 'interceptacao') && !ps(d, 'antecipacao') && !ps(d, 'contencao')) return;
     const a = weightedPlayer(att, SCORE_W);
-    bump(d, 'd');
     this.addEv(si, 'info', tx('tackle', { d: d.name, p: a.name }));
   }
 
@@ -406,6 +418,7 @@ export class Match {
     const shooter = kind === 'longe' ? weightedPlayer(att, LONG_W, null, e => 1 + 1.3 * ps(e, 'chute-de-longe'), 'long')
       : kind === 'cabeca' ? weightedPlayer(att, HEAD_W, null, e => 1 + 1.3 * ps(e, 'cabeceio') + .3 * ps(e, 'imposicao-fisica'), 'head')
       : weightedPlayer(att, SCORE_W, null, e => 1 + .4 * ps(e, 'finalizacao-precisa'), 'score');
+    bump(shooter, 'f');
     const assist = kind === 'cabeca' ? weightedPlayer(att, CROSS_W, shooter, e => FX.cruzamento[ps(e, 'cruzamento')], 'cross')
       : R() < .62 ? weightedPlayer(att, ASSIST_W, shooter, e => FX.profundidade[ps(e, 'passe-em-profundidade')] + .2 * ps(e, 'passe-preciso'), 'assist') : null;
     // Bloqueio (chutes rasteiros e de longe)
@@ -536,9 +549,9 @@ export class Match {
 
   /** Notas de 0 a 10 dos jogadores (quem começou ou entrou), pelo que fizeram no jogo e pelo resultado. */
   /** Gols e assistências de cada jogador do lado A (para as estatísticas da temporada). */
-  userNumbers(): Record<string, { g: number; a: number }> {
-    const o: Record<string, { g: number; a: number }> = {};
-    for (const e of this.A.xi) { const x = e.sx; if (x) o[e.name] = { g: x.g, a: x.a }; }
+  userNumbers(): Record<string, { id: string; g: number; a: number; d: number; s: number; e: number; f: number }> {
+    const o: Record<string, { id: string; g: number; a: number; d: number; s: number; e: number; f: number }> = {};
+    for (const e of this.A.xi) { const x = e.sx; if (x) o[e.name] = { id: e.P.id, g: x.g, a: x.a, d: x.d, s: x.s, e: x.e ?? 0, f: x.f ?? 0 }; }
     return o;
   }
 

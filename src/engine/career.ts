@@ -1,6 +1,7 @@
 // Modo carreira: Brasileirão (Série A ou B), Libertadores e outras ligas simuladas em segundo plano.
 // Tudo aqui é serializável (vai para o save) e sem interface.
 import { R, shuffle, wpick } from './rng';
+import type { Pos } from './types';
 import { applyResult, doubleRoundRobin, emptyRow, quickSim, roundRobin, sortTable, type Row, type Standing } from './season';
 import { clubStrength } from './squads';
 import { W, leagueClubs } from './world';
@@ -10,7 +11,9 @@ export const LIB_SIZE = 16;
 export const LIB_BR = 5;
 
 export interface Res { h: string; a: string; gh: number; ga: number; pens?: [number, number] }
-export interface LeagueComp { id: string; name: string; teams: string[]; rounds: [number, number][][]; round: number; table: Row[]; last: Res[] }
+export interface LeagueComp { id: string; name: string; teams: string[]; rounds: [number, number][][]; round: number; table: Row[]; last: Res[];
+  /** Artilharia e assistências da liga (id do jogador → gols, assistências e clube). */
+  art?: Record<string, { g: number; a: number; c: string }> }
 export interface CupTie { a: string; b: string; legs: ([number, number] | null)[]; pens?: [number, number]; winner?: string }
 export type LibPhase = 'grupos' | 'quartas' | 'semi' | 'final' | 'fim';
 export interface LibGroup { teams: string[]; rounds: [number, number][][]; table: Row[] }
@@ -39,7 +42,7 @@ export interface Career {
   evo?: boolean;
   mercado?: boolean;
   /** Números dos seus jogadores na temporada atual (gols, assistências, jogos, soma das notas). */
-  stats?: Record<string, { g: number; a: number; j: number; n: number }>;
+  stats?: Record<string, { g: number; a: number; j: number; n: number; /** desarmes, erros, defesas, finalizações e id do jogador */ d?: number; e?: number; s?: number; f?: number; id?: string }>;
   /** Fase alcançada na Libertadores desta temporada (para o histórico e os prêmios). */
   libReached: string | null;
   /** Jogadores fora (id do jogador): suspensos ou lesionados, com quantos jogos faltam. */
@@ -84,7 +87,25 @@ function makeLeague(id: string, teams: string[], single: boolean): LeagueComp {
 }
 
 /** Joga uma rodada de liga. `user` recebe o resultado do jogo do usuário (se houver). */
-function playLeagueRound(L: LeagueComp, user?: { club: string; gf: number; ga: number }): void {
+/** Distribui os gols de um clube da IA entre os jogadores (atacantes e bons finalizadores marcam mais; meias dão mais assistências). */
+const GOL_W: Partial<Record<Pos, number>> = { ATA: 6, PD: 3.5, PE: 3.5, MEI: 3, MD: 1.6, ME: 1.6, MC: 1.2, VOL: .5, LD: .35, LE: .35, ZAG: .5 };
+const AST_W: Partial<Record<Pos, number>> = { MEI: 4, PD: 3, PE: 3, MD: 2.6, ME: 2.6, MC: 2.5, ATA: 2, LD: 1.3, LE: 1.3, VOL: 1, ZAG: .3 };
+function creditGoals(L: LeagueComp, club: string, goals: number): void {
+  if (!goals) return;
+  const squad = (W.byClub.get(club) ?? []).filter(p => !p.filler && p.pos !== 'GOL').sort((a, b) => b.ovr - a.ovr).slice(0, 16);
+  if (!squad.length) return;
+  const art = L.art ??= {};
+  const w = (m: Partial<Record<Pos, number>>, k: number) => squad.map(p => [p, (m[p.pos] ?? .2) * Math.pow((p.st[k] ?? 70) / 70, 3) * Math.pow(p.ovr / 75, 2)] as const);
+  const wg = w(GOL_W, 1), wa = w(AST_W, 2);
+  for (let i = 0; i < goals; i++) {
+    const s = wpick(wg);
+    (art[s.id] ??= { g: 0, a: 0, c: club }).g++;
+    const outros = wa.filter(([p]) => p !== s);
+    if (outros.length && R() < .72) { const a = wpick(outros); (art[a.id] ??= { g: 0, a: 0, c: club }).a++; }
+  }
+}
+
+function playLeagueRound(L: LeagueComp, user?: { club: string; gf: number; ga: number; nums?: { id: string; g: number; a: number }[] }): void {
   const pairs = L.rounds[L.round];
   if (!pairs) return;
   L.last = [];
@@ -95,6 +116,11 @@ function playLeagueRound(L: LeagueComp, user?: { club: string; gf: number; ga: n
     else if (user && A === user.club) [gh, ga] = [user.ga, user.gf];
     else [gh, ga] = quickSim(H, A, 0);
     applyResult(L.table[h], gh, ga); applyResult(L.table[a], ga, gh);
+    // Artilharia: seus gols vêm da partida; os da IA são distribuídos pelo elenco
+    for (const [club, g] of [[H, gh], [A, ga]] as const) {
+      if (user && club === user.club) { const art = L.art ??= {}; for (const n of user.nums ?? []) if (n.g || n.a) { const r = art[n.id] ??= { g: 0, a: 0, c: club }; r.g += n.g; r.a += n.a; } }
+      else creditGoals(L, club, g);
+    }
     L.last.push({ h: H, a: A, gh, ga });
   }
   L.round++;
@@ -307,11 +333,11 @@ export function needsPens(f: Fixture, gf: number, ga: number): boolean {
 }
 
 /** Registra o resultado do usuário, simula o resto da data e avança as outras ligas. */
-export function recordResult(c: Career, gf: number, ga: number, pens?: [number, number]): void {
+export function recordResult(c: Career, gf: number, ga: number, pens?: [number, number], nums?: { id: string; g: number; a: number }[]): void {
   const it = c.cal[c.idx];
   if (!it) return;
   if (it.c === 'liga') {
-    playLeagueRound(c.league, { club: c.club, gf, ga });
+    playLeagueRound(c.league, { club: c.club, gf, ga, nums });
     const frac = c.league.round / c.league.rounds.length;
     for (const L of c.others) while (L.round < Math.floor(frac * L.rounds.length + 1e-9)) playLeagueRound(L);
   } else {

@@ -77,8 +77,10 @@ function finalize(m: Match, fx: Fixture | null): { coins: number; pens?: Shootou
     // Números da temporada: gols, assistências, jogos e notas de quem esteve em campo
     const st = S.career.stats ??= {}, nums = m.userNumbers();
     for (const n of m.notas().filter(x => x.side === 0)) {
-      const r = st[n.name] ??= { g: 0, a: 0, j: 0, n: 0 };
-      r.j++; r.n += n.nota; r.g += nums[n.name]?.g ?? 0; r.a += nums[n.name]?.a ?? 0;
+      const r = st[n.name] ??= { g: 0, a: 0, j: 0, n: 0 }, x = nums[n.name];
+      r.j++; r.n += n.nota; r.g += x?.g ?? 0; r.a += x?.a ?? 0;
+      r.d = (r.d ?? 0) + (x?.d ?? 0); r.e = (r.e ?? 0) + (x?.e ?? 0); r.s = (r.s ?? 0) + (x?.s ?? 0); r.f = (r.f ?? 0) + (x?.f ?? 0);
+      if (x) r.id = x.id;
     }
     // Cartões e lesões valem para os próximos jogos
     desfalques = applyIncidents(S.career, m.inc).map(a => {
@@ -86,7 +88,7 @@ function finalize(m: Match, fx: Fixture | null): { coins: number; pens?: Shootou
       return k === 'lesao' ? `🚑 ${n} lesionado: fora por ${f?.n ?? 1} jogo(s)` : k === 'vermelho' ? `🟥 ${n} expulso: suspenso no próximo jogo` : `🟨 ${n} levou o 3º amarelo: suspenso no próximo jogo`;
     });
     if (needsPens(fx, g, o)) pens = penaltyShootout(m.A, m.B);
-    recordResult(S.career, g, o, pens ? [pens.a, pens.b] : undefined);
+    recordResult(S.career, g, o, pens ? [pens.a, pens.b] : undefined, Object.values(nums).map(x => ({ id: x.id, g: x.g, a: x.a })));
   }
   saveNow();
   return { coins, pens, desfalques };
