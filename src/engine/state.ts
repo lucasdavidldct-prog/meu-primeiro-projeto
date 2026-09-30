@@ -24,6 +24,8 @@ export interface GameState {
   rec: { w: number; d: number; l: number; gf: number; ga: number; packs: number };
   lastFree: string;
   moments: boolean;
+  /** Lances em 3D (false = canvas 2D, para aparelhos mais fracos). */
+  lance3d?: boolean;
   titles: number;
   /** Mensagem para mostrar uma vez ao abrir o jogo (não é salva de volta). */
   aviso?: string;

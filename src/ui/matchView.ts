@@ -12,6 +12,16 @@ import { app, render, saveNow, userClub } from './ctx';
 import { crestHTML } from './crest';
 import { closeSheet, esc, fmt, openSheet, toast } from './dom';
 import { runMoment2D } from './moment2d';
+import { webglAvailable } from '../three/support';
+
+/** Lance 3D (carregado sob demanda), ou 2D se desligado nas configurações, sem WebGL ou se o 3D falhar. */
+export async function runMoment(m: Match, req: Parameters<typeof runMoment2D>[1]): Promise<Awaited<ReturnType<typeof runMoment2D>>> {
+  if (app.S.lance3d !== false && webglAvailable()) {
+    try { const { runMoment3D } = await import('../three/moment3d'); return await runMoment3D(m, req); }
+    catch (e) { console.warn('Lance 3D indisponível, usando 2D', e); }
+  }
+  return runMoment2D(m, req);
+}
 
 interface Live { m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout }
 let L: Live | null = null;
@@ -51,7 +61,7 @@ export function startMatch(opp: OppTeam, fx: Fixture | null): void {
     moments: S.moments ? 4 : 0,
     onMoment: S.moments ? async (mm, req) => {
       L!.busy = true; renderMatch();
-      const res = await runMoment2D(mm, req);
+      const res = await runMoment(mm, req);
       L!.busy = false;
       return res;
     } : undefined,
@@ -171,7 +181,7 @@ export function devMoment(kind: 'ataque' | 'contra' | 'penalti' | 'falta'): Prom
   const opp = allClubs()[0];
   const m = new Match(A, sideOpp(oppFromClub(opp)));
   const taker = kind === 'falta' ? freeKickTaker(A) : kind === 'penalti' ? penaltyTaker(A) : undefined;
-  return runMoment2D(m, { kind, taker });
+  return runMoment(m, { kind, taker });
 }
 
 export const matchActions = {

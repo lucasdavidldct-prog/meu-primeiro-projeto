@@ -3,6 +3,7 @@ import { ROLE } from '../../engine/positions';
 import { allCards, cardByUid, duplicates } from '../../engine/state';
 import { cardHTML } from '../card';
 import { app } from '../ctx';
+import { webglAvailable } from '../../three/support';
 import { esc, fmt } from '../dom';
 
 export function viewClub(): string {
@@ -23,6 +24,7 @@ export function viewClub(): string {
       <div class="stat"><small>Pacotes</small><b>${rec.packs}</b></div>
     </div>
     <div class="row" style="margin-top:12px;justify-content:space-between"><span class="small muted">Lances jogáveis nas partidas</span><button class="chip" data-act="togMom" aria-pressed="${S.moments}">${S.moments ? 'Ligados' : 'Desligados'}</button></div>
+    <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Visual dos lances${webglAvailable() ? '' : ' (sem 3D neste aparelho)'}</span><div class="chips"><button class="chip" data-act="lance3d" data-v="1" aria-pressed="${S.lance3d !== false && webglAvailable()}" ${webglAvailable() ? '' : 'disabled'}>3D</button><button class="chip" data-act="lance3d" data-v="0" aria-pressed="${S.lance3d === false || !webglAvailable()}">2D (leve)</button></div></div>
   </div>
   ${dups.length ? `<button class="btn block" style="margin-top:12px" data-act="sellDups">Vender ${dups.length} repetida${dups.length > 1 ? 's' : ''} por ${fmt(dupV)} moedas</button>` : ''}
   <h3>Coleção</h3>

@@ -80,6 +80,20 @@ vira as suas cartas; os pacotes trazem jogadores de qualquer liga.
 - Moedas por jogo e por colocação/título, **sala de troféus** e histórico de temporadas.
 - A IA escolhe formação e estilo pelo elenco e pelo adversário, e muda no intervalo e no fim do jogo conforme o placar.
 
+## Lances 3D
+
+Quando o motor cria uma chance para o seu time, a partida pausa e abre uma cena 3D (Three.js) com a câmera
+atrás do ataque: estádio à noite, gramado listrado com as marcações oficiais, gol com rede, jogadores low-poly
+com a camisa do clube e número, bola com sombra.
+
+- **Toque num companheiro** = passe · **toque no campo** = conduzir · **arraste em direção ao gol** = chute
+  (a direção mira, o comprimento dá a força e a curva do traço dá o efeito). A linha prevista mostra a chance em %.
+- A defesa reage a cada ação e o goleiro se posiciona e mergulha.
+- Tipos: ataque posicional, contra-ataque, pênalti e falta (com barreira e chute com curva).
+- Gol tem replay curto em câmera lenta, com câmera lateral.
+- Aparelho fraco? Em **Clube → Visual dos lances** escolha **2D (leve)**. Sem WebGL, o 2D é usado automaticamente.
+- A lógica dos lances fica em `src/engine/lanceScene.ts` (a mesma para 2D e 3D); o desenho 3D em `src/three/`.
+
 ## Save
 
 O progresso fica no IndexedDB do navegador. Em **Clube → Save** dá para exportar o save em JSON e importar de volta,
@@ -91,5 +105,5 @@ inclusive em outro aparelho.
 2. ✅ Base de dados real e editor de elencos
 3. ✅ Playstyles
 4. ✅ Carreira e competições
-5. Lances 3D
+5. ✅ Lances 3D
 6. Polimento

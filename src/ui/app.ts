@@ -104,6 +104,7 @@ const ACT: Record<string, Handler> = {
     if (v) { app.S.name = v.slice(0, 24); save(); render(); toast('Nome salvo'); }
   },
   togMom() { app.S.moments = !app.S.moments; save(); render(); },
+  lance3d(d) { app.S.lance3d = d.v === '1'; save(); render(); toast(app.S.lance3d ? 'Lances em 3D' : 'Lances em 2D (modo leve)'); },
   reset(_d, el) {
     if (!el.dataset.ok) { el.dataset.ok = '1'; el.textContent = 'Tem certeza? Toque de novo para apagar tudo'; return; }
     replaceState(blankGame()); save(); app.tab = 'start'; render(); window.scrollTo(0, 0);
