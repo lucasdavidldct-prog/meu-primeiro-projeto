@@ -5,7 +5,7 @@ import { LanceScene, TITLES, type BallKey, type Plan, type Target } from '../eng
 import type { Match, MomentRequest, MomentResult } from '../engine/match';
 import { clamp } from '../engine/rng';
 import { endSound, planSound } from './sfx';
-import { awayKit } from '../engine/kits';
+import { colorDist, kitDe } from '../engine/kits';
 
 export const HELP = {
   escanteio: '<b>Escanteio:</b> toque num companheiro na área para cruzar (bola alta). Depois, <b>desenhe o traço</b> para cabecear ou pegar de primeira. Na cobrança não tem impedimento.',
@@ -19,7 +19,8 @@ export const probColor = (p: number): string => (p >= .6 ? '#56d086' : p >= .35 
 export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult> {
   return new Promise(resolve => {
     const sc = new LanceScene(M, req), B = M.B, kind = req.kind, fk = kind === 'falta', pen = kind === 'penalti';
-    const bKit = awayKit([M.A.c1, M.A.c2], [M.B.c1, M.B.c2]);
+    // Rival com a cor da camisa; se ela se confundir com o dourado do seu time, usa a cor do detalhe
+    const kb = kitDe(M.B), bKit = colorDist(kb.s, '#e8c35f') < 200 ? [kb.t, kb.s] : [kb.s, kb.t];
     const ov = document.createElement('div');
     ov.className = 'moment';
     ov.innerHTML = `<div class="mo-head"><span class="mo-tag">${M.label}</span><b>${sc.title}</b><span class="acts" id="moActs"></span></div>

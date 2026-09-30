@@ -9,11 +9,11 @@ import { analyzeGesture, type Pt } from '../engine/lance';
 import { LanceScene, TITLES, type Actor, type BallKey, type Plan, type Target } from '../engine/lanceScene';
 import type { Match, MomentRequest, MomentResult } from '../engine/match';
 import { clamp } from '../engine/rng';
-import { awayKit } from '../engine/kits';
+import { goleiroKit, kitDe } from '../engine/kits';
 import { esc } from '../ui/dom';
 import { probColor } from '../ui/moment2d';
 import { carrierRing, makeBall, makePlayer, type PlayerMesh } from './players';
-import { addLights, buildGoal, buildPitch, buildStadium, tickStadium } from './stadium';
+import { addLights, buildGoal, buildPitch, buildStadium, resetNet, tickNet, tickStadium } from './stadium';
 import { endSound, planSound } from '../ui/sfx';
 
 const HELP3D = {
@@ -85,12 +85,11 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     const SCALE = portrait ? 1.3 : 1.1;
 
     const meshes = new Map<number, PlayerMesh>();
-    const gkCol = ['#c6f432', '#111111'];
-    // Uniforme do rival: reserva se as cores se confundirem com as suas
-    const bKit = awayKit([A.c1, A.c2], [B.c1, B.c2]);
+    // Uniformes da partida (o rival troca se confundir) e goleiros com cor própria
+    const aKit = kitDe(A), bKit = kitDe(B), gkA = goleiroKit(aKit, bKit, 0), gkB = goleiroKit(aKit, bKit, 1);
     const addActor = (a: Actor) => {
-      const colors = a.team === 0 ? [A.c1, A.c2] : a.gk ? gkCol : bKit;
-      const pm = makePlayer(colors[0], colors[1], a.num || 9, { gk: a.gk, facing: a.team === 0 ? -1 : 1, seed: a.id });
+      const kit = a.team === 0 ? (a.gk ? gkA : aKit) : a.gk ? gkB : bKit;
+      const pm = makePlayer(kit, a.num || 9, { gk: a.gk, facing: a.team === 0 ? -1 : 1, seed: a.id, P: a.e?.P });
       pm.root.position.copy(V(a.x, a.y));
       pm.root.scale.setScalar(SCALE);
       scene.add(pm.root);
@@ -388,6 +387,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       frames.push({ ball: ballM.position.clone(), actors: [...sc.mates, ...sc.foes].map(a => { const pm = meshes.get(a.id)!; return [a.id, pm.root.position.x, pm.root.position.z, pm.body.rotation.y, pm.body.rotation.z]; }) });
       if (frames.length > 240) frames.shift();
       tickStadium(performance.now());
+      tickNet(ballM.position);
       view.render(scene, camera);
     }
     // Replay: câmera lateral, perto do gol, em câmera lenta
@@ -404,6 +404,8 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       camera.lookAt(f.ball.x * .5, .9, Math.max(-1, f.ball.z * .6));
       // No replay do gol a torcida pula
       tickStadium(performance.now(), R.res.goal);
+      if (R.i < 1) resetNet();
+      tickNet(ballM.position);
       view.render(scene, camera);
       if (R.i >= R.frames.length + 25) { replay = null; replayEl.classList.remove('on'); cleanup(R.res); }
     }

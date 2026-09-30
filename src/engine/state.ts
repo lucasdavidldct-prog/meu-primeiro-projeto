@@ -49,6 +49,14 @@ export interface GameState {
   vibrar?: boolean;
   /** Fotos dos jogadores da Wikimedia Commons (padrão: ligadas). */
   fotos?: boolean;
+  /** Uniforme do seu time (índice nos uniformes do clube; ausente = automático: titular, o visitante troca). */
+  uniforme?: number;
+  /** Câmera dos lances 3D. */
+  camera?: 'padrao' | 'tv' | 'aerea' | 'atras';
+  /** Clima das partidas ('auto' = sorteado por jogo). */
+  clima?: 'auto' | 'dia' | 'sol' | 'noite' | 'chuva' | 'neve';
+  /** Desenho do gramado. */
+  gramado?: 'faixas' | 'xadrez' | 'circulos' | 'diagonal' | 'liso';
   /** Já viu as dicas de como jogar. */
   dicasVistas?: boolean;
   titles: number;

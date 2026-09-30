@@ -163,6 +163,7 @@ const ACT: Record<string, Handler> = {
   },
   togMom() { app.S.moments = !app.S.moments; save(); render(); },
   graficos(d) { const q = d.q as Quality; app.S.graficos = q; setQuality(q); save(); render(); toast(`Gráficos: ${QUALITY_N[q]}`); },
+  uniforme(d) { const k = Number(d.k); app.S.uniforme = k < 0 ? undefined : k; save(); render(); toast(k < 0 ? 'Uniforme automático' : 'Uniforme escolhido'); },
   lance3d(d) { app.S.lance3d = d.v === '1'; save(); render(); toast(app.S.lance3d ? 'Lances em 3D' : 'Lances em 2D (modo leve)'); },
   togSom() { app.S.som = app.S.som === false; save(); render(); if (app.S.som) sfx.coin(); },
   togVib() { app.S.vibrar = app.S.vibrar === false; save(); render(); },

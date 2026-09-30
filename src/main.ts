@@ -40,7 +40,7 @@ async function boot(): Promise<void> {
   // Só em desenvolvimento: atalhos para os testes de navegador (estado do jogo, redesenhar, dar carta, abrir lance)
   if (import.meta.env.DEV) {
     const [{ app, render }, { addCard }] = await Promise.all([import('./ui/ctx'), import('./engine/state')]);
-    Object.assign(window, { __esquadrao: { devMoment, app, render, addCard: (p: string, v: Parameters<typeof addCard>[2]) => { const c = addCard(app.S, p, v); render(); return c.u; } } });
+    Object.assign(window, { __esquadrao: { devMoment, app, render, vitrine: async () => (await import('./three/vitrine')).vitrine(), addCard: (p: string, v: Parameters<typeof addCard>[2]) => { const c = addCard(app.S, p, v); render(); return c.u; } } });
   }
 }
 void boot();

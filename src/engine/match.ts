@@ -1,5 +1,6 @@
 // Motor de partida minuto a minuto (sem interface). A interface injeta onMoment
 // para transformar chances do usuário em lances jogáveis.
+import { kitsDaPartida, type Kit } from './kits';
 import { classicoCartoes, type Classico } from './rivals';
 import { calcChem, effOvr, rate, type Ratings } from './chemistry';
 import { ROLE, slotsOf } from './positions';
@@ -27,6 +28,8 @@ const ERR_W: Record<Pos, number> = { GOL: .15, ZAG: 1, LD: 1, LE: 1, VOL: 1.2, M
 export interface Nota { name: string; pos: Pos; nota: number; side: 0 | 1 }
 export interface Side {
   you: boolean; name: string; s: string; c1: string; c2: string;
+  /** Clube (para os uniformes), uniforme escolhido pelo usuário e o uniforme vestido na partida. */
+  club?: string; kitEscolha?: number; kit?: Kit;
   form: FormationId; style: StyleId; ment: number;
   xi: SideEntry[]; bench: BasePlayer[]; subs: number; goals: number; scorers: string[]; str?: number;
   /** Orientações por vaga (o usuário escolhe; a IA usa as sugeridas pelos atributos). */
@@ -91,7 +94,7 @@ export function sideOpp(t: OppTeam, boost = 0): Side {
     const od = suggestOrder(P, slots[i].p);
     return { P, pos: slots[i].p, base: effOvr(P, slots[i].p, chem.per[i]) + boost, inMin: 0, yc: 0, red: false, name: P.short, ofx: orderFx(slots[i].p, od), fn: od.f };
   });
-  return { you: false, name: t.n, s: t.s, c1: t.c1, c2: t.c2, form: t.form, style: t.style, ment: 0, xi, bench, subs: 5, goals: 0, scorers: [], str: t.str };
+  return { you: false, name: t.n, s: t.s, club: t.club, c1: t.c1, c2: t.c2, form: t.form, style: t.style, ment: 0, xi, bench, subs: 5, goals: 0, scorers: [], str: t.str };
 }
 
 /** Cansaço de 0 a 1: começa aos 55 minutos em campo. Incansável reduz. */
@@ -162,6 +165,8 @@ export class Match {
     this.momentsLeft = opts.onMoment ? (opts.moments ?? 3) : 0;
     this.onMoment = opts.onMoment;
     this.home = opts.home ?? null;
+    const kits = kitsDaPartida(A, B, this.home, A.kitEscolha);
+    A.kit = kits.a; B.kit = kits.b;
     this.keeperBoost = opts.keeperBoost ?? 0;
     this.keeperLeft = opts.onMoment ? (opts.keeper ?? 0) : 0;
     const s1 = 1 + Math.floor(R() * 3), s2 = 2 + Math.floor(R() * 4);

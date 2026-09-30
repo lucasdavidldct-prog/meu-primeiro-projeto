@@ -532,3 +532,12 @@ table tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
 .tt-row span{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
 .tt-h{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .tt-h span{font-weight:800}
+
+/* Seletor de uniforme */
+.kits { display: flex; gap: 8px; margin-top: 6px; overflow-x: auto; padding-bottom: 2px; }
+.kit-op { flex: 0 0 auto; min-width: 92px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 12px;
+  background: var(--panel2, rgba(255,255,255,.04)); border: 1px solid var(--line, rgba(255,255,255,.1)); color: inherit; font: inherit; cursor: pointer; }
+.kit-op b { font-size: 13px; }
+.kit-op small { font-size: 10.5px; opacity: .6; }
+.kit-op[aria-pressed="true"] { border-color: var(--gold, #e8c35f); box-shadow: 0 0 0 1px var(--gold, #e8c35f) inset; }
+.kit-svg { display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }

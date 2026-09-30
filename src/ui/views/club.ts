@@ -8,6 +8,9 @@ import { webglAvailable } from '../../three/support';
 import { esc, fmt } from '../dom';
 import { isNative } from '../native';
 import { DIF_NAMES } from '../matchView';
+import { kitsDoClube } from '../../engine/kits';
+import { userClub } from '../ctx';
+import { kitSVG } from '../kitSvg';
 
 export function viewClub(): string {
   const S = app.S, all = allCards(S);
@@ -26,6 +29,7 @@ export function viewClub(): string {
       <div class="stat"><small>V–E–D</small><b style="font-size:21px">${rec.w}–${rec.d}–${rec.l}</b></div>
       <div class="stat"><small>Pacotes</small><b>${rec.packs}</b></div>
     </div>
+    ${uniformes()}
     <div class="row" style="margin-top:12px;justify-content:space-between"><span class="small muted">Lances jogáveis nas partidas</span><button class="chip" data-act="togMom" aria-pressed="${S.moments}">${S.moments ? 'Ligados' : 'Desligados'}</button></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Lance de goleiro (defender o chute que ia virar gol)</span><button class="chip" data-act="togGk" aria-pressed="${S.goleiro !== false}">${S.goleiro !== false ? 'Ligado' : 'Desligado'}</button></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Visual dos lances${webglAvailable() ? '' : ' (sem 3D neste aparelho)'}</span><div class="chips"><button class="chip" data-act="lance3d" data-v="1" aria-pressed="${S.lance3d !== false && webglAvailable()}" ${webglAvailable() ? '' : 'disabled'}>3D</button><button class="chip" data-act="lance3d" data-v="0" aria-pressed="${S.lance3d === false || !webglAvailable()}">2D (leve)</button></div></div>
@@ -62,4 +66,14 @@ export function viewClub(): string {
   </div>
   <div class="row" style="margin-top:24px"><button class="btn danger" data-act="reset">Recomeçar do zero</button></div>
   <p class="small muted" style="margin-top:18px;text-align:center">Esquadrão FC · versão ${__APP_VERSION__}</p>`;
+}
+
+/** Escolha do uniforme: automático (titular; fora de casa troca se confundir com o rival) ou um fixo. */
+function uniformes(): string {
+  const S = app.S, uc = userClub(), ks = kitsDoClube(S.career?.club, uc.c1, uc.c2), sel = S.uniforme;
+  return `<div style="margin-top:12px"><span class="small muted">Uniforme</span>
+    <div class="kits">
+      <button class="kit-op" data-act="uniforme" data-k="-1" aria-pressed="${sel === undefined}">${kitSVG(ks[0], 52)}<b>Automático</b><small>Troca se confundir</small></button>
+      ${ks.map((k, i) => `<button class="kit-op" data-act="uniforme" data-k="${i}" aria-pressed="${sel === i}">${kitSVG(k, 52)}<b>${k.n}</b><small>Sempre este</small></button>`).join('')}
+    </div></div>`;
 }

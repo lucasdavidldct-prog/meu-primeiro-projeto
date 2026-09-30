@@ -61,7 +61,7 @@ function userSide(): Side | null {
   const ord = T.slots.map((sl, i) => orderAt(S, i, T.xi[i], sl.p));
   const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench, ord });
   const uc = userClub();
-  Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2 });
+  Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2, club: S.career?.club, kitEscolha: S.uniforme });
   return A;
 }
 
@@ -260,7 +260,7 @@ export async function trainingMoment(kind: 'ataque' | 'penalti' | 'falta' = 'ata
   const ord = T.slots.map((sl, i) => orderAt(S, i, T.xi[i], sl.p));
   const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench, ord });
   const uc = userClub();
-  Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2 });
+  Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2, club: S.career?.club, kitEscolha: S.uniforme });
   const opp = allClubs().filter(c => c.id !== S.career?.club).sort((a, b) => Math.abs(clubStrength(a.id) - 70) - Math.abs(clubStrength(b.id) - 70))[0];
   const m = new Match(A, sideOpp(oppFromClub(opp)), { keeperBoost: -8 });
   m.label = 'Treino';
@@ -276,12 +276,14 @@ export async function trainingMoment(kind: 'ataque' | 'penalti' | 'falta' = 'ata
 }
 
 /** Só em desenvolvimento: abre um lance direto (usado nos testes de navegador). */
-export function devMoment(kind: MomentKind, pen = false): Promise<unknown> {
+export function devMoment(kind: MomentKind, pen = false, oppId?: string, home: 0 | 1 | null = null): Promise<unknown> {
   const S = app.S, T = teamInfo(S);
   const bench = S.squad.bench.filter(Boolean).map(u => cardByUid(S, u)!) as CardPlayer[];
   const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench });
-  const opp = allClubs()[0];
-  const m = new Match(A, sideOpp(oppFromClub(opp)));
+  const uc = userClub();
+  Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2, club: S.career?.club, kitEscolha: S.uniforme });
+  const opp = allClubs().find(c => c.id === oppId) ?? allClubs()[0];
+  const m = new Match(A, sideOpp(oppFromClub(opp)), { home });
   if (kind === 'goleiro') return runMoment(m, { kind, taker: penaltyTaker(m.B), pen });
   const taker = kind === 'falta' ? freeKickTaker(A) : kind === 'penalti' ? penaltyTaker(A) : undefined;
   return runMoment(m, { kind, taker, ...(kind === 'ataque' || kind === 'contra' ? m.origin(A) : {}) });

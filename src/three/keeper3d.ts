@@ -2,14 +2,14 @@
 // Deslize para a esquerda/direita (e para cima = bola alta); um toque = fica no meio.
 import * as THREE from 'three';
 import { pickShotZone, saveChance, tellOf, type Zone } from '../engine/keeper';
-import { awayKit } from '../engine/kits';
+import { goleiroKit, kitDe } from '../engine/kits';
 import type { Match, MomentRequest, MomentResult } from '../engine/match';
 import { R, clamp } from '../engine/rng';
 import { esc } from '../ui/dom';
 import { haptic, sfx } from '../ui/sfx';
 import { makeBall, makePlayer } from './players';
 import { createView } from './quality';
-import { addLights, buildGoal, buildPitch, buildStadium, tickStadium } from './stadium';
+import { addLights, buildGoal, buildPitch, buildStadium, tickNet, tickStadium } from './stadium';
 
 const V = (x: number, y: number, h = 0) => new THREE.Vector3(x - 34, h, y);
 /** Centro de cada zona na linha do gol: coluna 0 = esquerda da tela (lado +x do mundo, visto de trás do gol). */
@@ -43,12 +43,12 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
     const camera = new THREE.PerspectiveCamera(portrait ? 62 : 50, W / H, .1, 400);
     camera.position.copy(V(34, -6.5, 2.6)); camera.lookAt(V(34, 12, .8));
 
-    const kit = awayKit([M.A.c1, M.A.c2], [M.B.c1, M.B.c2]);
-    const gkMesh = makePlayer('#c6f432', '#111111', (gk as { num?: number } | undefined)?.num ?? 1, { gk: true, facing: 1, seed: 3 });
+    const kA = kitDe(M.A), kit = kitDe(M.B);
+    const gkMesh = makePlayer(goleiroKit(kA, kit), (gk as { num?: number } | undefined)?.num ?? 1, { gk: true, facing: 1, seed: 3, P: gk });
     gkMesh.root.position.copy(V(34, .6)); gkMesh.root.scale.setScalar(1.15);
     // Goleiro de costas para a câmera, olhando o batedor
     gkMesh.body.rotation.y = Math.PI;
-    const sh = makePlayer(kit[0], kit[1], 9, { facing: -1, seed: 7 });
+    const sh = makePlayer(kit, (shooter as { num?: number }).num ?? 9, { facing: -1, seed: 7, P: shooter });
     const sx = pen ? 34 : clamp(34 + (R() - .5) * 18, 20, 48), sy = pen ? 11 : 13 + R() * 7;
     // A pista: a corrida vem de um lado e o corpo gira para o canto "anunciado" (nem sempre verdadeiro)
     const tellDir = tell === 0 ? 1 : tell === 2 ? -1 : 0;
@@ -115,6 +115,7 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
         gkMesh.body.position.y = dive.row ? g * .5 : Math.sin(g * Math.PI) * .2;
       }
       tickStadium(performance.now(), saved === false);
+      tickNet(ball.position);
       view.render(scene, camera);
       if (done && t > RUN + FLY + 1600) return;
     }

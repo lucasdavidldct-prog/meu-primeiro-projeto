@@ -124,9 +124,50 @@ export function buildGoal(): THREE.Group {
   for (let y = 0; y <= 2.441; y += step) pts.push(-3.66, y, -D, 3.66, y, -D);
   for (let z = 0; z >= -D - .001; z -= step) { pts.push(-3.66, 2.44, z, 3.66, 2.44, z); for (const x of [-3.66, 3.66]) pts.push(x, 0, z, x, 2.44, z); }
   for (let y = 0; y <= 2.441; y += step) for (const x of [-3.66, 3.66]) pts.push(x, y, 0, x, y, -D);
-  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  // Rede mais fina na qualidade Alta (a malha deforma melhor quando a bola entra)
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(subdivide(pts, quality() === 'leve' ? 1 : 4), 3));
+  (geo.getAttribute('position') as THREE.BufferAttribute).setUsage(THREE.DynamicDrawUsage);
   g.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xe6e6e6, transparent: true, opacity: .42 })));
+  net = { geo, base: Float32Array.from(geo.getAttribute('position').array as Float32Array), hit: null, off: g.position };
   return g;
+}
+
+/** Quebra cada fio em `n` pedaços para a rede poder dobrar. */
+function subdivide(pts: number[], n: number): number[] {
+  if (n <= 1) return pts;
+  const out: number[] = [];
+  for (let i = 0; i < pts.length; i += 6) for (let k = 0; k < n; k++) {
+    const a = k / n, b = (k + 1) / n;
+    for (const f of [a, b]) out.push(pts[i] + (pts[i + 3] - pts[i]) * f, pts[i + 1] + (pts[i + 4] - pts[i + 1]) * f, pts[i + 2] + (pts[i + 5] - pts[i + 2]) * f);
+  }
+  return out;
+}
+
+/** Rede parada de novo (para o replay mostrar o balanço outra vez). */
+export function resetNet(): void { if (net) net.hit = null; }
+
+let net: { geo: THREE.BufferGeometry; base: Float32Array; hit: { x: number; y: number; t0: number } | null; off: THREE.Vector3 } | null = null;
+/**
+ * Rede que balança: quando a bola entra no gol, a malha estufa em volta do ponto onde ela bate e oscila até parar.
+ * Chame a cada quadro com a posição da bola (coordenadas do mundo).
+ */
+export function tickNet(ball: THREE.Vector3, now = performance.now()): void {
+  if (!net) return;
+  const bx = ball.x - net.off.x, by = ball.y, bz = ball.z - net.off.z;
+  if (!net.hit && bz < -.25 && bz > -2.2 && Math.abs(bx) < 3.7 && by < 2.5) net.hit = { x: bx, y: Math.max(.3, by), t0: now };
+  if (!net.hit) return;
+  const t = (now - net.hit.t0) / 1000;
+  if (t > 3.2) return;
+  // Estufa rápido (a bola empurra), volta e ainda balança um pouco
+  const amp = .55 * (1 - Math.exp(-t * 14)) * Math.exp(-t * 1.6) + .12 * Math.exp(-t * 1.2) * Math.sin(t * 13);
+  const pos = net.geo.getAttribute('position') as THREE.BufferAttribute, a = pos.array as Float32Array, b = net.base, { x: hx, y: hy } = net.hit;
+  for (let i = 0; i < a.length; i += 3) {
+    const x = b[i], y = b[i + 1], z = b[i + 2];
+    const fundo = Math.min(1, -z / 2); // os fios do fundo mexem mais; os presos às traves quase nada
+    const w = Math.exp(-((x - hx) ** 2 + (y - hy) ** 2) / 1.3) * fundo;
+    a[i + 2] = z - amp * w; a[i + 1] = y - amp * .25 * w * Math.max(0, y - .1) / 2.44;
+  }
+  pos.needsUpdate = true;
 }
 
 let crowdMat: THREE.MeshStandardMaterial | null = null;
