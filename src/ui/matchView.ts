@@ -1,5 +1,6 @@
 import { inPos } from '../engine/cards';
 import { type MomentKind, type Nota, Match, effNow, fatigue, freeKickTaker, matchReward, penaltyShootout, penaltyTaker, sideFromTeam, sideOpp, simulate, type Shootout, type Side } from '../engine/match';
+import { classico, classicoBoost, classicoPremio } from '../engine/rivals';
 import { allClubs, getPlayer } from '../engine/world';
 import { clubStrength } from '../engine/squads';
 import { clamp } from '../engine/rng';
@@ -44,6 +45,8 @@ export function difficulty(home: 0 | 1 | null): { boost: number; keeper: number;
 
 interface Live { desfalques?: string[]; m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; /** Sugestões de troca recusadas (nome de quem sairia). */ naoTrocar: Set<string>; avisado?: string; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout; notas?: Nota[] }
 let L: Live | null = null;
+/** Último adversário (para a revanche). */
+let lastOpp: OppTeam | null = null;
 const DELAYS = [0, 650, 300, 110];
 
 /** Seu time pronto para jogar (ou null se faltam titulares). */
@@ -65,7 +68,8 @@ function userSide(): Side | null {
 /** Aplica o resultado: moedas, retrospecto, pênaltis no mata-mata e registro na carreira. */
 function finalize(m: Match, fx: Fixture | null): { coins: number; pens?: Shootout; desfalques: string[] } {
   const S = app.S, g = m.A.goals, o = m.B.goals;
-  const coins = matchReward(g, o, m.momGoals, fx ? fx.mult : 1, !!fx);
+  // Vitória em clássico vale mais
+  const coins = Math.round(matchReward(g, o, m.momGoals, fx ? fx.mult : 1, !!fx) * (g > o ? classicoPremio(m.classico) : 1) / 10) * 10;
   const res = g > o ? 'w' : g === o ? 'd' : 'l';
   S.coins += coins; S.rec[res]++; S.rec.gf += g; S.rec.ga += o;
   let pens: Shootout | undefined, desfalques: string[] = [];
@@ -92,8 +96,11 @@ export function startMatch(opp: OppTeam, fx: Fixture | null): void {
   const S = app.S, A = userSide();
   if (!A) return;
   const home = fx ? fx.home : null, d = difficulty(home);
-  const m = new Match(A, sideOpp(opp, d.boost), {
-    home, keeperBoost: d.keeper, keeper: S.moments && S.goleiro !== false ? d.gk : 0,
+  // Clássico: o rival cresce e o jogo fica mais pegado
+  const cl = S.career ? classico(S.career.club, opp.club) : undefined;
+  lastOpp = opp;
+  const m = new Match(A, sideOpp(opp, d.boost + classicoBoost(cl)), {
+    home, keeperBoost: d.keeper, classico: cl, keeper: S.moments && S.goleiro !== false ? d.gk : 0,
     moments: S.moments ? d.moments : 0,
     onMoment: S.moments ? async (mm, req) => {
       L!.busy = true; renderMatch();
@@ -102,6 +109,7 @@ export function startMatch(opp: OppTeam, fx: Fixture | null): void {
       return res;
     } : undefined,
   });
+  if (cl) m.addEv(0, 'info', `🔥 ${cl.n}! Jogo de rivalidade: o ${opp.n} vem mais forte e mais pegado.`);
   if (fx) m.addEv(0, 'info', `${fx.label}${fx.home === 0 ? ' · em casa' : fx.home === 1 ? ' · fora de casa' : ' · campo neutro'}.`);
   L = { m, fx, speed: 1, paused: false, busy: false, naoTrocar: new Set() };
   const ov = document.createElement('div');
@@ -144,9 +152,12 @@ function notasHTML(ns: Nota[], opp: string): string {
 
 /** Simula o jogo do usuário sem assistir (sem lances jogáveis). */
 export async function quickPlay(opp: OppTeam, fx: Fixture): Promise<void> {
-  const A = userSide();
+  const S = app.S, A = userSide();
   if (!A) return;
-  const m = await simulate(A, sideOpp(opp, difficulty(fx.home).boost), fx.home);
+  const cl = S.career ? classico(S.career.club, opp.club) : undefined;
+  lastOpp = opp;
+  const m = new Match(A, sideOpp(opp, difficulty(fx.home).boost + classicoBoost(cl)), { home: fx.home, classico: cl });
+  for (;;) { const r = await m.step(); if (r === 'ht') m.secondHalf(); else if (r === 'end') break; }
   const r = finalize(m, fx);
   const res = m.A.goals > m.B.goals ? 'Vitória' : m.A.goals === m.B.goals ? 'Empate' : 'Derrota';
   render();
@@ -154,7 +165,7 @@ export async function quickPlay(opp: OppTeam, fx: Fixture): Promise<void> {
     <p class="small muted" style="margin-top:-4px">${esc(fx.label)} · ${esc(m.B.name)}</p>
     ${r.pens ? `<p><b>Pênaltis: ${r.pens.a} × ${r.pens.b}</b> — ${r.pens.winner === 0 ? 'classificado!' : 'eliminado.'}</p>` : ''}
     <div class="scorers" style="font-size:13px"><div>${m.A.scorers.map(esc).join('<br>') || '—'}</div><div>${m.B.scorers.map(esc).join('<br>') || '—'}</div></div>
-    ${r.desfalques.length ? `<div class="desf">${r.desfalques.map(esc).join('<br>')}</div>` : ''}<p>+${fmt(r.coins)} moedas.</p>${notasHTML(m.notas(), m.B.s)}<button class="btn pri block" data-act="closeSheet">Continuar</button>`);
+    ${r.desfalques.length ? `<div class="desf">${r.desfalques.map(esc).join('<br>')}</div>` : ''}<p>+${fmt(r.coins)} moedas.</p>${notasHTML(m.notas(), m.B.s)}${m.A.goals < m.B.goals ? '<button class="btn block" style="margin-bottom:8px" data-act="revanche">🔁 Revanche (amistoso, na hora)</button>' : ''}<button class="btn pri block" data-act="closeSheet">Continuar</button>`);
 }
 
 export function renderMatch(): void {
@@ -176,6 +187,7 @@ export function renderMatch(): void {
      ${L.desfalques?.length ? `<div class="desf">${L.desfalques.map(esc).join('<br>')}</div>` : ''}
      <p style="margin:0 0 10px">+${fmt(L.reward ?? 0)} moedas${L.fx ? ' · ' + esc(L.fx.label) : ' · amistoso'}.</p>
      ${L.notas ? notasHTML(L.notas, B.s) : ''}
+     ${A.goals < B.goals ? '<button class="btn block" style="margin-bottom:8px" data-act="revanche">🔁 Revanche (amistoso, na hora)</button>' : ''}
      <button class="btn pri block" data-act="closeMatch">Continuar</button></div>` : ''}
    ${M.ht && !M.over ? `<div class="ht"><b>Intervalo.</b> <span class="muted small">Ajuste o time e volte para o segundo tempo.</span><div class="row" style="margin-top:10px"><button class="btn pri" style="flex:1" data-act="secondHalf">Começar 2º tempo</button><button class="btn" data-act="subs">Substituições (${A.subs})</button></div></div>` : ''}
    ${subHint()}
@@ -286,6 +298,13 @@ export const matchActions = {
     renderMatch();
   },
   subs() { openSubs(); },
+  /** Revanche: amistoso na hora contra o mesmo adversário (não muda a tabela). */
+  revanche() {
+    if (!lastOpp) return;
+    const opp = lastOpp;
+    document.getElementById('match')?.remove(); if (L) clearTimeout(L.timer); L = null; closeSheet();
+    startMatch(opp, null);
+  },
   quickSub(d: DOMStringMap) {
     if (!L) return;
     const r = L.m.substitute(+d.o!, +d.i!);

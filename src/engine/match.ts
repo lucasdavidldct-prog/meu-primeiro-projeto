@@ -1,5 +1,6 @@
 // Motor de partida minuto a minuto (sem interface). A interface injeta onMoment
 // para transformar chances do usuário em lances jogáveis.
+import { classicoCartoes, type Classico } from './rivals';
 import { calcChem, effOvr, rate, type Ratings } from './chemistry';
 import { ROLE, slotsOf } from './positions';
 import { R, clamp, rn, wpick } from './rng';
@@ -137,6 +138,8 @@ export class Match {
   ht = false;
   over = false;
   momentsLeft: number;
+  /** Clássico (rivalidade): jogo mais pegado. */
+  classico?: Classico;
   /** Escanteio/lateral a favor que vai virar lance jogável neste minuto. */
   private bolaParada: 'escanteio' | 'lateral' | null = null;
   lastMom = -99;
@@ -151,7 +154,8 @@ export class Match {
   keeperLeft: number;
   lastKeeper = -99;
 
-  constructor(public A: Side, public B: Side, opts: { moments?: number; onMoment?: MomentHandler; home?: 0 | 1 | null; keeperBoost?: number; keeper?: number } = {}) {
+  constructor(public A: Side, public B: Side, opts: { moments?: number; onMoment?: MomentHandler; home?: 0 | 1 | null; keeperBoost?: number; keeper?: number; classico?: Classico } = {}) {
+    this.classico = opts.classico;
     this.momentsLeft = opts.onMoment ? (opts.moments ?? 3) : 0;
     this.onMoment = opts.onMoment;
     this.home = opts.home ?? null;
@@ -216,7 +220,7 @@ export class Match {
 
   private cards(): void {
     for (const [side, si] of [[this.A, 0], [this.B, 1]] as const) {
-      const pr = .02 * (side.style === 'pressao' ? 1.4 : 1);
+      const pr = .02 * (side.style === 'pressao' ? 1.4 : 1) * classicoCartoes(this.classico);
       if (R() < pr) {
         const e = weightedPlayer(side, FOUL_W);
         // Quem já tem amarelo se cuida: na maioria das vezes tira o pé da dividida
