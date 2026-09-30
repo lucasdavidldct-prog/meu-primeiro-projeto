@@ -35,3 +35,9 @@ export function psIcons(list: string[]): string {
 
 export const pips = (n: number): string =>
   `<span class="pips">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+
+/** Legenda legível embaixo da carta: país e clube por extenso. */
+export function cardCaption(P: CardPlayer): string {
+  const c = clubOf(P), n = nationOf(P.nat);
+  return `<div class="c-cap">${flagHTML(P.nat)}<span>${esc(n.n)}</span>${crestHTML(c, 'badge')}<span>${esc(P.leg ? (P.hist ?? 'Lenda') : c.n)}</span></div>`;
+}

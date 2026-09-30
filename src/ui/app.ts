@@ -26,6 +26,7 @@ import { viewStore } from './views/store';
 import { sfx, unlockAudio } from './sfx';
 import { initNative, isNative, shareFile } from './native';
 import { HELP } from './moment2d';
+import { initSquadDrag } from './squadDrag';
 import { bindEditorInputs, editorActions, resumeEditorIfNeeded, viewEditor } from './editor';
 
 function renderApp(): void {
@@ -70,6 +71,8 @@ function showHelp(): void {
 }
 
 function replaceState(S: GameState): void { app.S = S; app.sel = null; }
+
+const TEST_COINS = 1_000_000;
 
 type Handler = (d: DOMStringMap, el: HTMLElement) => void;
 const ACT: Record<string, Handler> = {
@@ -179,10 +182,13 @@ const ACT: Record<string, Handler> = {
   stClub(d) { app.startClub = d.c!; render(); },
   stShort() { app.startShort = !app.startShort; render(); },
   stLib() { app.startLib = !app.startLib; render(); },
+  stRich() { app.startRich = !app.startRich; render(); },
+  testCoins() { app.S.coins += TEST_COINS; saveNow(); render(); sfx.coin(); toast(`+${fmt(TEST_COINS)} moedas`); },
   stGo(_d, el) {
     if (app.S.cards.length && !el.dataset.ok) { el.dataset.ok = '1'; el.textContent = 'Toque de novo para confirmar'; return; }
     const c = W.clubs.get(app.startClub)!;
     replaceState(newCareerGame(c.id, { short: app.startShort, libNow: app.startLib && c.lg !== 'serie-b' }));
+    if (app.startRich) app.S.coins += TEST_COINS;
     app.tab = 'squad'; saveNow(); render(); window.scrollTo(0, 0);
     toast(`Bem-vindo ao ${c.n}! Temporada ${app.S.career!.year}.`);
     if (!app.S.dicasVistas) { app.S.dicasVistas = true; save(); setTimeout(showHelp, 600); }
@@ -195,6 +201,11 @@ const ACT: Record<string, Handler> = {
 export function startApp(S: GameState): void {
   app.S = S;
   unlockAudio();
+  initSquadDrag(document.getElementById('view')!, (to, u) => {
+    const r = applyPick(app.S, to.kind, to.i, u);
+    if (!r.ok) { if (r.msg) toast(r.msg); return; }
+    app.sel = null; save(); render();
+  });
   void initNative(() => { void flushSave(app.S); });
   // Erros inesperados: avisa em vez de deixar a tela travada sem explicação
   window.addEventListener('error', e => { console.error(e.error ?? e.message); toast('Ops, algo deu errado. Seu progresso está salvo.'); });

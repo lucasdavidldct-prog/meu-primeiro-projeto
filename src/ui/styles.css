@@ -281,3 +281,19 @@ button,.chip,.btn,[data-act]{touch-action:manipulation;-webkit-tap-highlight-col
 html{overscroll-behavior:none}
 .native body{user-select:none;-webkit-user-select:none}
 .native input,.native select,.native textarea{user-select:text;-webkit-user-select:text}
+
+/* Arrastar cartas na escalação */
+.slot[data-u]{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.slot.dragging{opacity:.35}
+.slot.drop-over .card,.slot.drop-over .ph{outline:3px solid var(--gold);outline-offset:3px;border-radius:6px}
+.drag-ghost{position:fixed;z-index:120;pointer-events:none;transform:scale(1.12) rotate(-3deg);filter:drop-shadow(0 12px 18px rgba(0,0,0,.6));transition:transform .12s}
+body.is-dragging{cursor:grabbing}
+
+/* Legenda com país e clube por extenso (pacotes e coleção) */
+.rv-item{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;padding:0;color:inherit;font:inherit;min-width:0}
+.c-cap{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:3px 6px;width:100%;max-width:120px;font-size:12px;line-height:1.2;color:var(--fg)}
+.c-cap span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.c-cap .flag{width:20px;height:13px}
+.c-cap .crest-box.badge{width:18px;height:21px;justify-self:center}
+.card.md .c-rib .flag,.card.lg .c-rib .flag,.card.xl .c-rib .flag{width:1.45em;height:.95em}
+.card.md .c-rib .crest-box.badge,.card.lg .c-rib .crest-box.badge,.card.xl .c-rib .crest-box.badge{width:1.5em;height:1.8em}

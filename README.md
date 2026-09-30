@@ -121,6 +121,14 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
   tela sempre em pé (retrato).
 - Ícone e tela de abertura vêm de `assets/` (regerar com `npx capacitor-assets generate --android`).
 
+## Escalação e modo teste
+
+- Em **Time**, toque numa carta para escolher outro jogador, ou **segure e arraste** a carta para outra posição
+  (ex.: ponta direita ↔ ponta esquerda) ou para as reservas; os dois trocam de lugar.
+- Pacotes e coleção mostram país e clube por extenso embaixo de cada carta.
+- **Modo teste:** a carreira começa com +1.000.000 moedas (opção na tela de escolha do clube) e em **Clube → Modo teste**
+  dá para somar mais 1.000.000 a qualquer momento.
+
 ## Sons, vibração e dicas
 
 - Efeitos sintetizados com Web Audio (sem arquivos): apito de início/intervalo/fim, torcida no gol, lamento no gol

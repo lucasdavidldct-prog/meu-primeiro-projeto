@@ -17,6 +17,8 @@ export const app = {
   startClub: 'CAM',
   startShort: false,
   startLib: true,
+  /** Começar a carreira com muitas moedas (para testar). */
+  startRich: true,
 };
 
 let renderFn: () => void = () => {};

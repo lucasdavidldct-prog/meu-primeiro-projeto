@@ -1,7 +1,7 @@
 import { isSpecial, sellValue } from '../../engine/cards';
 import { ROLE } from '../../engine/positions';
 import { allCards, cardByUid, duplicates } from '../../engine/state';
-import { cardHTML } from '../card';
+import { cardCaption, cardHTML } from '../card';
 import { app } from '../ctx';
 import { webglAvailable } from '../../three/support';
 import { esc, fmt } from '../dom';
@@ -34,7 +34,10 @@ export function viewClub(): string {
   <h3>Coleção</h3>
   <div class="chips">${[['todos', 'Todos'], ['GOL', 'Goleiros'], ['DEF', 'Defesa'], ['MEI', 'Meio'], ['ATA', 'Ataque'], ['esp', 'Especiais']].map(([k, n]) => `<button class="chip" data-act="cf" data-f="${k}" aria-pressed="${k === f}">${n}</button>`).join('')}
    <button class="chip" data-act="cs" aria-pressed="false">Ordem: ${app.clubSort === 'ovr' ? 'Geral' : 'Recentes'}</button></div>
-  <div class="grid" style="margin-top:12px">${list.map(P => `<button data-act="card" data-u="${P.u}" style="position:relative">${cardHTML(P, 'md', inSq.has(P.u) ? '<span class="dup" style="background:var(--good);color:#082014">TIME</span>' : '')}</button>`).join('') || '<p class="empty-note">Nenhuma carta aqui.</p>'}</div>
+  <div class="grid" style="margin-top:12px">${list.map(P => `<button class="rv-item" data-act="card" data-u="${P.u}"><div style="position:relative">${cardHTML(P, 'md', inSq.has(P.u) ? '<span class="dup" style="background:var(--good);color:#082014">TIME</span>' : '')}</div>${cardCaption(P)}</button>`).join('') || '<p class="empty-note">Nenhuma carta aqui.</p>'}</div>
+  <h3>Modo teste</h3>
+  <div class="panel"><p class="small muted" style="margin:0 0 10px">Para testar pacotes e o jogo sem precisar juntar moedas.</p>
+    <button class="btn block" data-act="testCoins">+1.000.000 moedas</button></div>
   <h3>Dados</h3>
   <div class="panel"><p class="small muted" style="margin:0 0 10px">Jogadores e clubes reais vêm de <code>data/ligas</code>. Transferências e ratings podem estar desatualizados: corrija no editor.</p>
     <button class="btn block" data-act="openEditor">Editor de elencos</button></div>

@@ -3,7 +3,7 @@ import { packContents, type PackId } from '../engine/packs';
 import { addCard } from '../engine/state';
 import type { OwnedCard } from '../engine/types';
 import { clubOf, nationOf } from '../engine/world';
-import { cardHTML, flagHTML } from './card';
+import { cardCaption, cardHTML, flagHTML } from './card';
 import { crestHTML } from './crest';
 import { app, render, saveNow } from './ctx';
 import { esc, fmt } from './dom';
@@ -61,7 +61,7 @@ function showReveal(got: Got[]): void {
   ov.className = 'ov'; ov.id = 'reveal';
   const dups = got.filter(g => g.dup), dv = dups.reduce((s, g) => s + sellValue(g.P), 0);
   ov.innerHTML = `<div class="ov-inner"><h2 style="text-align:center">Seu pacote</h2>
-   <div class="grid reveal">${got.map(g => `<div style="position:relative">${cardHTML(g.P, 'md', g.dup ? '<span class="dup">REPETIDA</span>' : '')}</div>`).join('')}</div>
+   <div class="grid reveal">${got.map(g => `<div class="rv-item"><div style="position:relative">${cardHTML(g.P, 'md', g.dup ? '<span class="dup">REPETIDA</span>' : '')}</div>${cardCaption(g.P)}</div>`).join('')}</div>
    <div style="display:grid;gap:8px;margin-top:20px">
    ${dups.length ? `<button class="btn" data-act="sellPackDups" data-u="${dups.map(g => g.u).join(',')}">Vender repetidas (+${fmt(dv)})</button>` : ''}
    <button class="btn pri" data-act="closeReveal">Guardar no clube</button></div></div>`;

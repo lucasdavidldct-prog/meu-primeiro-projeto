@@ -19,13 +19,13 @@ export function viewSquad(): string {
       : ` style="left:${s.x}%;top:${top}%"`;
     if (P) {
       const oop = !inPos(P, s.p);
-      pitch += `<button class="slot" data-act="slot" data-i="${i}"${selc} aria-label="${s.p}: ${esc(P.name)}">${cardHTML(P)}<span class="lbl ${oop ? 'oop' : ''}">${s.p} ${pips(chem.per[i])}</span></button>`;
+      pitch += `<button class="slot" data-act="slot" data-i="${i}" data-u="${P.u}"${selc} aria-label="${s.p}: ${esc(P.name)}">${cardHTML(P)}<span class="lbl ${oop ? 'oop' : ''}">${s.p} ${pips(chem.per[i])}</span></button>`;
     } else pitch += `<button class="slot empty" data-act="slot" data-i="${i}"${selc}><span class="ph">${s.p}</span></button>`;
   });
   pitch += '</div>';
   const bench = S.squad.bench.map((u, i) => {
     const P = u ? cardByUid(S, u) : null;
-    return P ? `<button class="slot" data-act="bslot" data-i="${i}">${cardHTML(P)}<span class="lbl">RES ${P.pos}</span></button>`
+    return P ? `<button class="slot" data-act="bslot" data-i="${i}" data-u="${P.u}">${cardHTML(P)}<span class="lbl">RES ${P.pos}</span></button>`
       : `<button class="slot empty" data-act="bslot" data-i="${i}"><span class="ph">+</span></button>`;
   }).join('');
   return `
@@ -36,7 +36,7 @@ export function viewSquad(): string {
   </div>
   <div class="bars">${bar('ATA', r.att)}${bar('MEI', r.mid)}${bar('DEF', r.def)}${bar('GOL', r.gk)}</div>
   ${pitch}
-  <p class="small muted" style="margin:6px 0 0">Toque num jogador para trocar. Losangos verdes = química (0–3). Posição em amarelo = fora de posição.</p>
+  <p class="small muted" style="margin:6px 0 0">Toque num jogador para trocar, ou <b>segure a carta e arraste</b> para outra posição (vale para as reservas também). Losangos verdes = química (0–3). Posição em amarelo = fora de posição.</p>
   <h3>Reservas</h3><div class="bench">${bench}</div>
   <div class="row" style="margin-top:6px"><button class="btn" data-act="auto">Escalar melhor time</button></div>
   <h3>Formação</h3>
