@@ -43,7 +43,9 @@ export function viewClub(): string {
   <div class="grid" style="margin-top:12px">${list.map(P => `<button class="rv-item" data-act="card" data-u="${P.u}"><div style="position:relative">${cardHTML(P, 'md', inSq.has(P.u) ? '<span class="dup" style="background:var(--good);color:#082014">TIME</span>' : '')}</div>${cardCaption(P)}</button>`).join('') || '<p class="empty-note">Nenhuma carta aqui.</p>'}</div>
   <h3>Modo teste</h3>
   <div class="panel"><p class="small muted" style="margin:0 0 10px">Para testar pacotes e o jogo sem precisar juntar moedas.</p>
-    <button class="btn block" data-act="testCoins">+1.000.000 moedas</button></div>
+    <button class="btn block" data-act="testCoins">+1.000.000 moedas</button>
+    <p class="small muted" style="margin:14px 0 10px">Veja o que cada estilo de jogo faz: o mesmo jogador sem o estilo, com prata e com +, no lance e na simulação.</p>
+    <button class="btn block" data-act="openLab">🧪 Laboratório de estilos</button></div>
   <h3>Dados</h3>
   <div class="panel"><p class="small muted" style="margin:0 0 10px">Jogadores e clubes reais vêm de <code>data/ligas</code>. Transferências e ratings podem estar desatualizados: corrija no editor.</p>
     <button class="btn block" data-act="openEditor">Editor de elencos</button></div>

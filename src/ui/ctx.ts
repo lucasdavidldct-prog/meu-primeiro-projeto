@@ -3,7 +3,7 @@ import type { GameState } from '../engine/state';
 import { flushSave, scheduleSave } from '../save/db';
 import { W } from '../engine/world';
 
-export type Tab = 'squad' | 'store' | 'club' | 'season' | 'editor' | 'start';
+export type Tab = 'squad' | 'store' | 'club' | 'season' | 'editor' | 'start' | 'lab';
 export const app = {
   S: null as unknown as GameState,
   tab: 'squad' as Tab,

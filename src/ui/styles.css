@@ -371,3 +371,21 @@ body.is-dragging{cursor:grabbing}
 .t-hall{--cbg:linear-gradient(160deg,#1c1238,#5a3fa8 55%,#241646);--ct:#f3e7ff;--cpat:radial-gradient(circle at 75% 18%,rgba(240,207,106,.55),transparent 40%)}
 /* Etiqueta da versão no topo da carta (não cobre os atributos) */
 .c-tag{top:3.5%;bottom:auto;left:31%;right:auto;padding:.15em .55em;border-radius:1em;background:rgba(0,0,0,.35);color:#fff;font-size:.5em;letter-spacing:.08em;white-space:nowrap;z-index:4}
+/* Laboratório de estilos */
+.lab-ps .chip{display:inline-flex;align-items:center;gap:5px}
+.lab-ps .psi{width:15px;height:15px}
+.lab-box{margin-top:14px}
+.lab-ic{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#1a1f27;color:#8a93a3;box-shadow:0 0 0 2px #3a4150;flex:none}
+.lab-ic .psi{width:26px;height:26px}
+.lab-ic.on{color:#e4e8ee;box-shadow:0 0 0 2px #c9ced6}
+.lab-ic.plus{color:#f6d77a;background:#231a05;box-shadow:0 0 0 2px #f0cf6a}
+.lab-lvl.l1[aria-pressed="true"]{background:#c9ced6;color:#1b1b1b}
+.lab-lvl.l2[aria-pressed="true"]{background:linear-gradient(180deg,#f2d27a,var(--gold));color:#1d1403}
+.lab-play{display:grid;gap:8px;margin-top:12px}
+.lab-t{width:100%;border-collapse:collapse;font-size:13px}
+.lab-t th,.lab-t td{padding:6px 4px;text-align:right;border-bottom:1px solid rgba(255,255,255,.07)}
+.lab-t th:first-child,.lab-t td:first-child{text-align:left}
+.lab-t .cur{color:var(--gold);font-weight:800}
+.lab-ps{flex-wrap:wrap;overflow:visible}
+.lab-t td:first-child{width:46%}
+.lab-sub{display:block;font-size:11px;color:var(--muted,#8a93a3);font-weight:400}

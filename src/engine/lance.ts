@@ -39,6 +39,21 @@ export function keeperMods(P: BasePlayer | null | undefined): KeeperMods {
   };
 }
 
+/** Defesa do rival no lance: cada marcador é anônimo na cena, então vale o nível do time,
+ *  somando os níveis de quem joga na linha e dividindo por 3 (três marcadores com prata = prata; com + = dourado). */
+export interface DefenseMods { tackle: number; intercept: number; antecipa: number; block: number; air: number }
+export function defenseMods(xi: { P: BasePlayer; pos: string; red: boolean }[]): DefenseMods {
+  const lv = (id: Parameters<typeof psLevel>[1]) => Math.min(2, xi.reduce((s, e) => s + (e.red || e.pos === 'GOL' ? 0 : psLevel(e.P, id)), 0) / 3);
+  const at = (v: readonly number[], l: number) => (l <= 1 ? v[0] + (v[1] - v[0]) * l : v[1] + (v[2] - v[1]) * (l - 1));
+  return {
+    tackle: at(FX.defDesarme, lv('desarme')) * at(FX.defContencao, lv('contencao')),
+    intercept: at(FX.defIntercepta, lv('interceptacao')),
+    antecipa: at(FX.defAntecipa, lv('antecipacao')),
+    block: at(FX.defBloqueio, lv('bloqueio')),
+    air: at(FX.defFisico, lv('imposicao-fisica')),
+  };
+}
+
 // ---------- Gesto de chute ----------
 export interface Pt { x: number; y: number; t?: number }
 export interface Gesture { angle: number; power: number; curve: number }

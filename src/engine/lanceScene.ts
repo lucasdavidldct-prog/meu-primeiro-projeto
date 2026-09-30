@@ -1,7 +1,7 @@
 // Cena de um lance jogável, sem interface: posiciona os jogadores, calcula as chances de cada ação
 // (com playstyles), resolve o resultado e devolve um "plano" de animação que o renderizador (2D ou 3D) executa.
 // Coordenadas: x de 0 a 68 (largura), y = distância da linha de fundo (gol em y = 0), h = altura da bola.
-import { GOAL, analyzeGesture, attackMods, bezier, fkControl, fkOdds, fkResolve, fkSetup, fkShotFromGesture, keeperMods, type FkSetup, type FkShot, type Gesture, type KeeperMods, type Pt } from './lance';
+import { GOAL, analyzeGesture, attackMods, defenseMods, type DefenseMods, bezier, fkControl, fkOdds, fkResolve, fkSetup, fkShotFromGesture, keeperMods, type FkSetup, type FkShot, type Gesture, type KeeperMods, type Pt } from './lance';
 import { effNow, pickShooter, type Match, type MomentKind, type MomentRequest, type MomentResult, type SideEntry } from './match';
 import { ROLE, slotsOf } from './positions';
 import { R, clamp, pick, rn, type Rng } from './rng';
@@ -59,6 +59,8 @@ export class LanceScene {
   readonly gkE?: SideEntry;
   readonly gkOvr: number;
   readonly km: KeeperMods;
+  /** Estilos de jogo da defesa rival (desarme, interceptação, bloqueio…). */
+  readonly dm: DefenseMods;
   readonly label: string;
   /** Título do lance (por onde a jogada nasceu). */
   title: string;
@@ -76,6 +78,7 @@ export class LanceScene {
     const gP = this.gkE?.P;
     this.gkOvr = (this.gkE ? effNow(this.gkE, M.min) + (gP?.st ? .7 * (.35 * gP.st[3] + .35 * gP.st[0] + .3 * gP.st[5] - gP.ovr) : 0) : 35) + (M.keeperBoost ?? 0);
     this.km = keeperMods(this.gkE?.P);
+    this.dm = defenseMods(B.xi);
     this.setup = kind === 'falta' ? fkSetup(r) : null;
     this.actions = kind === 'penalti' || kind === 'falta' ? 1 : req.treino ? 8 : 6;
     const num = (e?: SideEntry) => (e ? (A.xi.indexOf(e) + 1 === 1 ? 1 : A.xi.indexOf(e) + 1) : 0);
@@ -159,10 +162,11 @@ export class LanceScene {
     if (alto) return this.loftP(to);
     const c = this.carrier, Ln = dist(c, to), md0 = this.mods();
     let ok = 1;
-    const Rr = (2 + Ln * .05 - (this.stat(2) - 70) * .02) * md0.passRadius;
+    const Rr = (2 + Ln * .05 - (this.stat(2) - 70) * .02) * md0.passRadius * this.dm.intercept;
     for (const f of this.foes) { const d = segD(f, c, to); if (d < Rr) ok *= 1 - .85 * (1 - d / Rr); }
     const md = Math.min(...this.field().map(f => dist(f, to)), 99);
-    if (md < 2.4) ok *= .55 + .45 * md / 2.4;
+    const near = 2.4 * this.dm.antecipa;
+    if (md < near) ok *= .55 + .45 * md / near;
     ok *= clamp(1 - Math.max(0, Ln - 24) * .02 * md0.longPass, .5, 1);
     // Tiki-Taka: toque curto quase sem erro
     if (Ln < 15 && md0.lv.tiki) ok = Math.max(ok, FX.tikiTaka[md0.lv.tiki] * (md < 1.2 ? .8 : 1));
@@ -180,17 +184,17 @@ export class LanceScene {
     // Disputa com o marcador mais próximo do receptor (cabeceio/força ajudam quem recebe)
     const rc = this.mates.find(m => m.x === to.x && m.y === to.y), md = Math.min(...this.field().map(f => dist(f, to)), 99);
     const air = rc?.e ? (rc.e.P.st?.[5] ?? 70) / 75 + .15 * (rc.e.P.ps.some(x => x.startsWith('cabeceio')) ? 1 : 0) : 1;
-    if (md < 3) ok *= clamp((.45 + .55 * md / 3) * air, .2, 1);
+    if (md < 3) ok *= clamp((.45 + .55 * md / 3) * air * this.dm.air, .2, 1);
     return clamp(ok, .05, .95);
   }
   /** Lançamento: corrida do companheiro até o ponto contra o defensor mais próximo. */
   lancP(m: Actor, spot: Pt): number {
     const c = this.carrier, md0 = this.mods(), pas = this.stat(2);
     let ok = 1;
-    const Rr = (1.8 + dist(c, spot) * .04 - (pas - 70) * .02) * md0.passRadius;
+    const Rr = (1.8 + dist(c, spot) * .04 - (pas - 70) * .02) * md0.passRadius * this.dm.intercept;
     for (const f of this.field()) { const d = segD(f, c, spot); if (d < Rr) ok *= 1 - .8 * (1 - d / Rr); }
     const pace = (a?: Actor) => (a?.e?.P.st?.[0] ?? 72) / 10;
-    const tRun = dist(m, spot) / pace(m), tDef = Math.min(...this.field().map(f => dist(f, spot)), 99) / 7.2;
+    const tRun = dist(m, spot) / pace(m), tDef = Math.min(...this.field().map(f => dist(f, spot)), 99) / (7.2 * this.dm.antecipa);
     ok *= clamp(.55 + (tDef - tRun) * .35, .08, 1);
     ok *= clamp(1 - Math.max(0, dist(c, spot) - 22) * .02 * md0.longPass, .5, 1);
     return clamp(ok, .03, .95);
@@ -199,7 +203,7 @@ export class LanceScene {
     const c = this.carrier;
     let ok = 1;
     const m0 = this.mods(), close = this.field().some(f => dist(f, c) < 2.2);
-    const d0 = clamp((.72 - (this.stat(3) - 70) * .012) * m0.dribbleLoss * (close ? FX.resistente[m0.lv.resistente] : 1), .12, .9);
+    const d0 = clamp((.72 - (this.stat(3) - 70) * .012) * m0.dribbleLoss * this.dm.tackle * (close ? FX.resistente[m0.lv.resistente] : 1), .12, .9);
     for (const f of this.field()) { const d = segD(f, c, to); if (d < 3) ok *= 1 - d0 * (1 - d / 3); }
     return clamp(ok * clamp(1 - Math.max(0, dist(c, to) - this.mods().dribbleReach * .66) * .04, .6, 1), .03, .97);
   }
@@ -229,7 +233,7 @@ export class LanceScene {
     if (cav) miss = clamp(miss + FX.cavadinhaErro[lv.cavadinha], .03, .9);
     const path = this.shotPath(ax, curve);
     let block = 0;
-    for (const f of this.field()) if (pathD(f, path) < 1.2) block = 1 - (1 - block) * .55;
+    for (const f of this.field()) if (pathD(f, path) < 1.2) block = 1 - (1 - block) * this.dm.block;
     let save = clamp(((this.gkOvr / 100) * .9 * (1 - .5 * edge) + D * .015 * md.shotDist - (fin - 70) * .004 - .07) * this.km.save, .06, .95);
     // De primeira depois do cruzamento: a defesa está fora de posição e o goleiro reage tarde, mas é mais fácil errar
     if (this.firstTime) { save *= .8 * Math.min(FX.acrobaticoDefesa[lv.acrobatico], FX.cabecaDefesa[lv.cabeca]); block *= .45; }

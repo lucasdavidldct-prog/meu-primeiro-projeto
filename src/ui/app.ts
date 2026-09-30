@@ -29,6 +29,7 @@ import { applyEvolution, evolveSeason } from '../engine/evolution';
 import { initNative, isNative, shareFile } from './native';
 import { initSquadDrag } from './squadDrag';
 import { bindMarket, marketActions } from './market';
+import { labActions, viewLab } from './lab';
 import { slotMenuHTML } from './slotMenu';
 import { definirMinhaFoto, fotoDe, removerMinhaFoto, temFotoCommons } from './fotos';
 import { bindEditorInputs, editorActions, resumeEditorIfNeeded, viewEditor } from './editor';
@@ -37,12 +38,12 @@ function renderApp(): void {
   const S = app.S;
   document.getElementById('coins')!.textContent = fmt(S.coins);
   document.getElementById('clubName')!.textContent = S.name;
-  if (!S.career && app.tab !== 'editor') app.tab = 'start';
+  if (!S.career && app.tab !== 'editor' && app.tab !== 'lab') app.tab = 'start';
   document.getElementById('crest')!.outerHTML = `<span id="crest" class="crest-head">${crestHTML(userClub())}</span>`;
-  const tabNow = app.tab === 'editor' ? 'club' : app.tab;
+  const tabNow = app.tab === 'editor' || app.tab === 'lab' ? 'club' : app.tab;
   document.querySelectorAll<HTMLElement>('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.t === tabNow ? 'true' : 'false'));
   const v = document.getElementById('view')!;
-  v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : app.tab === 'editor' ? viewEditor() : app.tab === 'start' ? viewStart() : viewSeason();
+  v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : app.tab === 'editor' ? viewEditor() : app.tab === 'lab' ? viewLab() : app.tab === 'start' ? viewStart() : viewSeason();
   if (app.tab === 'editor') bindEditorInputs(v);
   if (app.tab === 'store') bindMarket(v);
 }
@@ -290,6 +291,7 @@ const ACT: Record<string, Handler> = {
   ...(marketActions as unknown as Record<string, Handler>),
   storeTab(d) { app.storeTab = d.t as 'pacotes' | 'mercado'; render(); },
   ...editorActions,
+  ...(labActions as unknown as Record<string, Handler>),
 };
 
 export function startApp(S: GameState): void {

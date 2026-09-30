@@ -68,6 +68,13 @@ export const FX = {
   tecnico: [1, .9, .8],
   resistente: [1, .8, .65],          // com marcador colado
   explosaoAlcance: [0, 1.2, 2.4],    // metros a mais por condução
+  // Defesa rival no lance jogável (nível do time: soma dos níveis dos marcadores ÷ 3, até 2)
+  defDesarme: [1, 1.15, 1.3],        // chance do marcador tomar a bola no drible
+  defContencao: [1, 1.1, 1.2],       // idem (não dá o bote errado)
+  defIntercepta: [1, 1.15, 1.3],     // raio de interceptação dos passes rasteiros
+  defAntecipa: [1, 1.12, 1.25],      // marcador chega antes no receptor
+  defBloqueio: [.55, .45, .35],      // fração do chute que passa por cada marcador no caminho
+  defFisico: [1, .9, .8],            // disputa pelo alto do receptor contra a defesa
   // Playstyles novos — simulação
   colocadoSim: [1, 1.12, 1.25],      // gols em finalizações normais
   cavadinhaSim: [1, 1.04, 1.08],

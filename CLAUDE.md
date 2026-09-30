@@ -40,7 +40,7 @@ O APK sai pelo GitHub Actions a cada push e é publicado na release `esquadrao-a
 - **Desempenho**: `rate()` roda a cada minuto de cada jogo. A parte fixa por jogador fica em cache em `chemistry.ts` (`offsets`).
   Quem mudar dados de jogador em memória deve trocar os objetos `st`/`ps` (e não mutar no lugar) e chamar `clearCardCache()` / `clearStrengthCache()`.
 - **Dados**: depois de editar `data/`, rode `npm run formatar-dados` e `npm run validar-dados`. Nação nova precisa entrar em `nacoes.json`.
-- **Estilos de jogo**: no máximo 6 por jogador; `id+` é a versão dourada.
+- **Estilos de jogo**: no máximo 6 por jogador; `id+` é a versão dourada. Todo estilo precisa de uma entrada em `LAB` (`src/engine/lab.ts`) com dica e efeitos; o teste `tests/lab.test.ts` cobra isso.
 
 ## Git e CI
 

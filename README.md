@@ -145,6 +145,14 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.6
+
+- **Laboratório de estilos** (Clube → Modo teste): escolha um estilo de jogo e um jogador (neutro 80 ou do seu elenco),
+  alterne entre **Sem**, **Prata** e **+** e jogue o lance certo para sentir a diferença (placar dos seus lances por nível).
+  Mostra a tabela de efeitos de cada nível e compara 3 × 300 partidas simuladas com a mesma sorte.
+- Estilos de **defesa** agora pesam também no lance jogável: marcadores com Carrinho/Contenção tomam mais a bola,
+  Interceptação/Antecipação cortam mais passes, Bloqueio trava mais chutes e Trombador ganha mais pelo alto.
+
 ## Versão 1.5.2
 
 - Motor de partida ~2,7× mais rápido (mesmos resultados): simular rodadas e temporadas fica mais leve no celular.
