@@ -14,6 +14,12 @@ export interface AttackMods {
   lv: { colocado: 0 | 1 | 2; forte: 0 | 1 | 2; cavadinha: 0 | 1 | 2; rasteiro: 0 | 1 | 2; acrobatico: 0 | 1 | 2; cabeca: 0 | 1 | 2; tiki: 0 | 1 | 2; lanc: 0 | 1 | 2; resistente: 0 | 1 | 2 };
 }
 export function attackMods(P: BasePlayer): AttackMods {
+  const m = baseAttackMods(P);
+  // Fora de Série: quase imparável no drible e quase não erra o chute
+  if (P.fs) { m.dribbleLoss *= .6; m.shotMiss *= .72; m.curve *= 1.1; }
+  return m;
+}
+function baseAttackMods(P: BasePlayer): AttackMods {
   return {
     passRadius: FX.passeRaio[psLevel(P, 'passe-preciso')] * FX.passeTenso[psLevel(P, 'passe-tenso')],
     longPass: FX.passeLongo[psLevel(P, 'passe-em-profundidade')],
@@ -37,9 +43,10 @@ const subOr = (P: BasePlayer, n: SubName) => (P.st && P.pos !== 'GOL' ? sub(P, n
 
 export interface KeeperMods { save: number; penSave: number; claim: number }
 export function keeperMods(P: BasePlayer | null | undefined): KeeperMods {
+  const f = P?.fs ? 1.15 : 1;
   return {
-    save: FX.defesaGoleiro[psLevel(P, 'reflexos')],
-    penSave: FX.defesaPenalti[psLevel(P, 'pegador-de-penalti')],
+    save: FX.defesaGoleiro[psLevel(P, 'reflexos')] * f,
+    penSave: FX.defesaPenalti[psLevel(P, 'pegador-de-penalti')] * f,
     claim: FX.saidaGol[psLevel(P, 'saida-do-gol')],
   };
 }

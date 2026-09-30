@@ -497,3 +497,9 @@ table tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
 /* Brilho que passa na carta grande (detalhes e abertura de pacote) */
 .card.lg::after,.card.xl::after{background:var(--cpat,none),linear-gradient(105deg,transparent 40%,rgba(255,255,255,.28) 50%,transparent 60%) -200% 0/250% 100% no-repeat;animation:cshine 4.5s ease-in-out infinite}
 @keyframes cshine{0%,55%{background-position:0 0,-200% 0}100%{background-position:0 0,200% 0}}
+/* Fora de Série: moldura dourada animada */
+.card.fs::before{box-shadow:inset 0 0 0 calc(var(--w)*.028) #ffd766,inset 0 0 calc(var(--w)*.2) rgba(255,200,60,.55);animation:fsPulse 2.4s ease-in-out infinite}
+@keyframes fsPulse{50%{box-shadow:inset 0 0 0 calc(var(--w)*.028) #fff3c4,inset 0 0 calc(var(--w)*.3) rgba(255,220,120,.8)}}
+.card.fs .c-tag{background:linear-gradient(90deg,#b8860b,#ffd766,#b8860b);color:#2a1c00}
+.fs-txt{color:#ffd766}
+.fs-box{display:grid;gap:4px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:linear-gradient(90deg,rgba(255,215,102,.18),rgba(255,215,102,.04));border:1px solid rgba(255,215,102,.55);font-size:13px}

@@ -92,7 +92,9 @@ function offsets(P: BasePlayer) {
   if (o && o.ovr === P.ovr && o.st === P.st && o.ps === P.ps) return o;
   const sec = (k: Sector) => ATTR_K * (COMP[k].reduce((s, w, i) => s + w * P.st[i], 0) - P.ovr) + psBonus(P, k);
   const gk = ATTR_K * (.3 * P.st[3] + .25 * P.st[0] + .2 * P.st[5] + .15 * P.st[1] + .1 * P.st[4] - P.ovr) + psBonus(P, 'gk');
-  o = { ovr: P.ovr, st: P.st, ps: P.ps, att: sec('att'), mid: sec('mid'), def: sec('def'), gk };
+  // Fora de Série pesa mais em qualquer setor
+  const fs = P.fs ? 2.5 : 0;
+  o = { ovr: P.ovr, st: P.st, ps: P.ps, att: sec('att') + fs, mid: sec('mid') + fs, def: sec('def') + fs, gk: gk + fs };
   offCache.set(P, o);
   return o;
 }

@@ -31,6 +31,8 @@ export interface BasePlayer {
   /** Playstyles (ids; sufixo + para a versão forte). */
   ps: string[];
   leg?: boolean;
+  /** Fora de Série: quase imparável (difícil de desarmar, quase não erra; raríssimo nos pacotes). */
+  fs?: boolean;
   /** Carta de evento semanal: id do evento, nome e cores do tema; `base` = id da carta normal. */
   ev?: { id: string; n: string; cores: [string, string]; base?: string };
   /** Categoria da lenda: ídolo, herói ou hall da fama. */

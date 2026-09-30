@@ -40,7 +40,9 @@ function drawSpecial(): Draw {
 /** Lenda do pacote: Ídolo 30%, Herói 35%, Hall da Fama 35%. */
 function pickLegend() {
   const r = R(), cat = r < .3 ? 'idolo' : r < .65 ? 'heroi' : 'hall';
-  const g = W.legends.filter(p => (p.legCat ?? 'idolo') === cat);
+  // Fora de Série: raríssimos (3% do pacote Lenda)
+  if (R() < .03) { const fs = W.legends.filter(p => p.fs); if (fs.length) return pick(fs); }
+  const g = W.legends.filter(p => (p.legCat ?? 'idolo') === cat && !p.fs);
   return pick(g.length ? g : W.legends);
 }
 

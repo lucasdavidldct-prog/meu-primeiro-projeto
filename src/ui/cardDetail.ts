@@ -44,6 +44,7 @@ export function showCard(u: number): void {
          <span>Dribles</span><b>${stars(d.skills)}</b>
          <span>Perna ruim</span><b>${stars(d.weak)}</b>
          <span>Pé</span><b>${{ D: 'Direito', E: 'Esquerdo', A: 'Ambidestro' }[P.foot]}</b>
+         ${P.fs ? '<span>Raridade</span><b class="fs-txt">⚡ Fora de Série</b>' : ''}
          ${P.quim ? `<span>Química</span><b>${esc(CHEM_BY_ID.get(P.quim)?.n ?? '')}</b>` : ''}
        </div>
      </div></div>
@@ -73,8 +74,9 @@ export function psDetail(list: string[]): string {
 }
 
 function stylesHTML(P: OwnedCard): string {
+  const fs = P.fs ? '<div class="fs-box"><b>⚡ Fora de Série</b><span>Um dos 3 melhores da posição na história. Quase impossível de desarmar, quase não erra o chute (o goleiro defende menos) e pesa mais na força do time. Raríssimo: 3% no pacote Lenda e quase nunca à venda no mercado.</span></div>' : '';
   const plus = P.ps.filter(x => x.endsWith('+')), prata = P.ps.filter(x => !x.endsWith('+'));
-  return `<p class="small muted" style="margin-top:0">Na carta aparecem só os estilos <b>+</b> (dourados). Os pratas ficam aqui.</p>
+  return `${fs}<p class="small muted" style="margin-top:0">Na carta aparecem só os estilos <b>+</b> (dourados). Os pratas ficam aqui.</p>
     ${plus.length ? `<h3>Estilos + (${plus.length})</h3>${psDetail(plus)}` : ''}
     ${prata.length ? `<h3>Estilos prata (${prata.length})</h3>${psDetail(prata)}` : ''}
     ${P.ps.length ? '' : '<p class="empty-note">Sem estilos de jogo. Dá para dar um + e um prata em Personalizar.</p>'}`;

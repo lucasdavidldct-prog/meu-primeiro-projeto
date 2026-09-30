@@ -79,7 +79,7 @@ export function loadWorld(ligas: LigaData[], lendas: LendasData = BUNDLED_LENDAS
     }
     W.leagues.push(info);
   }
-  W.legends = lendas.lendas.map(j => ({ ...toPlayer(j, 'ICO', 'ICO'), leg: true, hist: j.clubeHistorico, epoca: j.epoca, legClub: j.clube, legCat: j.categoria ?? 'idolo' }));
+  W.legends = lendas.lendas.map(j => ({ ...toPlayer(j, 'ICO', 'ICO'), leg: true, hist: j.clubeHistorico, epoca: j.epoca, legClub: j.clube, legCat: j.categoria ?? 'idolo', fs: j.foraDeSerie || undefined }));
   for (const p of W.legends) W.players.set(p.id, p);
   W.events = buildEvents(BUNDLED_EVENTOS);
   for (const p of W.events) W.players.set(p.id, p);

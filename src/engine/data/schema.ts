@@ -48,6 +48,8 @@ export interface LendaData extends JogadorData {
   /** Sigla do clube atual ligado ao ídolo, se houver (ex.: CAM). */
   clube?: string;
   epoca: string;
+  /** Fora de Série: os mais desejados do jogo (no máximo 3 por posição). */
+  foraDeSerie?: boolean;
   /** Ídolo (ícone), Herói ou Hall da Fama. Padrão: ídolo. */
   categoria?: LegCat;
 }

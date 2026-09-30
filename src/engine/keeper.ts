@@ -35,5 +35,7 @@ export function saveChance(shot: Zone, dive: Zone | null, gk: BasePlayer | undef
   p += (ref - 75) * .008 - (fin - 75) * .006;
   p *= 1 + .1 * psLevel(gk, 'reflexos') + (pen ? .12 * psLevel(gk, 'pegador-de-penalti') : 0);
   p *= 1 - .08 * psLevel(shooter, 'finalizacao-precisa') - .06 * psLevel(shooter, 'chute-colocado');
+  if (gk?.fs) p *= 1.12;
+  if (shooter.fs) p *= .85;
   return clamp(p, .02, .9);
 }

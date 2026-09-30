@@ -270,6 +270,7 @@ export class LanceScene {
     let ok = .42 + (stars - 3) * .08 + ((dri + agi) / 2 - 75) * .012;
     ok *= 1 / Math.pow(FX.firula[psLevel(P, 'firula')] * FX.dribleMarcador[psLevel(P, 'drible-rapido')], .5);
     ok /= this.dm.tackle;
+    if (P.fs) ok += .14;
     return clamp(1 - (1 - ok) * perto, .08, .92);
   }
   /** Nome da finta conforme as estrelas de drible. */
@@ -327,6 +328,7 @@ export class LanceScene {
     if (cav) { save *= FX.cavadinhaDefesa[lv.cavadinha]; block *= .3; }
     // Rasteiro: bola rente à grama, o goleiro tem que descer (mais difícil de perto)
     if (rasteiro) save *= FX.rasteiroDefesa[lv.rasteiro] * (D < 20 ? .92 : 1);
+    if (c.e?.P.fs) save *= .88; // Fora de Série: o goleiro sofre
     save *= clamp(1 - Math.abs(gk.x - ax) / 11, .45, 1) * (1 - .15 * ac * md.curve) * (1 + weak * 1.6);
     save = clamp(save, .04, .97);
     return { goal: (1 - miss) * (1 - block) * (1 - save), miss, save, block };
