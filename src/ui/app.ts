@@ -1,3 +1,4 @@
+import { QUALITY_N, defaultQuality, setQuality, type Quality } from '../three/qualityLevel';
 import { STAT_G, STAT_L } from '../engine/positions';
 import { psIcon } from './psIcons';
 import { VAR, TIER_N, sellValue } from '../engine/cards';
@@ -30,6 +31,7 @@ import { initNative, isNative, shareFile } from './native';
 import { initSquadDrag } from './squadDrag';
 import { bindMarket, marketActions } from './market';
 import { labActions, viewLab } from './lab';
+import { cardDetailActions, showCard } from './cardDetail';
 import { slotMenuHTML } from './slotMenu';
 import { definirMinhaFoto, fotoDe, removerMinhaFoto, temFotoCommons } from './fotos';
 import { bindEditorInputs, editorActions, resumeEditorIfNeeded, viewEditor } from './editor';
@@ -55,32 +57,6 @@ function refreshCard(id: string): void {
   if (u && document.getElementById('sheet')) showCard(u);
 }
 
-/** Playstyles agrupados por categoria, com o nível (prata = normal, dourado = +) e o que fazem no jogo. */
-function psDetail(list: string[]): string {
-  const items = list.map(x => { const { id, plus } = parsePs(x); return { d: PS_BY_ID.get(id), plus }; }).filter(x => x.d);
-  return (Object.keys(PS_CATS) as PsCat[]).map(cat => {
-    const g = items.filter(x => x.d!.cat === cat);
-    return g.length ? `<div class="ps-cat">${PS_CATS[cat]}</div><div class="ps-list">${g.map(({ d, plus }) => `<div class="ps-item ${plus ? 'plus' : ''}"><span class="ic">${psIcon(d!.id)}</span><div><b>${d!.nome}<span class="lvl">${plus ? '+ dourado' : 'prata'}</span></b><span class="muted">${plus ? d!.descPlus + ' ' + d!.desc : d!.desc}</span></div></div>`).join('')}</div>` : '';
-  }).join('');
-}
-
-function showCard(u: number): void {
-  const S = app.S, P = cardByUid(S, u);
-  if (!P) return;
-  const inSq = S.squad.xi.includes(P.u) || S.squad.bench.includes(P.u);
-  const L = P.pos === 'GOL' ? STAT_G : STAT_L;
-  openSheet(`<div style="display:grid;justify-items:center;gap:12px">${cardHTML(P, 'lg')}</div>
-   <h2 style="margin-top:14px">${esc(P.name)}</h2>
-   <div class="small muted">${P.v === 'base' || P.leg ? TIER_N[P.tier] : VAR[P.v].n} · ${P.pos}${P.alt.length ? ' (também ' + P.alt.join(', ') + ')' : ''} · ${P.age} anos</div>
-   <div class="small muted">${nationOf(P.nat).n} · ${P.leg ? `<b>${LEG_CATS[P.legCat ?? 'idolo']}</b> · ` + esc(P.hist ?? 'Lendas') + (P.epoca ? ' (' + esc(P.epoca) + ')' : '') : esc(leagueName(P)) + ' · ' + esc(clubOf(P).n)}</div>
-   <dl class="kv"><dt>Pé bom</dt><dd>${{ D: 'Direito', E: 'Esquerdo', A: 'Ambidestro' }[P.foot]}</dd>${P.leg ? '' : `<dt>Idade</dt><dd>${P.age} anos</dd>`}${P.legClub === 'CAM' ? '<dt>Ídolo</dt><dd>Atlético Mineiro</dd>' : ''}</dl>
-   <div class="bars" style="margin-top:12px">${P.st.map((s, i) => `<div class="bar">${L[i]}<i><b style="width:${s}%"></b></i><span>${s}</span></div>`).join('')}</div>
-   ${P.ps.length ? `<h3>Playstyles</h3>${psDetail(P.ps)}` : ''}
-   ${photoPanel(P.id)}
-   ${app.S.career?.mercado ? `<p class="small muted" style="margin:10px 0 0">${P.tr ? '🔓 Negociável no mercado de leilão' : '🔒 Intransferível (veio de pacote): não vai ao leilão, mas pode ser vendida rápido abaixo.'}</p>` : ''}
-   <div style="margin-top:16px">${inSq ? '<p class="small muted">Está no seu elenco. Tire do time para poder vender.</p>' : `<button class="btn danger block" data-act="sell" data-u="${P.u}">Vender por ${fmt(sellValue(P))} moedas</button>`}</div>`);
-}
-
 /** Guia rápido: aparece na primeira carreira e fica em Clube → Como jogar. */
 function showHelp(): void {
   openSheet(`<h2>Como jogar</h2>
@@ -93,14 +69,6 @@ function showHelp(): void {
    <h3>Playstyles</h3><p>Os ícones na carta são habilidades (Chute de Longe, Velocista…). As versões <b>+</b> são mais fortes. Elas pesam na simulação e nos lances.</p>
   </div>
   <div class="row" style="gap:8px;margin-top:14px"><button class="btn pri" style="flex:1" data-act="treino" data-k="ataque">Fazer o treino de lances</button><button class="btn" style="flex:1" data-act="closeSheet">Entendi</button></div>`);
-}
-
-function photoPanel(id: string): string {
-  const f = fotoDe(id);
-  const credit = f?.fonte === 'commons' ? `<a href="${esc(f.pagina!)}" target="_blank" rel="noopener">Foto: Wikimedia Commons (licença livre)</a>` : f?.fonte === 'minha' ? 'Foto escolhida por você' : temFotoCommons(id) && app.S.fotos === false ? 'Fotos da internet desligadas em Clube' : 'Sem foto';
-  return `<h3>Foto</h3><div class="row" style="gap:8px;flex-wrap:wrap"><span class="small muted" style="flex:1 1 100%">${credit}</span>
-    <button class="btn" data-act="photoPick" data-id="${esc(id)}">${f?.fonte === 'minha' ? 'Trocar minha foto' : 'Escolher foto'}</button>
-    ${f?.fonte === 'minha' ? `<button class="btn" data-act="photoDel" data-id="${esc(id)}">Remover minha foto</button>` : ''}</div>`;
 }
 
 function openSlotMenu(i: number): void {
@@ -118,7 +86,7 @@ function seasonRecord(S: GameState): string {
   return row ? `<p class="small muted" style="margin-top:-4px">Campanha no ${esc(C.div === 'A' ? 'Brasileirão' : 'Série B')}: ${row.W}V ${row.D}E ${row.L}D · ${row.GF} gols marcados, ${row.GA} sofridos.</p>` : '';
 }
 
-function replaceState(S: GameState): void { app.S = S; app.sel = null; applyEvolution(S.evo); }
+function replaceState(S: GameState): void { app.S = S; app.sel = null; applyEvolution(S.evo); setQuality(S.graficos ?? defaultQuality()); }
 
 const TEST_COINS = 1_000_000;
 
@@ -175,6 +143,7 @@ const ACT: Record<string, Handler> = {
     if (v) { app.S.name = v.slice(0, 24); save(); render(); toast('Nome salvo'); }
   },
   togMom() { app.S.moments = !app.S.moments; save(); render(); },
+  graficos(d) { const q = d.q as Quality; app.S.graficos = q; setQuality(q); save(); render(); toast(`Gráficos: ${QUALITY_N[q]}`); },
   lance3d(d) { app.S.lance3d = d.v === '1'; save(); render(); toast(app.S.lance3d ? 'Lances em 3D' : 'Lances em 2D (modo leve)'); },
   togSom() { app.S.som = app.S.som === false; save(); render(); if (app.S.som) sfx.coin(); },
   togVib() { app.S.vibrar = app.S.vibrar === false; save(); render(); },
@@ -292,6 +261,7 @@ const ACT: Record<string, Handler> = {
   storeTab(d) { app.storeTab = d.t as 'pacotes' | 'mercado'; render(); },
   ...editorActions,
   ...(labActions as unknown as Record<string, Handler>),
+  ...(cardDetailActions as unknown as Record<string, Handler>),
 };
 
 export function startApp(S: GameState): void {

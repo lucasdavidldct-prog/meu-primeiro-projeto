@@ -22,6 +22,7 @@ import { loadEditedLigas } from './save/dados';
 import { applyEdits } from './engine/world';
 import { startApp } from './ui/app';
 import { applyEvolution } from './engine/evolution';
+import { defaultQuality, setQuality } from './three/qualityLevel';
 import { devMoment } from './ui/matchView';
 import { loadMinhasFotos } from './ui/fotos';
 
@@ -34,7 +35,12 @@ async function boot(): Promise<void> {
   try { S = await loadSave(); } catch (e) { console.warn('Não foi possível ler o save', e); }
   if (!S) { S = blankGame(); await flushSave(S).catch(e => console.warn('Não foi possível salvar', e)); }
   applyEvolution(S.evo);
+  setQuality(S.graficos ?? defaultQuality());
   startApp(S);
-  if (import.meta.env.DEV) Object.assign(window, { __esquadrao: { devMoment } });
+  // Só em desenvolvimento: atalhos para os testes de navegador (estado do jogo, redesenhar, dar carta, abrir lance)
+  if (import.meta.env.DEV) {
+    const [{ app, render }, { addCard }] = await Promise.all([import('./ui/ctx'), import('./engine/state')]);
+    Object.assign(window, { __esquadrao: { devMoment, app, render, addCard: (p: string, v: Parameters<typeof addCard>[2]) => { const c = addCard(app.S, p, v); render(); return c.u; } } });
+  }
 }
 void boot();

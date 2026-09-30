@@ -5,11 +5,15 @@ import { GOAL, analyzeGesture, attackMods, defenseMods, type DefenseMods, bezier
 import { effNow, pickShooter, type Match, type MomentKind, type MomentRequest, type MomentResult, type SideEntry } from './match';
 import { ROLE, slotsOf } from './positions';
 import { R, clamp, pick, rn, type Rng } from './rng';
+import { sub, type SubName } from './attrs';
 import { FX } from './playstyles';
 
 export interface Actor { id: number; x: number; y: number; tx: number; ty: number; e?: SideEntry; gk?: boolean; team: 0 | 1; num: number }
+/** Tipo de chute escolhido no lance ('auto' = o gesto decide: curvo = colocado, rápido = forte, curto e lento = cavadinha). */
+export type ShotType = 'auto' | 'normal' | 'colocado' | 'forte' | 'rasteiro' | 'cavadinha';
+export const SHOT_N: Record<ShotType, string> = { auto: 'Auto', normal: 'Normal', colocado: 'Colocado', forte: 'Forte', rasteiro: 'Rasteiro', cavadinha: 'Cavadinha' };
 export type Target =
-  | { kind: 'shot'; ax: number; power: number; curve: number }
+  | { kind: 'shot'; ax: number; power: number; curve: number; tipo?: ShotType }
   /** Passe: rasteiro (1 toque) ou alto (2 toques), por cima da marcação. */
   | { kind: 'pass'; m: Actor; alto?: boolean }
   /** Lançamento em profundidade: a bola vai para o espaço e o companheiro corre até ela. */
@@ -64,6 +68,8 @@ export class LanceScene {
   readonly label: string;
   /** Título do lance (por onde a jogada nasceu). */
   title: string;
+  /** Tipo de chute escolhido pelo jogador no seletor do lance. */
+  shotType: ShotType = 'auto';
   /** O portador recebeu um cruzamento/passe alto na área: finaliza de primeira. */
   firstTime = false;
   private r: Rng;
@@ -156,13 +162,15 @@ export class LanceScene {
   goalie(): Actor { return this.foes.find(f => f.gk)!; }
   private mods(m = this.carrier) { return attackMods(m.e!.P); }
   private stat(k: number, m = this.carrier) { return m.e!.P.st ? m.e!.P.st[k] : m.e!.base; }
+  /** Subatributo do portador (chute de longe, voleio, passe curto…); sem dados, usa o atributo principal. */
+  private sb(name: SubName, k: number, m = this.carrier) { return m.e?.P.st && m.e.P.pos !== 'GOL' ? sub(m.e.P, name) : this.stat(k, m); }
 
   // ---------- Probabilidades ----------
   passP(to: Actor, alto = false): number {
     if (alto) return this.loftP(to);
     const c = this.carrier, Ln = dist(c, to), md0 = this.mods();
     let ok = 1;
-    const Rr = (2 + Ln * .05 - (this.stat(2) - 70) * .02) * md0.passRadius * this.dm.intercept;
+    const Rr = (2 + Ln * .05 - (this.sb(Ln < 20 ? 'Passe curto' : 'Passe longo', 2) - 70) * .02) * md0.passRadius * this.dm.intercept;
     for (const f of this.foes) { const d = segD(f, c, to); if (d < Rr) ok *= 1 - .85 * (1 - d / Rr); }
     const md = Math.min(...this.field().map(f => dist(f, to)), 99);
     const near = 2.4 * this.dm.antecipa;
@@ -174,7 +182,8 @@ export class LanceScene {
   }
   /** Passe alto: passa por cima de quem está no meio do caminho, mas é menos preciso e o receptor disputa no alto. */
   loftP(to: Pt): number {
-    const c = this.carrier, Ln = dist(c, to), md0 = this.mods(), pas = this.stat(2);
+    // Da ponta, o passe alto é cruzamento; no resto, passe longo
+    const c = this.carrier, Ln = dist(c, to), md0 = this.mods(), pas = this.sb(c.x < 16 || c.x > 52 ? 'Cruzamento' : 'Passe longo', 2);
     let ok = clamp(1 - Math.max(0, Ln - 10) * .011 * md0.longPass * FX.lancamento[md0.lv.lanc] * (1 - (pas - 70) * .02), .35, .97);
     // Cruzamento da ponta: quem tem o playstyle Cruzamento acerta mais
     const cr = this.carrier.e ? this.carrier.e.P.ps.find(x => x.startsWith('cruzamento')) : undefined;
@@ -189,11 +198,11 @@ export class LanceScene {
   }
   /** Lançamento: corrida do companheiro até o ponto contra o defensor mais próximo. */
   lancP(m: Actor, spot: Pt): number {
-    const c = this.carrier, md0 = this.mods(), pas = this.stat(2);
+    const c = this.carrier, md0 = this.mods(), pas = this.sb('Passe longo', 2);
     let ok = 1;
     const Rr = (1.8 + dist(c, spot) * .04 - (pas - 70) * .02) * md0.passRadius * this.dm.intercept;
     for (const f of this.field()) { const d = segD(f, c, spot); if (d < Rr) ok *= 1 - .8 * (1 - d / Rr); }
-    const pace = (a?: Actor) => (a?.e?.P.st?.[0] ?? 72) / 10;
+    const pace = (a?: Actor) => (a?.e?.P.st && a.e.P.pos !== 'GOL' ? sub(a.e.P, 'Pique') : 72) / 10;
     const tRun = dist(m, spot) / pace(m), tDef = Math.min(...this.field().map(f => dist(f, spot)), 99) / (7.2 * this.dm.antecipa);
     ok *= clamp(.55 + (tDef - tRun) * .35, .08, 1);
     ok *= clamp(1 - Math.max(0, dist(c, spot) - 22) * .02 * md0.longPass, .5, 1);
@@ -203,7 +212,7 @@ export class LanceScene {
     const c = this.carrier;
     let ok = 1;
     const m0 = this.mods(), close = this.field().some(f => dist(f, c) < 2.2);
-    const d0 = clamp((.72 - (this.stat(3) - 70) * .012) * m0.dribbleLoss * this.dm.tackle * (close ? FX.resistente[m0.lv.resistente] : 1), .12, .9);
+    const d0 = clamp((.72 - (this.sb('Drible', 3) - 70) * .012) * m0.dribbleLoss * this.dm.tackle * (close ? FX.resistente[m0.lv.resistente] : 1), .12, .9);
     for (const f of this.field()) { const d = segD(f, c, to); if (d < 3) ok *= 1 - d0 * (1 - d / 3); }
     return clamp(ok * clamp(1 - Math.max(0, dist(c, to) - this.mods().dribbleReach * .66) * .04, .6, 1), .03, .97);
   }
@@ -217,11 +226,22 @@ export class LanceScene {
     return Array.from({ length: n + 1 }, (_, i) => bezier(c, ctrl, end, i / n));
   }
   /** Chances de um chute: força ideal entre 0,45 e 0,85; curva engana o goleiro, mas é mais difícil de acertar. */
-  shotOdds(ax: number, power = .65, curve = 0): { goal: number; miss: number; save: number; block: number } {
+  /** Tipo concreto do chute: escolhido no seletor, ou lido do gesto no modo Auto. */
+  shotKind(power: number, curve: number, tipo: ShotType = 'auto'): { colocado: boolean; forte: boolean; cav: boolean; rasteiro: boolean } {
+    const c = this.carrier, D = Math.hypot(c.x - 34, c.y), pen = this.kind === 'penalti';
+    if (tipo === 'auto') return { colocado: Math.abs(curve) >= .3, forte: power >= .72, cav: !pen && power < .34 && D < 22, rasteiro: false };
+    return { colocado: tipo === 'colocado', forte: tipo === 'forte', cav: tipo === 'cavadinha' && !pen, rasteiro: tipo === 'rasteiro' };
+  }
+  shotOdds(ax: number, power = .65, curve = 0, tipo: ShotType = 'auto'): { goal: number; miss: number; save: number; block: number } {
     const c = this.carrier, md = this.mods(), gk = this.goalie(), pen = this.kind === 'penalti';
-    const D = Math.hypot(c.x - 34, c.y), edge = Math.min(1, Math.abs(ax - 34) / GOAL.half), fin = this.stat(1);
+    // Tipo escolhido ajusta a força efetiva: forte bate forte, rasteiro firme, cavadinha de leve
+    const sk = this.shotKind(power, curve, tipo);
+    if (tipo !== 'auto') power = sk.forte ? Math.max(power, .78) : sk.rasteiro ? clamp(power, .5, .8) : sk.cav ? .3 : sk.colocado ? clamp(power, .45, .75) : power;
+    const D = Math.hypot(c.x - 34, c.y), edge = Math.min(1, Math.abs(ax - 34) / GOAL.half);
+    // O subatributo depende do chute: pênalti, de primeira (voleio), de fora da área ou finalização normal
+    const fin = this.sb(pen ? 'Pênalti' : this.firstTime ? 'Voleio' : D >= 18 ? 'Chute de longe' : 'Finalização', 1);
     // Tipo de chute pelo gesto: curvo = colocado, forte = super chute, curto e lento perto do gol = cavadinha
-    const lv = md.lv, colocado = Math.abs(curve) >= .3, forte = power >= .72, cav = !pen && power < .34 && D < 22;
+    const lv = md.lv, { colocado, forte, cav, rasteiro } = sk;
     const weak = cav && lv.cavadinha ? 0 : Math.max(0, .45 - power), hard = Math.max(0, power - FX.superChuteLimite[lv.forte]), ac = Math.abs(curve);
     if (pen) {
       const miss = clamp((.03 + Math.pow(edge, 3) * .28 - (fin - 70) * .003 + hard * 2.5) * md.shotMiss, .02, .7);
@@ -230,16 +250,21 @@ export class LanceScene {
     }
     let miss = clamp((.04 + D * .016 * md.shotDist + Math.pow(edge, 3) * .3 - (fin - 70) * .005 + hard * 2 + ac * .06 * md.shotMiss + (this.firstTime ? .06 * (lv.acrobatico ? .3 : 1) : 0)) * md.shotMiss, .03, .9);
     if (colocado) miss *= FX.colocadoErro[lv.colocado];
-    if (cav) miss = clamp(miss + FX.cavadinhaErro[lv.cavadinha], .03, .9);
+    if (cav) miss = clamp(miss + FX.cavadinhaErro[lv.cavadinha] + (D >= 22 ? .3 : 0), .03, .9);
+    // Rasteiro de longe perde precisão
+    if (rasteiro && D > 22) miss = clamp(miss + (D - 22) * .01, .03, .9);
     const path = this.shotPath(ax, curve);
     let block = 0;
     for (const f of this.field()) if (pathD(f, path) < 1.2) block = 1 - (1 - block) * this.dm.block;
+    if (rasteiro) block *= FX.rasteiroBloqueio[lv.rasteiro];
     let save = clamp(((this.gkOvr / 100) * .9 * (1 - .5 * edge) + D * .015 * md.shotDist - (fin - 70) * .004 - .07) * this.km.save, .06, .95);
     // De primeira depois do cruzamento: a defesa está fora de posição e o goleiro reage tarde, mas é mais fácil errar
     if (this.firstTime) { save *= .8 * Math.min(FX.acrobaticoDefesa[lv.acrobatico], FX.cabecaDefesa[lv.cabeca]); block *= .45; }
     if (colocado) save *= FX.colocadoDefesa[lv.colocado];
     if (forte) save *= FX.superChuteDefesa[lv.forte];
     if (cav) { save *= FX.cavadinhaDefesa[lv.cavadinha]; block *= .3; }
+    // Rasteiro: bola rente à grama, o goleiro tem que descer (mais difícil de perto)
+    if (rasteiro) save *= FX.rasteiroDefesa[lv.rasteiro] * (D < 20 ? .92 : 1);
     save *= clamp(1 - Math.abs(gk.x - ax) / 11, .45, 1) * (1 - .15 * ac * md.curve) * (1 + weak * 1.6);
     save = clamp(save, .04, .97);
     return { goal: (1 - miss) * (1 - block) * (1 - save), miss, save, block };
@@ -261,11 +286,13 @@ export class LanceScene {
   shotFromGesture(g: Gesture): Target | null {
     const c = this.carrier, dx = Math.cos(g.angle), dy = Math.sin(g.angle);
     if (dy > -.2) return null;
-    const ax = c.x + dx * (-c.y / dy);
-    return { kind: 'shot', ax: clamp(ax, 22, 46), power: g.power, curve: g.curve };
+    const ax = clamp(c.x + dx * (-c.y / dy), 22, 46), tipo = this.shotType;
+    // Colocado escolhido com traço reto: a bola abre e fecha no canto (curva para dentro do gol)
+    const curve = tipo === 'colocado' && Math.abs(g.curve) < .3 ? -.45 * Math.sign(ax - 34 || 1) : tipo === 'rasteiro' || tipo === 'normal' ? g.curve * .5 : g.curve;
+    return { kind: 'shot', ax, power: g.power, curve, tipo };
   }
   prob(t: Target): number {
-    return t.kind === 'pass' ? this.passP(t.m, t.alto) : t.kind === 'lanc' ? this.lancP(t.m, t) : t.kind === 'drib' ? this.dribP(t) : this.shotOdds(t.ax, t.power, t.curve).goal;
+    return t.kind === 'pass' ? this.passP(t.m, t.alto) : t.kind === 'lanc' ? this.lancP(t.m, t) : t.kind === 'drib' ? this.dribP(t) : this.shotOdds(t.ax, t.power, t.curve, t.tipo).goal;
   }
   /** Fim de um traço que não vai para o gol: perto de um companheiro = passe; no espaço = lançamento para quem estiver mais perto. */
   throughTarget(x: number, y: number): Target | null {
@@ -360,14 +387,14 @@ export class LanceScene {
     }
     // Chute
     this.done = true;
-    const sp = this.shotOdds(t.ax, t.power, t.curve), as = this.lastPasser ? this.lastPasser.e!.name : null, gk = this.goalie();
+    const sk = this.shotKind(t.power, t.curve, t.tipo), sp = this.shotOdds(t.ax, t.power, t.curve, t.tipo), as = this.lastPasser ? this.lastPasser.e!.name : null, gk = this.goalie();
     const path = this.kind === 'penalti' ? [c, { x: t.ax, y: 0 }] : this.shotPath(t.ax, t.curve);
     const speed = .55 + t.power;
     const dur = Math.round(clamp(Math.hypot(c.x - t.ax, c.y) * 34 / speed, 320, 1100));
     const toKeys = (pts: Pt[], hEnd: number, peak: number): BallKey[] => pts.map((p, i) => { const k = i / (pts.length - 1); return { x: p.x, y: p.y, h: hEnd * k + 4 * peak * k * (1 - k) }; });
     // Cavadinha: bola sobe por cima do goleiro e cai no gol
-    const chip = this.kind !== 'penalti' && t.power < .34 && Math.hypot(c.x - 34, c.y) < 22;
-    const hTarget = chip ? 1.5 : clamp(.25 + t.power * 1.9 + (r() - .5) * .5, .15, 2.2), peakS = chip ? 2.8 : .3;
+    const chip = sk.cav, low = sk.rasteiro;
+    const hTarget = chip ? 1.5 : low ? .12 + r() * .12 : clamp(.25 + t.power * 1.9 + (r() - .5) * .5, .15, 2.2), peakS = chip ? 2.8 : low ? .02 : .3;
     const gkDive = (x: number): -1 | 0 | 1 => (Math.abs(x - gk.x) < .8 ? 0 : x < gk.x ? -1 : 1);
     if (this.kind !== 'penalti' && r() < sp.block) {
       const f = this.field().sort((a, b) => pathD(a, path) - pathD(b, path))[0];

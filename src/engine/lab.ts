@@ -34,6 +34,8 @@ export const LAB: Record<string, LabInfo> = {
     efeitos: [L('Erro no chute com curva', FX.colocadoErro, 'mult', 'menor'), L('Defesa do goleiro no chute com curva', FX.colocadoDefesa, 'mult', 'menor'), S('Gols nas finalizações', FX.colocadoSim, 'mult', 'maior')] },
   'chute-de-longe': { lado: 'ataque', pos: 'MEI', lances: ['ataque'], dica: 'Chute de FORA da área com traço RÁPIDO (super chute).',
     efeitos: [L('Penalidade pela distância', FX.chuteDistancia, 'mult', 'menor'), L('Defesa do goleiro no chute forte', FX.superChuteDefesa, 'mult', 'menor'), L('Força máxima sem isolar a bola', FX.superChuteLimite, 'prob', 'maior'), S('Gols de fora da área', FX.chuteLonge, 'mult', 'maior')] },
+  'chute-rasteiro': { lado: 'ataque', pos: 'ATA', lances: ['ataque'], dica: 'Escolha o chute RASTEIRO no seletor (ou traço rápido e baixo) de dentro ou da entrada da área.',
+    efeitos: [L('Defesa do goleiro no chute rasteiro', FX.rasteiroDefesa, 'mult', 'menor'), L('Chance de o marcador travar', FX.rasteiroBloqueio, 'mult', 'menor')] },
   'cavadinha': { lado: 'ataque', pos: 'ATA', lances: ['ataque'], dica: 'Perto do gol, faça um traço CURTO e LENTO: vira cavadinha.',
     efeitos: [L('Erro na cavadinha (soma)', FX.cavadinhaErro, 'prob', 'menor'), L('Defesa do goleiro na cavadinha', FX.cavadinhaDefesa, 'mult', 'menor'), S('Gols nas finalizações', FX.cavadinhaSim, 'mult', 'maior')] },
   'cobranca-de-falta': { lado: 'ataque', pos: 'MEI', lances: ['falta', 'ataque'], dica: 'Na falta, curve o traço por cima/ao lado da barreira.',

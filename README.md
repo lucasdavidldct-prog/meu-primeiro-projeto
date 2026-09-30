@@ -145,6 +145,18 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.7
+
+- **Atributos detalhados** em cada jogador (Aceleração, Pique, Chute de longe, Voleio, Pênalti, Precisão na falta, Curva…),
+  derivados dos 6 atributos, da posição e dos estilos; **estrelas de drible e de perna ruim**. Eles pesam nos lances.
+- **Carta mostra só os estilos +**; os pratas ficam nos detalhes. Detalhes em abas: Atributos, Estilos, Personalizar e Info.
+- **Personalizar a carta**: escolha um estilo +, um prata e o **estilo de química** (Artilheiro, Maestro, Âncora…),
+  que soma atributos conforme a química do jogador no time (cheio com 3/3).
+- **Seletor do tipo de chute** nos lances: Auto, Normal, Colocado, Forte, Rasteiro e Cavadinha. Novo estilo **Chute Rasteiro**.
+- **Troca rápida**: durante a partida, o jogo avisa quem está cansado e sugere o reserva; um toque troca.
+- **Gráficos 3D novos** com qualidade Alta/Média/Leve (Clube): sombras, brilho dos refletores, gramado texturizado,
+  arquibancadas com cobertura, torcida que pula no gol, placas de LED e jogadores mais detalhados. Menus com acabamento novo.
+
 ## Versão 1.6
 
 - **Laboratório de estilos** (Clube → Modo teste): escolha um estilo de jogo e um jogador (neutro 80 ou do seu elenco),

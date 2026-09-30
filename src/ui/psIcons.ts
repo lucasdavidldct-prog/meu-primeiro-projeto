@@ -9,6 +9,7 @@ const ICONS: Record<string, string> = {
   'finalizacao-precisa': `<circle cx="12" cy="12" r="8"/>${DOT(12, 12, 3)}<path d="M12 1v4M12 19v4M1 12h4M19 12h4"/>`,
   'chute-colocado': `<path d="M13 3h8v8"/><path d="M5 18C6 10 10 7 18 6"/><path d="M15 3.5l3 2.5-3 2.5"/>${B(4, 20)}`,
   'chute-de-longe': `${B(16, 12, 5)}<path d="M2 7h8M1 12h9M2 17h8"/>`,
+  'chute-rasteiro': `<path d="M2 20h20"/><path d="M7 17h13M16 14l4 3-4 3"/>${B(4, 17, 2.2)}<path d="M1 13h4"/>`,
   'cavadinha': `<path d="M4 19C7 3 15 3 19 17"/>${B(20, 19, 2)}<path d="M12 13v8M9 15.5h6"/>${DOT(12, 11, 1.3)}`,
   'cobranca-de-falta': `<path d="M10 14v8M13 14v8M16 14v8"/><path d="M5 18C5 7 14 3 21 7"/><path d="M18 4l3 3-3.5 1.5"/>${B(4, 20, 2)}`,
   'cabeceio': `<circle cx="10" cy="14" r="4.5"/>${B(18, 5, 3)}<path d="M13.5 10.5l2-2"/><path d="M2 23c1-2 3.5-3 8-3s7 1 8 3"/>`,

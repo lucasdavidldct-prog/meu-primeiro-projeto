@@ -445,6 +445,33 @@ export class Match {
     }
   }
 
+  /**
+   * Sugestão de troca rápida para o usuário: o titular mais cansado (fôlego abaixo de `limite`) e o melhor reserva
+   * para a vaga dele (de preferência da mesma posição). `ignorar` são nomes que o usuário já recusou.
+   */
+  suggestSub(limite = 70, ignorar: ReadonlySet<string> = new Set()): { out: number; inIdx: number; folego: number; ganho: number } | null {
+    const A = this.A;
+    if (A.subs <= 0 || !A.bench.length || this.over) return null;
+    let best: { out: number; folego: number } | null = null;
+    A.xi.forEach((e, i) => {
+      if (e.red || e.pos === 'GOL' || ignorar.has(e.name)) return;
+      const folego = Math.round(100 - fatigue(e, this.min) * 60);
+      if (folego < limite && (!best || folego < best.folego)) best = { out: i, folego };
+    });
+    if (!best) return null;
+    const b = best as { out: number; folego: number }, e0 = A.xi[b.out];
+    const emCampo = new Set(A.xi.filter(x => !x.red).map(x => x.P.id));
+    let pick: { j: number; v: number } | null = null;
+    A.bench.forEach((P, j) => {
+      if (emCampo.has(P.id)) return;
+      const v = effOvr(P, e0.pos, 1);
+      if (!pick || v > pick.v) pick = { j, v };
+    });
+    if (!pick) return null;
+    const pk = pick as { j: number; v: number }, ganho = pk.v - effNow(e0, this.min);
+    return ganho > -2 ? { out: b.out, inIdx: pk.j, folego: b.folego, ganho } : null;
+  }
+
   /** Substituição do usuário (lado A). */
   substitute(outIdx: number, benchIdx: number): { ok: boolean; msg?: string } {
     const A = this.A;

@@ -23,12 +23,15 @@ export function cardHTML(P: CardPlayer, size = 'sm', extra = ''): string {
   return `<div class="card ${size} t-${P.tier}" style="--k1:${c.c1};--k2:${c.c2}" title="${esc(P.name)} ${P.ovr}">${extra}
    <div class="c-rib"><b class="c-ovr">${P.ovr}</b><span class="c-pos">${P.pos}</span>${flagHTML(P.nat)}${crestHTML(c, 'badge')}</div>
    <div class="c-face">${faceSVG(c)}${photoHTML(P.id)}</div>
-   ${P.ps.length ? `<div class="c-ps">${psIcons(P.ps)}</div>` : ''}
+   ${plusOf(P.ps).length ? `<div class="c-ps">${psIcons(plusOf(P.ps))}</div>` : ''}
    <div class="c-name">${esc(P.short)}</div>
    <div class="c-stats">${P.st.map((s, i) => `<span><b>${s}</b>${L[i]}</span>`).join('')}</div>
    ${isSpecial(P.tier) ? `<div class="c-tag">${TIER_N[P.tier]}</div>` : ''}
   </div>`;
 }
+
+/** Na carta aparecem só os estilos + (dourados); os pratas ficam nos detalhes. */
+const plusOf = (ps: string[]) => ps.filter(x => x.endsWith('+'));
 
 /** Ícones dos playstyles (os "+" ganham anel dourado). */
 export function psIcons(list: string[]): string {

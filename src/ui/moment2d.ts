@@ -1,5 +1,6 @@
 // Lance jogável em canvas 2D (visão de cima) — alternativa leve ao 3D. A lógica vem de LanceScene.
 import { GOAL, analyzeGesture, type Pt } from '../engine/lance';
+import { bindShotBar, shotBarHTML } from './shotPicker';
 import { LanceScene, TITLES, type BallKey, type Plan, type Target } from '../engine/lanceScene';
 import type { Match, MomentRequest, MomentResult } from '../engine/match';
 import { clamp } from '../engine/rng';
@@ -7,7 +8,7 @@ import { endSound, planSound } from './sfx';
 import { awayKit } from '../engine/kits';
 
 export const HELP = {
-  ataque: '<b>1 toque</b> no companheiro: passe rasteiro · <b>2 toques</b>: passe alto · toque no <b>campo</b>: conduzir · <b>traço até o gol</b>: chute (rápido = forte, curvo = efeito) ou toque dentro do gol · traço para o <b>espaço</b>: lançamento',
+  ataque: '<b>1 toque</b> no companheiro: passe rasteiro · <b>2 toques</b>: passe alto · toque no <b>campo</b>: conduzir · <b>traço até o gol</b>: chute (tipo de chute: escolha embaixo do campo) ou toque dentro do gol · traço para o <b>espaço</b>: lançamento',
   penalti: '<b>Desenhe um traço</b> até o canto (a velocidade dá a força) ou toque dentro do gol.',
   falta: '<b>Desenhe o traço</b> da bola até o gol: a direção mira, a <b>curva</b> dá o efeito e a <b>velocidade</b> dá a força.',
 };
@@ -21,9 +22,11 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
     ov.className = 'moment';
     ov.innerHTML = `<div class="mo-head"><span class="mo-tag">${M.label}</span><b>${sc.title}</b><span class="acts" id="moActs"></span></div>
       <canvas id="moCv"></canvas>
-      <div class="mo-help">${HELP[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind]}</div>
+      ${!fk && !pen ? shotBarHTML() : ''}
+      <div class="mo-help" id="moHelp">${HELP[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind]}</div>
       <div class="mo-msg" id="moMsg"></div>`;
     document.body.appendChild(ov);
+    bindShotBar(ov, sc, d => { ov.querySelector<HTMLElement>('#moHelp')!.innerHTML = d; });
     const cv = ov.querySelector<HTMLCanvasElement>('#moCv')!, ctx = cv.getContext('2d')!, msgEl = ov.querySelector<HTMLElement>('#moMsg')!;
     const Wd = Math.min(ov.clientWidth - 32, 460), U = Wd / 68, Y0 = -4, Hu = 48, Ht = Hu * U, dpr = window.devicePixelRatio || 1;
     cv.style.width = Wd + 'px'; cv.style.height = Ht + 'px'; cv.width = Wd * dpr; cv.height = Ht * dpr; ctx.scale(dpr, dpr);

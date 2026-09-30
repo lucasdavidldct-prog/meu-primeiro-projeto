@@ -3,6 +3,8 @@
 // toque no campo = conduzir · desenhe um traço em direção ao gol = chute (a direção mira, a curva do traço dá o efeito
 // e a velocidade do gesto dá a força) · traço para o espaço = lançamento para quem estiver mais perto.
 import * as THREE from 'three';
+import { bindShotBar, shotBarHTML } from '../ui/shotPicker';
+import { createView } from './quality';
 import { analyzeGesture, type Pt } from '../engine/lance';
 import { LanceScene, TITLES, type Actor, type BallKey, type Plan, type Target } from '../engine/lanceScene';
 import type { Match, MomentRequest, MomentResult } from '../engine/match';
@@ -11,11 +13,11 @@ import { awayKit } from '../engine/kits';
 import { esc } from '../ui/dom';
 import { probColor } from '../ui/moment2d';
 import { carrierRing, makeBall, makePlayer, type PlayerMesh } from './players';
-import { addLights, buildGoal, buildPitch, buildStadium } from './stadium';
+import { addLights, buildGoal, buildPitch, buildStadium, tickStadium } from './stadium';
 import { endSound, planSound } from '../ui/sfx';
 
 const HELP3D = {
-  ataque: '<b>1 toque</b> no companheiro: passe rasteiro · <b>2 toques</b>: passe alto · toque no <b>campo</b>: conduzir · <b>desenhe um traço</b> até o gol para chutar (rápido = forte, curvo = com efeito) · traço para o <b>espaço</b>: lançamento',
+  ataque: '<b>1 toque</b> no companheiro: passe rasteiro · <b>2 toques</b>: passe alto · toque no <b>campo</b>: conduzir · <b>desenhe um traço</b> até o gol para chutar · escolha o <b>tipo de chute</b> embaixo (Colocado, Forte, Rasteiro, Cavadinha) ou deixe no Auto · traço para o <b>espaço</b>: lançamento',
   penalti: '<b>Desenhe um traço</b> da bola até o canto: a direção escolhe o canto, a velocidade dá a força. Rápido demais vai por cima.',
   falta: '<b>Desenhe o traço</b> da bola até o gol: a direção mira, a <b>curva do traço</b> dá o efeito e a <b>velocidade</b> dá a força. Por cima ou em volta da barreira.',
 };
@@ -37,6 +39,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
         <div class="m3d-label" id="m3dLabel"></div>
         <div class="m3d-help show" id="m3dHelp">${HELP3D[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind]}</div>
         <div class="m3d-replay" id="m3dReplay">REPLAY</div>
+        ${!fk && !pen ? shotBarHTML() : ''}
       </div>
       <div class="mo-msg" id="moMsg"></div>`;
     document.body.appendChild(ov);
@@ -62,16 +65,16 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     let helpTimer = setTimeout(() => { if (coach < 0) helpEl.classList.remove('show'); }, 4500);
     showCoach();
     $('m3dQ').addEventListener('click', () => { clearTimeout(helpTimer); helpEl.classList.toggle('show'); });
+    // Seletor do tipo de chute: mostra a dica do tipo por alguns segundos
+    bindShotBar(ov, sc, d => { clearTimeout(helpTimer); helpEl.innerHTML = d; helpEl.classList.add('show'); helpTimer = setTimeout(() => helpEl.classList.remove('show'), 3500); });
 
     // ---------- Three.js ----------
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    // Celular: resolução um pouco menor deixa o lance fluido sem perder nitidez perceptível
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, matchMedia('(pointer: coarse)').matches ? 1.5 : 2));
-    renderer.setSize(W, H);
+    // Renderizador conforme a qualidade gráfica (Alta: sombras e brilho; Leve: o mais rápido)
+    const view = createView(W, H), renderer = view.renderer;
     wrap.prepend(renderer.domElement);
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x070b12);
-    scene.fog = new THREE.Fog(0x070b12, 90, 190);
+    scene.fog = new THREE.Fog(0x0b1424, 110, 260);
     addLights(scene);
     scene.add(buildPitch(), buildGoal(), buildStadium());
     // Tela em pé: lente mais fechada na falta e no pênalti (enquadra gol e barreira sem mostrar céu)
@@ -115,7 +118,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     function flash(text: string, color: string) { msgEl.textContent = text; msgEl.style.color = color; msgEl.classList.remove('show'); void msgEl.offsetWidth; msgEl.classList.add('show'); }
     function cleanup(res: MomentResult) {
       cancelAnimationFrame(raf); clearTimeout(helpTimer);
-      renderer.dispose();
+      view.dispose();
       scene.traverse(o => { const m = o as THREE.Mesh; m.geometry?.dispose?.(); });
       ov.remove();
       resolve(res);
@@ -368,7 +371,8 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       actsEl.textContent = pen ? 'Cobrança' : fk ? `Cobrador: ${sc.carrier.e!.name}` : `${sc.actions} ações`;
       frames.push({ ball: ballM.position.clone(), actors: [...sc.mates, ...sc.foes].map(a => { const pm = meshes.get(a.id)!; return [a.id, pm.root.position.x, pm.root.position.z, pm.body.rotation.y, pm.body.rotation.z]; }) });
       if (frames.length > 240) frames.shift();
-      renderer.render(scene, camera);
+      tickStadium(performance.now());
+      view.render(scene, camera);
     }
     // Replay: câmera lateral, perto do gol, em câmera lenta
     function playReplay() {
@@ -382,7 +386,9 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       const side = f.ball.x >= 0 ? 1 : -1;
       camera.position.set(side * (portrait ? 14 : 11), portrait ? 3.4 : 2.4, portrait ? 9 : 6.5);
       camera.lookAt(f.ball.x * .5, .9, Math.max(-1, f.ball.z * .6));
-      renderer.render(scene, camera);
+      // No replay do gol a torcida pula
+      tickStadium(performance.now(), R.res.goal);
+      view.render(scene, camera);
       if (R.i >= R.frames.length + 25) { replay = null; replayEl.classList.remove('on'); cleanup(R.res); }
     }
     frame();

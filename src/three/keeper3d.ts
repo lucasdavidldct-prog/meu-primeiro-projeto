@@ -8,7 +8,8 @@ import { R, clamp } from '../engine/rng';
 import { esc } from '../ui/dom';
 import { haptic, sfx } from '../ui/sfx';
 import { makeBall, makePlayer } from './players';
-import { addLights, buildGoal, buildPitch, buildStadium } from './stadium';
+import { createView } from './quality';
+import { addLights, buildGoal, buildPitch, buildStadium, tickStadium } from './stadium';
 
 const V = (x: number, y: number, h = 0) => new THREE.Vector3(x - 34, h, y);
 /** Centro de cada zona na linha do gol: coluna 0 = esquerda da tela (lado +x do mundo, visto de trás do gol). */
@@ -29,14 +30,15 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
     document.body.appendChild(ov);
     const wrap = ov.querySelector<HTMLElement>('#kWrap')!, msg = ov.querySelector<HTMLElement>('#kMsg')!;
     const W = ov.clientWidth, H = ov.clientHeight;
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, matchMedia('(pointer: coarse)').matches ? 1.5 : 2));
-    renderer.setSize(W, H);
+    const view = createView(W, H), renderer = view.renderer;
     wrap.prepend(renderer.domElement);
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x070b12);
     addLights(scene);
-    scene.add(buildPitch(), buildGoal(), buildStadium());
+    const goal = buildGoal();
+    // Câmera atrás do gol: a rede fica bem na frente, então ela fica mais transparente aqui
+    goal.traverse(o => { const l = o as THREE.LineSegments; if (l.isLineSegments) (l.material as THREE.LineBasicMaterial).opacity = .16; });
+    scene.add(buildPitch(), goal, buildStadium());
     const portrait = W / H < 1;
     const camera = new THREE.PerspectiveCamera(portrait ? 62 : 50, W / H, .1, 400);
     camera.position.copy(V(34, -6.5, 2.6)); camera.lookAt(V(34, 12, .8));
@@ -75,7 +77,7 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
     function finish(res: MomentResult, text: string, color: string) {
       done = true;
       msg.textContent = text; msg.style.color = color; msg.classList.add('show');
-      setTimeout(() => { renderer.dispose(); ov.remove(); resolve(res); }, 1500);
+      setTimeout(() => { view.dispose(); ov.remove(); resolve(res); }, 1500);
     }
     function frame() {
       if (!ov.isConnected) return;
@@ -112,7 +114,8 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
         gkMesh.body.rotation.z = -dirX * g * (dive.row ? .9 : 1.35);
         gkMesh.body.position.y = dive.row ? g * .5 : Math.sin(g * Math.PI) * .2;
       }
-      renderer.render(scene, camera);
+      tickStadium(performance.now(), saved === false);
+      view.render(scene, camera);
       if (done && t > RUN + FLY + 1600) return;
     }
     frame();

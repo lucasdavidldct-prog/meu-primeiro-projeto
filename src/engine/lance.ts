@@ -1,5 +1,6 @@
 // Modelo dos lances jogáveis, independente da interface (usado pelo lance 2D e, depois, pelo 3D).
 // Coordenadas do campo em metros: x de 0 a 68 (largura), y = distância da linha de fundo (gol em y = 0).
+import { sub, type SubName } from './attrs';
 import { FX, psLevel } from './playstyles';
 import { clamp } from './rng';
 import type { BasePlayer } from './types';
@@ -10,7 +11,7 @@ export interface AttackMods {
   passRadius: number; longPass: number; dribbleLoss: number; dribbleReach: number;
   shotMiss: number; shotDist: number; curve: number; fkSpread: number; fkSkill: number;
   /** Níveis (0, 1, 2) dos playstyles que mudam o tipo de chute e de passe no lance. */
-  lv: { colocado: 0 | 1 | 2; forte: 0 | 1 | 2; cavadinha: 0 | 1 | 2; acrobatico: 0 | 1 | 2; cabeca: 0 | 1 | 2; tiki: 0 | 1 | 2; lanc: 0 | 1 | 2; resistente: 0 | 1 | 2 };
+  lv: { colocado: 0 | 1 | 2; forte: 0 | 1 | 2; cavadinha: 0 | 1 | 2; rasteiro: 0 | 1 | 2; acrobatico: 0 | 1 | 2; cabeca: 0 | 1 | 2; tiki: 0 | 1 | 2; lanc: 0 | 1 | 2; resistente: 0 | 1 | 2 };
 }
 export function attackMods(P: BasePlayer): AttackMods {
   return {
@@ -20,16 +21,20 @@ export function attackMods(P: BasePlayer): AttackMods {
     dribbleReach: FX.dribleAlcance[psLevel(P, 'velocista')] + FX.explosaoAlcance[psLevel(P, 'explosao')] + (psLevel(P, 'tecnico') ? .6 : 0),
     shotMiss: FX.chuteErro[psLevel(P, 'finalizacao-precisa')],
     shotDist: FX.chuteDistancia[psLevel(P, 'chute-de-longe')],
-    curve: FX.curva[psLevel(P, 'cobranca-de-falta')] * FX.trivelaCurva[psLevel(P, 'trivela')],
-    fkSpread: FX.faltaDispersao[psLevel(P, 'cobranca-de-falta')],
+    // Subatributos: Curva aumenta o efeito; Precisão na falta diminui a dispersão da cobrança
+    curve: FX.curva[psLevel(P, 'cobranca-de-falta')] * FX.trivelaCurva[psLevel(P, 'trivela')] * clamp(1 + (subOr(P, 'Curva') - 75) * .006, .85, 1.15),
+    fkSpread: FX.faltaDispersao[psLevel(P, 'cobranca-de-falta')] * clamp(1 - (subOr(P, 'Precisão na falta') - 75) * .01, .75, 1.25),
     fkSkill: psLevel(P, 'cobranca-de-falta'),
     lv: {
-      colocado: psLevel(P, 'chute-colocado'), forte: psLevel(P, 'chute-de-longe'), cavadinha: psLevel(P, 'cavadinha'),
+      colocado: psLevel(P, 'chute-colocado'), forte: psLevel(P, 'chute-de-longe'), cavadinha: psLevel(P, 'cavadinha'), rasteiro: psLevel(P, 'chute-rasteiro'),
       acrobatico: psLevel(P, 'acrobatico'), cabeca: psLevel(P, 'cabeceio'), tiki: psLevel(P, 'tiki-taka'), lanc: psLevel(P, 'lancamento'),
       resistente: psLevel(P, 'resistente-pressao'),
     },
   };
 }
+/** Subatributo de jogador de linha (goleiro ou sem dados: 75, neutro). */
+const subOr = (P: BasePlayer, n: SubName) => (P.st && P.pos !== 'GOL' ? sub(P, n) : 75);
+
 export interface KeeperMods { save: number; penSave: number; claim: number }
 export function keeperMods(P: BasePlayer | null | undefined): KeeperMods {
   return {

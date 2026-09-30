@@ -6,7 +6,7 @@ export type PsId =
   | 'cruzamento' | 'drible-rapido' | 'velocista' | 'primeiro-toque' | 'desarme' | 'interceptacao' | 'bloqueio'
   | 'imposicao-fisica' | 'incansavel' | 'reflexos' | 'saida-do-gol' | 'pegador-de-penalti' | 'reposicao-longa'
   | 'chute-colocado' | 'cavadinha' | 'passe-tenso' | 'lancamento' | 'tiki-taka' | 'firula' | 'tecnico' | 'resistente-pressao'
-  | 'antecipacao' | 'contencao' | 'acrobatico' | 'trivela' | 'explosao';
+  | 'antecipacao' | 'contencao' | 'acrobatico' | 'trivela' | 'explosao' | 'chute-rasteiro';
 
 export function psLevel(P: BasePlayer | null | undefined, id: PsId): 0 | 1 | 2 {
   if (!P) return 0;
@@ -58,6 +58,8 @@ export const FX = {
   superChuteLimite: [.88, .93, .97], // força a partir da qual a bola sobe demais
   cavadinhaDefesa: [.9, .45, .3],    // cavadinha por cima do goleiro (sem o playstyle quase sempre é defendida)
   cavadinhaErro: [.35, .14, .08],
+  rasteiroDefesa: [1, .85, .72],     // chute rasteiro (bola no chão): chance do goleiro defender
+  rasteiroBloqueio: [1, .8, .65],    // e de o marcador travar
   acrobaticoDefesa: [1, .85, .72],   // finalização de primeira (voleio)
   cabecaDefesa: [1, .85, .72],       // cabeçada depois do cruzamento
   trivelaCurva: [1, 1.3, 1.6],       // alcance da curva em chutes e faltas

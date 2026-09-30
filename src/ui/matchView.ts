@@ -15,7 +15,7 @@ import { closeSheet, esc, fmt, openSheet, toast } from './dom';
 import { runMoment2D } from './moment2d';
 import { runKeeper2D } from './keeper2d';
 import { webglAvailable } from '../three/support';
-import { sfx } from './sfx';
+import { haptic, sfx } from './sfx';
 
 /** Lance 3D (carregado sob demanda), ou 2D se desligado nas configurações, sem WebGL ou se o 3D falhar. */
 export async function runMoment(m: Match, req: Parameters<typeof runMoment2D>[1]): Promise<Awaited<ReturnType<typeof runMoment2D>>> {
@@ -42,7 +42,7 @@ export function difficulty(home: 0 | 1 | null): { boost: number; keeper: number;
   return { boost, keeper, moments: Math.max(1, moments), gk: [2, 2, 1, 1][d] };
 }
 
-interface Live { m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout; notas?: Nota[] }
+interface Live { m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; /** Sugestões de troca recusadas (nome de quem sairia). */ naoTrocar: Set<string>; avisado?: string; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout; notas?: Nota[] }
 let L: Live | null = null;
 const DELAYS = [0, 650, 300, 110];
 
@@ -94,7 +94,7 @@ export function startMatch(opp: OppTeam, fx: Fixture | null): void {
     } : undefined,
   });
   if (fx) m.addEv(0, 'info', `${fx.label}${fx.home === 0 ? ' · em casa' : fx.home === 1 ? ' · fora de casa' : ' · campo neutro'}.`);
-  L = { m, fx, speed: 1, paused: false, busy: false };
+  L = { m, fx, speed: 1, paused: false, busy: false, naoTrocar: new Set() };
   const ov = document.createElement('div');
   ov.className = 'match'; ov.id = 'match';
   document.body.appendChild(ov);
@@ -168,6 +168,7 @@ export function renderMatch(): void {
      ${L.notas ? notasHTML(L.notas, B.s) : ''}
      <button class="btn pri block" data-act="closeMatch">Continuar</button></div>` : ''}
    ${M.ht && !M.over ? `<div class="ht"><b>Intervalo.</b> <span class="muted small">Ajuste o time e volte para o segundo tempo.</span><div class="row" style="margin-top:10px"><button class="btn pri" style="flex:1" data-act="secondHalf">Começar 2º tempo</button><button class="btn" data-act="subs">Substituições (${A.subs})</button></div></div>` : ''}
+   ${subHint()}
    ${!M.over ? `<div class="mctl">
      <button class="chip" data-act="mPause" aria-pressed="${L.paused}">${L.paused ? 'Continuar' : 'Pausar'}</button>
      ${[1, 2, 3].map(s => `<button class="chip" data-act="mSpeed" data-s="${s}" aria-pressed="${L!.speed === s}">${['', '1×', '2×', '4×'][s]}</button>`).join('')}
@@ -185,6 +186,18 @@ export function renderMatch(): void {
   </div>`;
   const st = ov.querySelector<HTMLSelectElement>('#mStyle');
   if (st) st.onchange = () => { M.setStyle(st.value as StyleId); renderMatch(); };
+}
+
+/** Aviso de troca rápida quando um titular está cansado (um toque troca; "Agora não" some com a sugestão). */
+function subHint(): string {
+  if (!L || L.m.over || L.m.ht) return '';
+  const M = L.m, s = M.suggestSub(70, L.naoTrocar);
+  if (!s) return '';
+  const e = M.A.xi[s.out], P = M.A.bench[s.inIdx];
+  if (L.avisado !== e.name) { L.avisado = e.name; haptic('leve'); }
+  return `<div class="sub-hint"><span class="sh-ic">🔋</span><div><b>${esc(e.name)}</b> está cansado · fôlego <b class="${s.folego < 55 ? 'down' : ''}">${s.folego}%</b>
+      <div class="small muted">Entra <b>${esc(P.short)}</b> (${P.pos} · ${P.ovr})${s.ganho > 0 ? ` · +${Math.round(s.ganho)} de rendimento` : ''}</div></div>
+    <div class="sh-acts"><button class="btn pri" data-act="quickSub" data-o="${s.out}" data-i="${s.inIdx}">Trocar</button><button class="btn" data-act="skipSub" data-n="${esc(e.name)}">Agora não</button></div></div>`;
 }
 
 function openSubs(): void {
@@ -263,5 +276,12 @@ export const matchActions = {
     renderMatch();
   },
   subs() { openSubs(); },
+  quickSub(d: DOMStringMap) {
+    if (!L) return;
+    const r = L.m.substitute(+d.o!, +d.i!);
+    if (!r.ok) { if (r.msg) toast(r.msg); return; }
+    sfx.whistle(1); renderMatch();
+  },
+  skipSub(d: DOMStringMap) { if (!L) return; L.naoTrocar.add(d.n ?? ''); renderMatch(); },
   treino(d: DOMStringMap) { closeSheet(); void trainingMoment((d.k ?? 'ataque') as 'ataque' | 'penalti' | 'falta'); },
 };

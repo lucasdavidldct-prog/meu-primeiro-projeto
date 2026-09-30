@@ -6,12 +6,15 @@ import { pick } from './rng';
 import { newCareer, type Career, type CareerOpts } from './career';
 import type { FormationId, OwnedCard, Pos, SlotDef, StyleId, Variant } from './types';
 import { W, getPlayer } from './world';
+import { withChem } from './chemStyles';
 import { ROLE_SWAPS, orderFx, suggestOrder, type Order } from './orders';
 
 export const SAVE_VERSION = 4;
 
 /** Carta da coleção. tr = negociável no mercado (elenco inicial e compras no leilão; cartas de pacote não). */
-export interface CardRef { u: number; p: string; v: Variant; tr?: boolean }
+/** Personalização da carta: um estilo de jogo + (dourado), um prata e o estilo de química. */
+export interface CardExtra { plus?: string; prata?: string; quim?: string }
+export interface CardRef { u: number; p: string; v: Variant; tr?: boolean; ex?: CardExtra }
 export interface GameState {
   v: number;
   t: number;
@@ -34,6 +37,8 @@ export interface GameState {
   moments: boolean;
   /** Lances em 3D (false = canvas 2D, para aparelhos mais fracos). */
   lance3d?: boolean;
+  /** Qualidade gráfica dos lances 3D (padrão: conforme o aparelho). */
+  graficos?: 'alta' | 'media' | 'leve';
   /** Lance de goleiro: defender o chute que ia virar gol (padrão: ligado). */
   goleiro?: boolean;
   /** Efeitos sonoros (padrão: ligados). */
@@ -108,11 +113,26 @@ export function addCard(S: GameState, p: string, v: Variant, tr = false): CardRe
   return c;
 }
 
+/** Carta do usuário: dados da versão + estilos extras escolhidos por ele (o de química entra no teamInfo, pela química). */
+function owned(c: CardRef): OwnedCard {
+  const P = cardData(c.p, c.v), ex = c.ex;
+  const o: OwnedCard = { ...P, u: c.u, tr: c.tr };
+  if (ex?.quim) o.quim = ex.quim;
+  if (ex?.plus || ex?.prata) o.ps = mergePs(P.ps, ex.plus, ex.prata);
+  return o;
+}
+/** Soma os estilos extras: o + substitui a versão prata do mesmo estilo; o prata não rebaixa um + que já existe. */
+export function mergePs(base: string[], plus?: string, prata?: string): string[] {
+  let ps = base.slice();
+  if (plus) ps = [...ps.filter(x => x !== plus && x !== plus + '+'), plus + '+'];
+  if (prata && !ps.includes(prata) && !ps.includes(prata + '+')) ps.push(prata);
+  return ps;
+}
 export function cardByUid(S: GameState, u: number): OwnedCard | null {
   const c = S.cards.find(c => c.u === u);
-  return c ? { ...cardData(c.p, c.v), u, tr: c.tr } : null;
+  return c ? owned(c) : null;
 }
-export const allCards = (S: GameState): OwnedCard[] => S.cards.map(c => ({ ...cardData(c.p, c.v), u: c.u, tr: c.tr }));
+export const allCards = (S: GameState): OwnedCard[] => S.cards.map(owned);
 export const xiCards = (S: GameState): (OwnedCard | null)[] => S.squad.xi.map(u => (u ? cardByUid(S, u) : null));
 
 export function removeCard(S: GameState, u: number): void {
@@ -220,7 +240,9 @@ export function setFormation(S: GameState, f: FormationId): void {
 
 export interface TeamInfo { xi: (OwnedCard | null)[]; chem: Chem; slots: SlotDef[]; r: Ratings; ovr: number; full: boolean }
 export function teamInfo(S: GameState): TeamInfo {
-  const xi = xiCards(S), slots = squadSlots(S), chem = calcChem(xi, slots);
+  const xi0 = xiCards(S), slots = squadSlots(S), chem = calcChem(xi0, slots);
+  // Estilo de química de cada carta, proporcional à química dela na formação
+  const xi = xi0.map((P, i) => (P ? withChem(P, P.quim, chem.per[i]) : null));
   const entries = slots.map((s, i) => ({ pos: s.p, eff: effOvr(xi[i], s.p, chem.per[i]), P: xi[i], ofx: orderFx(s.p, orderAt(S, i, xi[i], s.p)) }));
   const filled = xi.filter(Boolean) as OwnedCard[];
   const ovr = filled.length ? Math.round(filled.reduce((a, P) => a + P.ovr, 0) / 11) : 0;
