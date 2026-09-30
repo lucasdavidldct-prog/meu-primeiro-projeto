@@ -1,7 +1,7 @@
 {
   "name": "esquadrao-fc",
   "private": true,
-  "version": "1.5.1",
+  "version": "1.5.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,10 @@
     "calibrar": "tsx scripts/calibrar.ts",
     "apk": "node scripts/apk.mjs",
     "android": "npm run build && npx cap sync android && npx cap open android",
-    "fotos": "tsx scripts/buscar-fotos.ts"
+    "fotos": "tsx scripts/buscar-fotos.ts",
+    "playtest": "node scripts/playtest.mjs",
+    "formatar-dados": "tsx scripts/formatar-dados.ts",
+    "checar": "npm run typecheck && npm test && npm run validar-dados"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

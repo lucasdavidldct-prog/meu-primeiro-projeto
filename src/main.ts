@@ -1,11 +1,20 @@
-import '@fontsource/saira/400.css';
-import '@fontsource/saira/500.css';
-import '@fontsource/saira/600.css';
-import '@fontsource/saira/700.css';
-import '@fontsource/saira-extra-condensed/600.css';
-import '@fontsource/saira-extra-condensed/700.css';
-import '@fontsource/saira-extra-condensed/800.css';
-import '@fontsource/saira-extra-condensed/900.css';
+// Fontes: só latin e latin-ext (nomes como Błaszczykowski, Hamšík, Čech); sem os conjuntos que o jogo não usa.
+import '@fontsource/saira/latin-400.css';
+import '@fontsource/saira/latin-ext-400.css';
+import '@fontsource/saira/latin-500.css';
+import '@fontsource/saira/latin-ext-500.css';
+import '@fontsource/saira/latin-600.css';
+import '@fontsource/saira/latin-ext-600.css';
+import '@fontsource/saira/latin-700.css';
+import '@fontsource/saira/latin-ext-700.css';
+import '@fontsource/saira-extra-condensed/latin-600.css';
+import '@fontsource/saira-extra-condensed/latin-ext-600.css';
+import '@fontsource/saira-extra-condensed/latin-700.css';
+import '@fontsource/saira-extra-condensed/latin-ext-700.css';
+import '@fontsource/saira-extra-condensed/latin-800.css';
+import '@fontsource/saira-extra-condensed/latin-ext-800.css';
+import '@fontsource/saira-extra-condensed/latin-900.css';
+import '@fontsource/saira-extra-condensed/latin-ext-900.css';
 import './ui/styles.css';
 import { blankGame } from './engine/state';
 import { flushSave, loadSave } from './save/db';

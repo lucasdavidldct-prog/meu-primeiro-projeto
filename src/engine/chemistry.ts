@@ -81,15 +81,26 @@ function psBonus(P: BasePlayer, k: Sector | 'gk'): number {
 export function sectorEff(e: RateEntry, k: Sector): number {
   const P = e.P;
   if (!P || !P.st || P.pos === 'GOL') return e.eff;
-  const c = COMP[k].reduce((s, w, i) => s + w * P.st[i], 0);
-  return e.eff + ATTR_K * (c - P.ovr) + psBonus(P, k);
+  return e.eff + offsets(P)[k];
+}
+/** Parte fixa da força por setor (atributos + playstyles): calculada uma vez por jogador.
+ *  A partida recalcula os setores a cada minuto; sem cache isso dominava o tempo da simulação.
+ *  Vale enquanto ovr/st/ps forem os mesmos objetos (a evolução e o editor trocam por novos). */
+const offCache = new WeakMap<BasePlayer, { ovr: number; st: number[]; ps: string[]; att: number; mid: number; def: number; gk: number }>();
+function offsets(P: BasePlayer) {
+  let o = offCache.get(P);
+  if (o && o.ovr === P.ovr && o.st === P.st && o.ps === P.ps) return o;
+  const sec = (k: Sector) => ATTR_K * (COMP[k].reduce((s, w, i) => s + w * P.st[i], 0) - P.ovr) + psBonus(P, k);
+  const gk = ATTR_K * (.3 * P.st[3] + .25 * P.st[0] + .2 * P.st[5] + .15 * P.st[1] + .1 * P.st[4] - P.ovr) + psBonus(P, 'gk');
+  o = { ovr: P.ovr, st: P.st, ps: P.ps, att: sec('att'), mid: sec('mid'), def: sec('def'), gk };
+  offCache.set(P, o);
+  return o;
 }
 /** Goleiro: MER, POS e REF pesam mais (atributos de goleiro: MER MAN CHU REF VEL POS). */
 export function gkEff(e: RateEntry): number {
   const P = e.P;
   if (!P || !P.st || P.pos !== 'GOL') return e.eff;
-  const c = .3 * P.st[3] + .25 * P.st[0] + .2 * P.st[5] + .15 * P.st[1] + .1 * P.st[4];
-  return e.eff + ATTR_K * (c - P.ovr) + psBonus(P, 'gk');
+  return e.eff + offsets(P).gk;
 }
 
 /** Força por setor, ponderada pela posição e pela função de cada jogador; expulsões pesam 5% cada. */

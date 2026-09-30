@@ -145,6 +145,13 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.5.2
+
+- Motor de partida ~2,7× mais rápido (mesmos resultados): simular rodadas e temporadas fica mais leve no celular.
+- APK menor: só as fontes com os caracteres usados (latin e latin-ext).
+- Ferramentas de desenvolvimento: `npm run checar`, `npm run playtest` (navegador real, prints e erros de console)
+  e `npm run formatar-dados`; instruções do projeto em `CLAUDE.md`, skills e agentes em `.claude/`.
+
 ## Versão 1.5.1
 
 - **Lendas em 3 categorias**, cada uma com carta própria: **Ídolo** (clara), **Herói** (laranja) e **Hall da Fama** (roxa).
