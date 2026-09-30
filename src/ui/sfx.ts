@@ -72,6 +72,29 @@ export const sfx = {
     tone(150, t, .12, 'sine', .35 + power * .35, 45);
     noise(t, .06, 'bandpass', 1800, .12 + power * .1, .003);
   },
+  /** Superchute: estouro grave da batida e o zunido da bola cortando o ar. */
+  superKick(): void {
+    if (!ac()) return;
+    const t = ctx!.currentTime;
+    tone(110, t, .22, 'sine', .8, 32);
+    noise(t, .08, 'bandpass', 1400, .35, .002);
+    noise(t + .03, .55, 'bandpass', 2600, .16, .02, 700);
+    haptic('forte');
+  },
+  /** Cabeçada: toque abafado. */
+  head(): void {
+    if (!ac()) return;
+    const t = ctx!.currentTime;
+    tone(180, t, .1, 'sine', .35, 90);
+    noise(t, .05, 'lowpass', 900, .12, .003);
+  },
+  /** Desarme/carrinho: pancada seca na bola. */
+  tackle(): void {
+    if (!ac()) return;
+    const t = ctx!.currentTime;
+    noise(t, .18, 'lowpass', 600, .28, .005);
+    tone(120, t, .1, 'sine', .25, 70);
+  },
   pass(): void {
     if (!ac()) return;
     const t = ctx!.currentTime;

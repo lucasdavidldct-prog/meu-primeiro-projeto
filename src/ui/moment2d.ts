@@ -1,6 +1,6 @@
 // Lance jogável em canvas 2D (visão de cima) — alternativa leve ao 3D. A lógica vem de LanceScene.
 import { GOAL, analyzeGesture, type Pt } from '../engine/lance';
-import { bindShotBar, shotBarHTML } from './shotPicker';
+import { choiceHTML, openChoice, probColor } from './choice';
 import { LanceScene, TITLES, type BallKey, type Plan, type Target } from '../engine/lanceScene';
 import type { Match, MomentRequest, MomentResult } from '../engine/match';
 import { clamp } from '../engine/rng';
@@ -10,11 +10,11 @@ import { colorDist, kitDe } from '../engine/kits';
 export const HELP = {
   escanteio: '<b>Escanteio:</b> toque num companheiro na área para cruzar (bola alta). Depois, <b>desenhe o traço</b> para cabecear ou pegar de primeira. Na cobrança não tem impedimento.',
   lateral: '<b>Lateral:</b> toque num companheiro perto para cobrar com a mão. Depois o lance segue normal. Cuidado com o <b>impedimento</b> (linha amarela).',
-  ataque: '<b>1 toque</b> no companheiro: passe rasteiro · <b>2 toques</b>: passe alto · toque no <b>campo</b>: conduzir · toque no <b>seu jogador</b>: finta (drible) · <b>traço até o gol</b>: chute (tipo de chute: escolha embaixo do campo) ou toque dentro do gol · traço para o <b>espaço</b>: lançamento',
+  ataque: 'Toque no <b>companheiro</b> e escolha o passe (Rasteiro, Alto ou Enfiado) · toque no <b>campo</b>: conduzir · toque no <b>seu jogador</b>: finta · <b>trace a linha até o gol</b> e escolha o chute (Rasteiro, Superchute ou Colocado) · traço para o <b>espaço</b>: lançamento',
   penalti: '<b>Desenhe um traço</b> até o canto (a velocidade dá a força) ou toque dentro do gol.',
   falta: '<b>Desenhe o traço</b> da bola até o gol: a direção mira, a <b>curva</b> dá o efeito e a <b>velocidade</b> dá a força.',
 };
-export const probColor = (p: number): string => (p >= .6 ? '#56d086' : p >= .35 ? '#f2b640' : '#f06a5a');
+export { probColor };
 
 export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult> {
   return new Promise(resolve => {
@@ -25,11 +25,10 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
     ov.className = 'moment';
     ov.innerHTML = `<div class="mo-head"><span class="mo-tag">${M.label}</span><b>${sc.title}</b><span class="acts" id="moActs"></span></div>
       <canvas id="moCv"></canvas>
-      ${!fk && !pen ? shotBarHTML() : ''}
+      ${choiceHTML()}
       <div class="mo-help" id="moHelp">${HELP[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind as keyof typeof HELP]}</div>
       <div class="mo-msg" id="moMsg"></div>`;
     document.body.appendChild(ov);
-    bindShotBar(ov, sc, d => { ov.querySelector<HTMLElement>('#moHelp')!.innerHTML = d; });
     const cv = ov.querySelector<HTMLCanvasElement>('#moCv')!, ctx = cv.getContext('2d')!, msgEl = ov.querySelector<HTMLElement>('#moMsg')!;
     const Wd = Math.min(ov.clientWidth - 32, 460), U = Wd / 68, Y0 = -4, Hu = 48, Ht = Hu * U, dpr = window.devicePixelRatio || 1;
     cv.style.width = Wd + 'px'; cv.style.height = Ht + 'px'; cv.width = Wd * dpr; cv.height = Ht * dpr; ctx.scale(dpr, dpr);
@@ -50,15 +49,18 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
         setTimeout(() => { ov.remove(); resolve(plan.end!.res); }, plan.end.goal ? 1700 : 1400);
       }
     }
-    const busy = () => !!anim || finished;
+    let menu = false;
+    const busy = () => !!anim || finished || menu;
+    const escolher = (title: string, ops: ReturnType<typeof sc.passOptions>) => {
+      menu = true;
+      openChoice(ov, title, ops, o => { menu = false; hover = null; run(sc.perform(o.t)); }, () => { menu = false; hover = null; });
+    };
 
     const toWorld = (e: { clientX: number; clientY: number }): Pt => { const b = cv.getBoundingClientRect(); return { x: (e.clientX - b.left) / U, y: (e.clientY - b.top) / U + Y0 }; };
-    // Mesmos controles do 3D: 1 toque = passe rasteiro, 2 toques = passe alto, toque no campo = conduzir,
-    // traço até o gol = chute (velocidade = força, curva = efeito), traço para o espaço = lançamento. Toque dentro do gol também chuta.
+    // Mesmos controles do 3D: toque no companheiro = menu do passe, toque no campo = conduzir,
+    // traço até o gol = menu do chute (a curva do traço vale no Colocado), traço para o espaço = lançamento.
     interface Stroke { pts: Pt[]; scr: { x: number; y: number; t: number }[]; drag: boolean }
     let stroke: Stroke | null = null;
-    let pendingTap: { m: Target & { kind: 'pass' }; t: number; timer: ReturnType<typeof setTimeout> } | null = null;
-    const cancelTap = () => { if (pendingTap) { clearTimeout(pendingTap.timer); pendingTap = null; } };
     const mateAt = (w: Pt) => { let best = null as (Target & { kind: 'pass' }) | null, bd = 3.4; for (const m of sc.mates) { if (m === sc.carrier) continue; const d = Math.hypot(m.x - w.x, m.y - w.y); if (d < bd) { bd = d; best = { kind: 'pass', m }; } } return best; };
     function strokePower(st: Stroke): number {
       let len = 0;
@@ -77,7 +79,7 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
       const w = toWorld(e);
       if (stroke) {
         stroke.pts.push(w); stroke.scr.push({ x: e.clientX, y: e.clientY, t: performance.now() });
-        if (!stroke.drag && Math.hypot(e.clientX - stroke.scr[0].x, e.clientY - stroke.scr[0].y) > 12) { stroke.drag = true; cancelTap(); hover = null; }
+        if (!stroke.drag && Math.hypot(e.clientX - stroke.scr[0].x, e.clientY - stroke.scr[0].y) > 12) { stroke.drag = true; hover = null; }
       } else if (e.pointerType === 'mouse' && !fk) hover = mateAt(w) ?? sc.target(w.x, w.y);
     });
     cv.addEventListener('pointerup', e => {
@@ -91,7 +93,10 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
         const power = strokePower(st);
         if (fk) { const pv = sc.fkFromGesture({ ...g, power }); if (pv) run(sc.performFk(pv.shot)); return; }
         const shot = sc.shotFromGesture({ ...g, power });
-        if (shot) { run(sc.perform(shot)); return; }
+        if (shot && shot.kind === 'shot') {
+          if (pen) { run(sc.perform(shot)); return; }
+          hover = shot; escolher(sc.firstTime ? 'Bola alta: como finalizar?' : 'Tipo de chute', sc.shotOptions(shot)); return;
+        }
         if (pen) return;
         const t = sc.throughTarget(w.x, w.y);
         if (t && t.kind !== 'shot') run(sc.perform(t));
@@ -100,16 +105,14 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
       if (fk) return;
       const pm = pen ? null : mateAt(w);
       if (pm) {
-        if (pendingTap && pendingTap.m.m === pm.m && performance.now() - pendingTap.t < 340) { cancelTap(); run(sc.perform({ ...pm, alto: true })); return; }
-        cancelTap(); hover = pm;
-        pendingTap = { m: pm, t: performance.now(), timer: setTimeout(() => { pendingTap = null; if (!busy()) run(sc.perform(pm)); }, 280) };
-        return;
+        hover = pm;
+        if (sc.setPiece) { run(sc.perform({ ...pm, alto: kind === 'escanteio' })); return; }
+        escolher(`Passe para ${pm.m.e!.name}`, sc.passOptions(pm.m)); return;
       }
-      cancelTap();
       const t = sc.target(w.x, w.y);
       if (t) run(sc.perform(t));
     });
-    cv.addEventListener('pointerleave', () => { if (!pendingTap) hover = null; });
+    cv.addEventListener('pointerleave', () => { if (!menu) hover = null; });
     const trail = () => {
       if (!stroke?.drag || stroke.scr.length < 2) return;
       const b = cv.getBoundingClientRect();
@@ -155,7 +158,7 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
       for (let y = -2.4; y < 0; y += .6) { ctx.beginPath(); ctx.moveTo(SX(GOAL.left), SY(y)); ctx.lineTo(SX(GOAL.right), SY(y)); ctx.stroke(); }
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(SX(GOAL.left), SY(0)); ctx.lineTo(SX(GOAL.left), SY(-2.4)); ctx.lineTo(SX(GOAL.right), SY(-2.4)); ctx.lineTo(SX(GOAL.right), SY(0)); ctx.stroke();
       const c = sc.carrier;
-      if (hover && !busy()) {
+      if (hover && (!busy() || menu)) {
         const p = sc.prob(hover), col = probColor(p);
         const tx2 = hover.kind === 'pass' ? hover.m.x : hover.kind === 'drib' || hover.kind === 'lanc' ? hover.x : hover.kind === 'finta' ? c.x : hover.ax;
         const ty2 = hover.kind === 'pass' ? hover.m.y : hover.kind === 'drib' || hover.kind === 'lanc' ? hover.y : hover.kind === 'finta' ? c.y - 3 : -1.2;

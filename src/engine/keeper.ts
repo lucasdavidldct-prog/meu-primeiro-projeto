@@ -1,41 +1,65 @@
-// Lance de goleiro: quando o rival vai marcar, você escolhe o canto para pular.
-// 6 zonas do gol: coluna (0 esquerda, 1 meio, 2 direita, do ponto de vista do goleiro) × linha (0 baixo, 1 alto).
+// Lance de goleiro: o rival vai chutar e você escolhe onde defender.
+// Só 3 chutes possíveis: alto no canto esquerdo, no meio e alto no canto direito (esquerda/direita da SUA tela,
+// com a câmera atrás do gol). Acertou o lado = o goleiro defende. Errou = gol, com duas exceções visíveis:
+// o batedor pode mandar para fora, e o goleiro com Reflexos ainda salva com o pé o chute no meio.
 import { psLevel } from './playstyles';
 import { R, clamp, type Rng } from './rng';
 import type { BasePlayer } from './types';
 
-export interface Zone { col: 0 | 1 | 2; row: 0 | 1 }
-export const ZONES: Zone[] = [0, 1, 2].flatMap(col => [0, 1].map(row => ({ col, row }) as Zone));
+/** 0 = alto esquerdo (da tela), 1 = meio, 2 = alto direito. */
+export type Canto = 0 | 1 | 2;
+export const CANTO_N: Record<Canto, string> = { 0: 'alto no canto esquerdo', 1: 'no meio', 2: 'alto no canto direito' };
+
+/** Chance do Reflexos salvar com o pé o chute no meio quando você pulou para o lado. */
+export const REFLEXO_PE = [0, .35, .6] as const;
 
 /** Onde o batedor vai chutar: bons finalizadores procuram mais os cantos. */
-export function pickShotZone(shooter: BasePlayer, pen: boolean, r: Rng = R): Zone {
-  const fin = shooter.st?.[1] ?? 70, canto = clamp(.62 + (fin - 70) * .012 + (pen ? .08 : 0), .5, .9);
-  const col: 0 | 1 | 2 = r() < canto ? (r() < .5 ? 0 : 2) : 1;
-  const row: 0 | 1 = r() < (col === 1 ? .55 : .42) ? 1 : 0;
-  return { col, row };
+export function pickCanto(shooter: BasePlayer, pen: boolean, r: Rng = R): Canto {
+  const fin = shooter.st?.[1] ?? 70, canto = clamp(.64 + (fin - 70) * .012 + (pen ? .06 : 0), .5, .9);
+  return r() < canto ? (r() < .5 ? 0 : 2) : 1;
 }
 
-/** A pista que o batedor dá (corrida/corpo): lado verdadeiro na maior parte das vezes; craques disfarçam melhor. */
-export function tellOf(shot: Zone, shooter: BasePlayer, r: Rng = R): 0 | 1 | 2 {
-  const disfarce = clamp(.82 - ((shooter.st?.[1] ?? 70) - 70) * .006 - .05 * psLevel(shooter, 'finalizacao-precisa'), .6, .85);
-  if (r() < disfarce) return shot.col;
-  const others = ([0, 1, 2] as const).filter(c => c !== shot.col);
+/** A pista que o batedor dá (corrida e corpo): o lado verdadeiro na maior parte das vezes; craques disfarçam melhor.
+ *  O goleiro com Pegador de Pênalti lê melhor o batedor (a pista mente menos). */
+export function pistaCanto(shot: Canto, shooter: BasePlayer, r: Rng = R, gk?: BasePlayer, pen = false): Canto {
+  const ler = pen ? .06 * psLevel(gk, 'pegador-de-penalti') : .03 * psLevel(gk, 'pegador-de-penalti');
+  const verdade = clamp(.8 - ((shooter.st?.[1] ?? 70) - 70) * .006 - .05 * psLevel(shooter, 'finalizacao-precisa') + ler, .6, .92);
+  if (r() < verdade) return shot;
+  const others = ([0, 1, 2] as const).filter(c => c !== shot);
   return others[Math.floor(r() * others.length)];
 }
 
-/** Chance de defender: acertar a zona é o que mais importa; reflexos do goleiro e qualidade do batedor pesam. */
-export function saveChance(shot: Zone, dive: Zone | null, gk: BasePlayer | undefined, shooter: BasePlayer, pen: boolean): number {
-  const d = dive ?? { col: 1, row: 0 };
-  let p: number;
-  if (d.col === shot.col) p = d.row === shot.row ? (shot.row ? .6 : .68) : .38;
-  else if (Math.abs(d.col - shot.col) === 1) p = shot.col === 1 ? .3 : .16;
-  else p = .03;
-  if (pen) p *= .92;
-  const ref = gk?.st?.[3] ?? 70, fin = shooter.st?.[1] ?? 70;
-  p += (ref - 75) * .008 - (fin - 75) * .006;
-  p *= 1 + .1 * psLevel(gk, 'reflexos') + (pen ? .12 * psLevel(gk, 'pegador-de-penalti') : 0);
-  p *= 1 - .08 * psLevel(shooter, 'finalizacao-precisa') - .06 * psLevel(shooter, 'chute-colocado');
-  if (gk?.fs) p *= 1.12;
-  if (shooter.fs) p *= .85;
-  return clamp(p, .02, .9);
+/** Chance do batedor errar o gol (fora ou trave). Saída do Gol fecha o ângulo; Finalização Precisa erra menos. */
+export function missChance(shooter: BasePlayer, gk: BasePlayer | undefined, pen: boolean): number {
+  const fin = shooter.st?.[1] ?? 70;
+  let p = (pen ? .07 : .1) - (fin - 75) * .004;
+  p *= [1, .75, .55][psLevel(shooter, 'finalizacao-precisa')];
+  if (!pen) p += .05 * psLevel(gk, 'saida-do-gol');
+  if (shooter.fs) p *= .6;
+  return clamp(p, .02, .22);
+}
+
+export type KeeperRes = 'defesa' | 'pe' | 'fora' | 'gol';
+/**
+ * Resultado do lance. `dive` = onde você defendeu (null = não escolheu: fica no meio).
+ * Acertou o lado: defende sempre. Errou: gol, salvo o chute para fora e a defesa com o pé (Reflexos, chute no meio).
+ */
+export function keeperResolve(shot: Canto, dive: Canto | null, gk: BasePlayer | undefined, shooter: BasePlayer, pen: boolean, r: Rng = R): KeeperRes {
+  const d = dive ?? 1;
+  if (r() < missChance(shooter, gk, pen)) return 'fora';
+  if (d === shot) return 'defesa';
+  if (shot === 1 && r() < REFLEXO_PE[psLevel(gk, 'reflexos')] * (gk?.fs ? 1.2 : 1)) return 'pe';
+  return 'gol';
+}
+
+/** Tempo para escolher antes do batedor correr (ms): Pegador de Pênalti dá mais tempo no pênalti. */
+export function tempoEscolha(gk: BasePlayer | undefined, pen: boolean): number {
+  return 5000 + (pen ? 1000 * psLevel(gk, 'pegador-de-penalti') : 0);
+}
+
+/** Gesto → canto: arrastar para a esquerda/direita (ou para cima em diagonal) = alto naquele lado; toque = meio. */
+export function cantoDoGesto(dx: number, dy: number, limiar = 30): Canto {
+  if (Math.abs(dx) < limiar && Math.abs(dy) < limiar) return 1;
+  if (Math.abs(dx) < limiar * .6) return 1; // para cima ou para baixo, reto: meio
+  return dx < 0 ? 0 : 2;
 }

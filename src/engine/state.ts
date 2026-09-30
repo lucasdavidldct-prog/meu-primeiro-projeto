@@ -52,6 +52,7 @@ export interface GameState {
   /** Uniforme do seu time (índice nos uniformes do clube; ausente = automático: titular, o visitante troca). */
   uniforme?: number;
   /** Câmera dos lances 3D. */
+  /** Câmera dos lances (a antiga 'aerea' é lida como 'padrao'). */
   camera?: 'padrao' | 'tv' | 'aerea' | 'atras';
   /** Clima das partidas ('auto' = sorteado por jogo). */
   clima?: 'auto' | 'dia' | 'sol' | 'noite' | 'chuva' | 'neve';

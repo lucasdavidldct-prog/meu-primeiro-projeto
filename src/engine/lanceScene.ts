@@ -7,15 +7,27 @@ import { effNow, pickShooter, type Match, type MomentKind, type MomentRequest, t
 import { ROLE, slotsOf } from './positions';
 import { R, clamp, pick, rn, type Rng } from './rng';
 import { skillStars, sub, type SubName } from './attrs';
-import { FX, psLevel } from './playstyles';
+import { FX, psLevel, type PsId } from './playstyles';
+import { PS_BY_ID } from './data/schema';
 
-export interface Actor { id: number; x: number; y: number; tx: number; ty: number; e?: SideEntry; gk?: boolean; team: 0 | 1; num: number }
-/** Tipo de chute escolhido no lance ('auto' = o gesto decide: curvo = colocado, rápido = forte, curto e lento = cavadinha). */
-export type ShotType = 'auto' | 'normal' | 'colocado' | 'forte' | 'rasteiro' | 'cavadinha';
-export const SHOT_N: Record<ShotType, string> = { auto: 'Auto', normal: 'Normal', colocado: 'Colocado', forte: 'Forte', rasteiro: 'Rasteiro', cavadinha: 'Cavadinha' };
+/** Papel de quem está sem a bola (movimentação a cada ação). */
+export type Papel = 'infiltra' | 'area' | 'aberto' | 'apoio' | 'chega' | 'ultrapassa';
+export interface Actor { id: number; x: number; y: number; tx: number; ty: number; e?: SideEntry; gk?: boolean; team: 0 | 1; num: number; papel?: Papel }
+/**
+ * Tipo de chute. Depois de traçar a linha, o jogador escolhe: Rasteiro, Superchute ou Colocado (só o colocado faz curva).
+ * Cavadinha aparece para quem tem o estilo; na bola alta (cruzamento), Cabeçada ou Voleio. 'auto'/'normal' ficam para testes.
+ */
+export type ShotType = 'auto' | 'normal' | 'colocado' | 'forte' | 'rasteiro' | 'cavadinha' | 'cabeca' | 'voleio';
+export const SHOT_N: Record<ShotType, string> = { auto: 'Auto', normal: 'Normal', colocado: 'Colocado', forte: 'Superchute', rasteiro: 'Rasteiro', cavadinha: 'Cavadinha', cabeca: 'Cabeçada', voleio: 'Voleio' };
+/** Estilo de jogo que agiu numa jogada (para mostrar na tela). */
+export interface PsTag { id: PsId; lvl: 1 | 2; nome: string; icone: string; rival?: boolean }
+/** Uma opção do menu de chute ou de passe, com a chance e os estilos do jogador que ajudam. */
+export interface Opcao { t: Target; nome: string; dica: string; p: number; ps: PsTag[] }
+/** Como a jogada começou (muda quantos atacam, quantos defendem e onde). */
+export type Cenario = 'construcao' | 'posicional' | 'contra' | 'roubada' | 'bloco' | 'ponta';
 export type Target =
   | { kind: 'shot'; ax: number; power: number; curve: number; tipo?: ShotType }
-  /** Passe: rasteiro (1 toque) ou alto (2 toques), por cima da marcação. */
+  /** Passe: rasteiro ou alto (por cima da marcação). */
   | { kind: 'pass'; m: Actor; alto?: boolean }
   /** Lançamento em profundidade: a bola vai para o espaço e o companheiro corre até ela. */
   | { kind: 'lanc'; m: Actor; x: number; y: number }
@@ -33,6 +45,12 @@ export interface Plan {
   dur: number;
   /** Goleiro: para onde vai e se mergulha (-1 esquerda, 1 direita, 0 não). */
   gk?: { x: number; y: number; dive: -1 | 0 | 1; h: number };
+  /** Animação de quem está com a bola (chute, superchute, cabeçada, voleio, passe). */
+  anim?: 'chute' | 'super' | 'cabeca' | 'voleio' | 'passe' | 'drible';
+  /** Estilos de jogo que agiram nesta jogada (seus e da defesa rival). */
+  ps?: PsTag[];
+  /** Aviso extra (ex.: "+1 ação" do Primeiro Toque). */
+  bonus?: string;
   /** Chamado quando a animação termina (atualiza quem está com a bola, reação da defesa etc.). */
   commit: () => void;
   /** Se o lance acabou, o resultado para o motor e a mensagem de tela. */
@@ -55,8 +73,22 @@ function pathD(p: Pt, path: Pt[]): number {
   for (let i = 1; i < path.length; i++) m = Math.min(m, segD(p, path[i - 1], path[i]));
   return m;
 }
+/** Etiqueta de um estilo (com o nome e o ícone do catálogo). */
+export function psTag(id: PsId, lvl: 0 | 1 | 2, rival = false): PsTag | null {
+  if (!lvl) return null;
+  const d = PS_BY_ID.get(id);
+  return { id, lvl, nome: (d?.nome ?? id) + (lvl > 1 ? '+' : ''), icone: d?.icone ?? '★', rival };
+}
 const arc = (a: Pt, b: Pt, peak: number, n: number, ha = 0, hb = 0): BallKey[] =>
   Array.from({ length: n + 1 }, (_, i) => { const t = i / n; return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, h: ha + (hb - ha) * t + 4 * peak * t * (1 - t) }; });
+
+/** Sorteio com pesos. */
+function pesado<T>(r: Rng, xs: [T, number][]): T {
+  let t = 0; for (const [, w] of xs) t += w;
+  let k = r() * t;
+  for (const [v, w] of xs) { k -= w; if (k <= 0) return v; }
+  return xs[xs.length - 1][0];
+}
 
 export class LanceScene {
   readonly kind: MomentKind;
@@ -79,8 +111,12 @@ export class LanceScene {
   setPiece = false;
   /** Tipo de chute escolhido pelo jogador no seletor do lance. */
   shotType: ShotType = 'auto';
-  /** O portador recebeu um cruzamento/passe alto na área: finaliza de primeira. */
+  /** O portador recebeu um cruzamento/passe alto na área: finaliza de primeira (cabeçada ou voleio). */
   firstTime = false;
+  /** Como a jogada começou. */
+  cenario: Cenario = 'posicional';
+  /** Quem já ganhou a ação extra do Primeiro Toque neste lance. */
+  private toque = new Set<number>();
   private r: Rng;
   private nid = 1;
 
@@ -141,51 +177,118 @@ export class LanceScene {
       this.foes.push(mk(34, .8, 1, undefined, true, 1));
       this.title = TITLES[kind];
     } else {
-      const slots = slotsOf(A.form), counter = kind === 'contra', depth = counter ? rn(4, 9, r) : rn(0, 4, r);
-      A.xi.forEach((e, i) => {
-        if (e.red || e.pos === 'GOL') return;
-        const sl = slots[i], role = ROLE(e.pos);
-        if (role === 'D' && !((e.pos === 'LD' || e.pos === 'LE') && r() < .35)) return;
-        const X = 3.5 + sl.x / 100 * 61;
-        let Y = sl.y >= 60 ? 31 - (sl.y - 60) * .6 : sl.y >= 36 ? 30 + (60 - sl.y) * .45 : 36;
-        Y -= depth;
-        this.mates.push(mk(clamp(X + rn(-2, 2, r), 3, 65), clamp(Y + rn(-2, 2, r), 6, 43), 0, e));
-      });
-      const nOut = req.treino ? 3 : counter ? 3 : 4, nMid = req.treino ? 0 : counter ? 1 : 2;
-      const ball0 = this.mates.filter(m => m.y >= 22);
-      this.carrier = ball0.length ? pick(ball0, r) : this.mates.reduce((a, b) => (a.y > b.y ? a : b));
-      // Jogada pelas pontas: quem criou a jogada começa aberto, com um marcador em cima e gente na área para o cruzamento
-      const lado = req.lado;
-      if (lado === 'esq' || lado === 'dir') {
-        const e = req.creator && !req.creator.red && req.creator.pos !== 'GOL' ? req.creator : null;
-        let c = e ? this.mates.find(m => m.e === e) : undefined;
-        if (!c && e) { c = mk(0, 0, 0, e); this.mates.push(c); }
-        if (!c) c = this.mates.reduce((a, b) => ((lado === 'esq' ? a.x < b.x : a.x > b.x) ? a : b));
-        c.x = c.tx = lado === 'esq' ? rn(5, 11, r) : rn(57, 63, r);
-        c.y = c.ty = counter ? rn(26, 34, r) : rn(17, 26, r);
-        this.carrier = c;
-        // Dois companheiros atacando a área
-        const box = this.mates.filter(m => m !== c).sort((a, b) => a.y - b.y).slice(0, 2);
-        box.forEach((m, k) => { m.x = m.tx = 34 + (k ? -1 : 1) * rn(2, 6, r) + (lado === 'esq' ? 3 : -3); m.y = m.ty = rn(9, 14, r); });
-        this.title = lado === 'esq' ? 'Jogada pela esquerda!' : 'Jogada pela direita!';
-      } else this.title = counter ? TITLES.contra : 'Chance pelo meio';
-      const nums = [2, 3, 4, 6, 5, 8];
-      for (let k = 0; k < nOut; k++) this.foes.push(mk(clamp(16 + k * (36 / (nOut - 1)) + (this.carrier.x - 34) * .2 + rn(-2, 2, r), 4, 64), rn(11, 16, r), 1, undefined, false, nums[k]));
-      for (let k = 0; k < nMid; k++) this.foes.push(mk(clamp(this.carrier.x + rn(-9, 9, r), 4, 64), clamp(this.carrier.y - rn(5, 8, r), 8, 40), 1, undefined, false, nums[4 + k]));
-      this.foes.push(mk(34, .8, 1, undefined, true, 1));
-      if (lado === 'esq' || lado === 'dir') {
-        // Lateral rival em cima do portador; zagueiros de olho nos atacantes da área
-        const c = this.carrier, outs = this.field().slice(0, nOut);
-        const fb = outs.reduce((a, b) => (Math.abs(a.x - c.x) < Math.abs(b.x - c.x) ? a : b));
-        fb.x = fb.tx = c.x + (lado === 'esq' ? 2.2 : -2.2); fb.y = fb.ty = c.y - 3;
-      }
+      this.montar(req, mk, r);
       this.react();
       for (const a of [...this.mates, ...this.foes]) { a.x = a.tx; a.y = a.ty; }
     }
   }
 
+  /**
+   * Monta a jogada aberta. O cenário sai do estilo do seu time e do rival (posse = saída pelo meio, contra-ataque,
+   * pressão = roubada no ataque, rival na retranca = defesa fechada), e a mentalidade muda quantos sobem e quantos ficam.
+   */
+  private montar(req: MomentRequest, mk: (x: number, y: number, team: 0 | 1, e?: SideEntry, gk?: boolean, n?: number) => Actor, r: Rng): void {
+    const A = this.M.A, B = this.M.B, kind = req.kind, lado = req.lado;
+    const cen: Cenario = lado === 'esq' || lado === 'dir' ? 'ponta' : kind === 'contra' ? 'contra' : req.treino ? 'posicional'
+      : pesado(r, [['construcao', 1 + (A.style === 'posse' ? 1.6 : 0) + (A.ment < 0 ? .5 : 0)], ['posicional', 1.3], ['contra', A.style === 'contra' ? 1.4 : .25],
+        ['roubada', .45 + (A.style === 'pressao' ? 1.4 : 0) + (A.ment > 0 ? .3 : 0)], ['bloco', .35 + (B.style === 'retranca' ? 1.6 : 0) + (B.ment < 0 ? .6 : 0)]]);
+    this.cenario = cen;
+    const slots = slotsOf(A.form), ment = A.ment;
+    // Profundidade de cada cenário: quanto mais longe do gol, mais campo para construir
+    const depth = cen === 'construcao' ? rn(9, 13, r) : cen === 'contra' ? rn(4, 9, r) : cen === 'roubada' ? rn(-3, 0, r) : cen === 'bloco' ? rn(1, 4, r) : rn(0, 4, r);
+    A.xi.forEach((e, i) => {
+      if (e.red || e.pos === 'GOL') return;
+      const sl = slots[i], role = ROLE(e.pos);
+      // Laterais sobem mais quando o time está ofensivo; zagueiros só na saída de bola
+      if (role === 'D') {
+        const sobe = (e.pos === 'LD' || e.pos === 'LE') ? .3 + .15 * ment + (cen === 'bloco' || cen === 'construcao' ? .25 : 0) : cen === 'construcao' ? .25 : 0;
+        if (r() >= sobe) return;
+      }
+      const X = 3.5 + sl.x / 100 * 61;
+      let Y = sl.y >= 60 ? 31 - (sl.y - 60) * .6 : sl.y >= 36 ? 30 + (60 - sl.y) * .45 : 36;
+      Y -= depth;
+      this.mates.push(mk(clamp(X + rn(-2, 2, r), 3, 65), clamp(Y + rn(-2, 2, r), 6, 46), 0, e));
+    });
+    const papel = (a: Actor): Papel => {
+      const p = a.e?.pos ?? 'MC';
+      if (p === 'ATA') return r() < .55 ? 'infiltra' : 'area';
+      if (p === 'PD' || p === 'PE' || p === 'MD' || p === 'ME') return r() < .5 ? 'aberto' : 'infiltra';
+      if (p === 'MEI') return r() < .5 ? 'chega' : 'apoio';
+      if (p === 'LD' || p === 'LE') return 'ultrapassa';
+      if (p === 'VOL' || p === 'ZAG') return 'apoio';
+      return r() < .45 ? 'chega' : 'apoio';
+    };
+    this.mates.forEach(m => { m.papel = papel(m); });
+    // Quem começa com a bola
+    const perto = (y0: number, y1: number) => this.mates.filter(m => m.y >= y0 && m.y <= y1);
+    if (cen === 'construcao') {
+      const mc = this.mates.filter(m => ['VOL', 'MC', 'MEI'].includes(m.e!.pos));
+      this.carrier = mc.length ? pick(mc, r) : this.mates.reduce((a, b) => (a.y > b.y ? a : b));
+    } else if (cen === 'roubada') {
+      const at = this.mates.filter(m => ROLE(m.e!.pos) === 'A');
+      this.carrier = at.length ? pick(at, r) : this.mates.reduce((a, b) => (a.y < b.y ? a : b));
+      this.carrier.y = this.carrier.ty = rn(20, 27, r);
+    } else {
+      const b0 = perto(22, 99);
+      this.carrier = b0.length ? pick(b0, r) : this.mates.reduce((a, b) => (a.y > b.y ? a : b));
+    }
+    const c0 = this.carrier;
+    // Contra-ataque e roubada: poucos no lance (quem já estava perto da bola); os outros ficaram para trás
+    if (cen === 'contra' || cen === 'roubada') {
+      const n = cen === 'contra' ? 2 + (ment > 0 ? 1 : 0) + (r() < .4 ? 1 : 0) : 2 + (r() < .5 ? 1 : 0);
+      const resto = this.mates.filter(m => m !== c0).sort((a, b) => dist(a, c0) + a.y * .4 - (dist(b, c0) + b.y * .4)).slice(0, n);
+      this.mates = [c0, ...resto];
+      if (cen === 'contra') { c0.y = c0.ty = rn(30, 38, r); resto.forEach((m, k) => { m.y = m.ty = clamp(c0.y - rn(2, 8, r), 16, 40); m.x = m.tx = clamp(34 + (k % 2 ? -1 : 1) * rn(8, 18, r), 5, 63); m.papel = k ? 'aberto' : 'infiltra'; }); }
+    }
+    if (lado === 'esq' || lado === 'dir') {
+      // Jogada pelas pontas: quem criou a jogada começa aberto, com um marcador em cima e gente na área para o cruzamento
+      const e = req.creator && !req.creator.red && req.creator.pos !== 'GOL' ? req.creator : null;
+      let c = e ? this.mates.find(m => m.e === e) : undefined;
+      if (!c && e) { c = mk(0, 0, 0, e); c.papel = 'aberto'; this.mates.push(c); }
+      if (!c) c = this.mates.reduce((a, b) => ((lado === 'esq' ? a.x < b.x : a.x > b.x) ? a : b));
+      c.x = c.tx = lado === 'esq' ? rn(5, 11, r) : rn(57, 63, r);
+      c.y = c.ty = rn(17, 26, r);
+      this.carrier = c;
+      const box = this.mates.filter(m => m !== c).sort((a, b) => a.y - b.y).slice(0, 2);
+      box.forEach((m, k) => { m.x = m.tx = 34 + (k ? -1 : 1) * rn(2, 6, r) + (lado === 'esq' ? 3 : -3); m.y = m.ty = rn(9, 14, r); m.papel = 'area'; });
+    }
+    const c = this.carrier;
+    this.title = ({ construcao: 'Saída pelo meio', posicional: 'Chance pelo meio', contra: TITLES.contra, roubada: 'Roubou no ataque!', bloco: 'Defesa fechada: ache o espaço', ponta: lado === 'esq' ? 'Jogada pela esquerda!' : 'Jogada pela direita!' } as Record<Cenario, string>)[cen];
+    // Defesa: linha e meio-campo conforme o cenário e o jeito do rival (retranca = mais gente atrás; pressão = mais gente na bola)
+    const retr = B.style === 'retranca' || B.ment < 0, press = B.style === 'pressao' || B.ment > 0;
+    let nOut = req.treino ? 3 : cen === 'contra' ? (r() < .5 ? 2 : 3) : cen === 'roubada' ? 3 : cen === 'bloco' ? 5 : 4;
+    let nMid = req.treino ? 0 : cen === 'contra' ? (r() < .5 ? 0 : 1) : cen === 'roubada' ? 1 : cen === 'construcao' ? 3 : cen === 'bloco' ? 3 : 2;
+    if (!req.treino && retr && cen !== 'contra') nOut = Math.min(5, nOut + (cen === 'bloco' ? 0 : 1));
+    if (!req.treino && press && (cen === 'construcao' || cen === 'posicional')) nMid++;
+    const lineY = cen === 'construcao' ? rn(15, 20, r) : cen === 'bloco' ? rn(7, 11, r) : cen === 'contra' ? clamp(c.y - rn(10, 16, r), 12, 26) : cen === 'roubada' ? rn(10, 16, r) : rn(11, 16, r);
+    const nums = [2, 3, 4, 6, 5, 8, 10, 7, 11];
+    for (let k = 0; k < nOut; k++) {
+      const w = nOut > 1 ? 36 + (nOut - 4) * 5 : 0, x0 = 34 - w / 2 + k * (nOut > 1 ? w / (nOut - 1) : 0);
+      // Na roubada a defesa está desarrumada: linha torta e um fora de posição
+      const bag = cen === 'roubada' ? rn(-3, 5, r) : rn(-1, 1, r);
+      this.foes.push(mk(clamp(x0 + (c.x - 34) * .2 + rn(-2, 2, r), 4, 64), clamp(lineY + bag, 3, 40), 1, undefined, false, nums[k]));
+    }
+    for (let k = 0; k < nMid; k++) {
+      const x = cen === 'bloco' || cen === 'construcao' ? 34 + (k - (nMid - 1) / 2) * rn(9, 12, r) + (c.x - 34) * .3 : c.x + rn(-9, 9, r);
+      // No contra-ataque o volante vem correndo atrás (do lado do campo de quem ataca)
+      const y = cen === 'contra' ? c.y + rn(2, 5, r) : cen === 'bloco' ? rn(17, 22, r) : clamp(c.y - rn(5, 9, r), 8, 42);
+      this.foes.push(mk(clamp(x, 4, 64), clamp(y, 6, 46), 1, undefined, false, nums[nOut + k]));
+    }
+    this.foes.push(mk(34, .8, 1, undefined, true, 1));
+    if (lado === 'esq' || lado === 'dir') {
+      // Lateral rival em cima do portador
+      const outs = this.field().slice(0, nOut);
+      const fb = outs.reduce((a, b) => (Math.abs(a.x - c.x) < Math.abs(b.x - c.x) ? a : b));
+      fb.x = fb.tx = c.x + (lado === 'esq' ? 2.2 : -2.2); fb.y = fb.ty = c.y - 3;
+    }
+    // Ações: construir do meio pede mais toques; contra-ataque e roubada são rápidos
+    this.actions = req.treino ? 8 : cen === 'construcao' ? 7 : cen === 'bloco' ? 7 : cen === 'contra' ? 5 : cen === 'roubada' ? 4 : 6;
+  }
+
   get ballAt(): BallKey {
     if (this.setup) return { x: this.setup.ball.x, y: this.setup.ball.y, h: 0 };
+    // Bola alta na área (cruzamento): chega na altura da cabeça
+    if (this.firstTime) return { x: this.carrier.x + .1, y: this.carrier.y - .45, h: 1.85 };
     return { x: this.carrier.x + .5, y: this.carrier.y - .8, h: 0 };
   }
   field(): Actor[] { return this.foes.filter(f => !f.gk); }
@@ -294,19 +397,20 @@ export class LanceScene {
   }
   /** Chances de um chute: força ideal entre 0,45 e 0,85; curva engana o goleiro, mas é mais difícil de acertar. */
   /** Tipo concreto do chute: escolhido no seletor, ou lido do gesto no modo Auto. */
-  shotKind(power: number, curve: number, tipo: ShotType = 'auto'): { colocado: boolean; forte: boolean; cav: boolean; rasteiro: boolean } {
+  shotKind(power: number, curve: number, tipo: ShotType = 'auto'): { colocado: boolean; forte: boolean; cav: boolean; rasteiro: boolean; cabeca?: boolean; voleio?: boolean } {
     const c = this.carrier, D = Math.hypot(c.x - 34, c.y), pen = this.kind === 'penalti';
     if (tipo === 'auto') return { colocado: Math.abs(curve) >= .3, forte: power >= .72, cav: !pen && power < .34 && D < 22, rasteiro: false };
-    return { colocado: tipo === 'colocado', forte: tipo === 'forte', cav: tipo === 'cavadinha' && !pen, rasteiro: tipo === 'rasteiro' };
+    const k = { colocado: tipo === 'colocado', forte: tipo === 'forte', cav: tipo === 'cavadinha' && !pen, rasteiro: tipo === 'rasteiro' };
+    return tipo === 'cabeca' ? { ...k, cabeca: true } : tipo === 'voleio' ? { ...k, voleio: true } : k;
   }
   shotOdds(ax: number, power = .65, curve = 0, tipo: ShotType = 'auto'): { goal: number; miss: number; save: number; block: number } {
     const c = this.carrier, md = this.mods(), gk = this.goalie(), pen = this.kind === 'penalti';
     // Tipo escolhido ajusta a força efetiva: forte bate forte, rasteiro firme, cavadinha de leve
     const sk = this.shotKind(power, curve, tipo);
-    if (tipo !== 'auto') power = sk.forte ? Math.max(power, .78) : sk.rasteiro ? clamp(power, .5, .8) : sk.cav ? .3 : sk.colocado ? clamp(power, .45, .75) : power;
+    if (tipo !== 'auto') power = sk.forte ? Math.max(power, .78) : sk.rasteiro ? clamp(power, .5, .8) : sk.cav ? .3 : sk.colocado ? clamp(power, .45, .75) : sk.cabeca ? .6 : sk.voleio ? clamp(power, .6, .85) : power;
     const D = Math.hypot(c.x - 34, c.y), edge = Math.min(1, Math.abs(ax - 34) / GOAL.half);
-    // O subatributo depende do chute: pênalti, de primeira (voleio), de fora da área ou finalização normal
-    const fin = this.sb(pen ? 'Pênalti' : this.firstTime ? 'Voleio' : D >= 18 ? 'Chute de longe' : 'Finalização', 1);
+    // O subatributo depende do chute: pênalti, cabeçada, de primeira (voleio), de fora da área ou finalização normal
+    const fin = this.sb(pen ? 'Pênalti' : sk.cabeca ? 'Cabeceio' : sk.voleio || this.firstTime ? 'Voleio' : D >= 18 ? 'Chute de longe' : 'Finalização', 1);
     // Tipo de chute pelo gesto: curvo = colocado, forte = super chute, curto e lento perto do gol = cavadinha
     const lv = md.lv, { colocado, forte, cav, rasteiro } = sk;
     const weak = cav && lv.cavadinha ? 0 : Math.max(0, .45 - power), hard = Math.max(0, power - FX.superChuteLimite[lv.forte]), ac = Math.abs(curve);
@@ -315,7 +419,10 @@ export class LanceScene {
       const save = clamp(.45 * (1 - .6 * edge) * (this.gkOvr / 80) * this.km.penSave * (1 + weak * 2) * this.cf.goleiro, .06, .85);
       return { goal: (1 - miss) * (1 - save), miss, save, block: 0 };
     }
-    let miss = clamp((.04 + D * .016 * md.shotDist + Math.pow(edge, 3) * .3 - (fin - 70) * .005 + hard * 2 + ac * .06 * md.shotMiss + (this.firstTime ? .06 * (lv.acrobatico ? .3 : 1) : 0)) * md.shotMiss, .03, .9);
+    // De primeira é mais difícil: cabeçada (longe do gol perde força) e voleio (Acrobático ajuda)
+    const aereo = sk.cabeca ? .07 * (lv.cabeca ? .5 : 1) + Math.max(0, D - 11) * .03 + (1 - this.dm.air) * .6 - .04 * psLevel(c.e!.P, 'imposicao-fisica')
+      : sk.voleio ? .1 * (lv.acrobatico ? .35 : 1) : this.firstTime ? .06 * (lv.acrobatico ? .3 : 1) : 0;
+    let miss = clamp((.04 + D * .016 * md.shotDist + Math.pow(edge, 3) * .3 - (fin - 70) * .005 + hard * 2 + ac * .06 * md.shotMiss + aereo) * md.shotMiss, .03, .9);
     miss = 1 - (1 - miss) * this.cf.chute; // chuva e neve atrapalham a batida
     if (colocado) miss *= FX.colocadoErro[lv.colocado];
     if (cav) miss = clamp(miss + FX.cavadinhaErro[lv.cavadinha] + (D >= 22 ? .3 : 0), .03, .9);
@@ -327,7 +434,9 @@ export class LanceScene {
     if (rasteiro) block *= FX.rasteiroBloqueio[lv.rasteiro];
     let save = clamp(((this.gkOvr / 100) * .9 * (1 - .5 * edge) + D * .015 * md.shotDist - (fin - 70) * .004 - .07) * this.km.save, .06, .95);
     // De primeira depois do cruzamento: a defesa está fora de posição e o goleiro reage tarde, mas é mais fácil errar
-    if (this.firstTime) { save *= .8 * Math.min(FX.acrobaticoDefesa[lv.acrobatico], FX.cabecaDefesa[lv.cabeca]); block *= .45; }
+    if (sk.cabeca) { save *= .8 * FX.cabecaDefesa[lv.cabeca]; block *= .3; }
+    else if (sk.voleio) { save *= .8 * FX.acrobaticoDefesa[lv.acrobatico]; block *= .45; }
+    else if (this.firstTime) { save *= .8 * Math.min(FX.acrobaticoDefesa[lv.acrobatico], FX.cabecaDefesa[lv.cabeca]); block *= .45; }
     if (colocado) save *= FX.colocadoDefesa[lv.colocado];
     if (forte) save *= FX.superChuteDefesa[lv.forte];
     if (cav) { save *= FX.cavadinhaDefesa[lv.cavadinha]; block *= .3; }
@@ -365,6 +474,50 @@ export class LanceScene {
     const curve = tipo === 'colocado' && Math.abs(g.curve) < .3 ? -.45 * Math.sign(ax - 34 || 1) : tipo === 'rasteiro' || tipo === 'normal' ? g.curve * .5 : g.curve;
     return { kind: 'shot', ax, power: g.power, curve, tipo };
   }
+  /** O chute com o tipo escolhido: só o Colocado segue a curva do traço; os outros vão retos. */
+  shotAs(base: { ax: number; curve: number }, tipo: ShotType): Target {
+    const curve = tipo === 'colocado' ? (Math.abs(base.curve) < .3 ? -.45 * Math.sign(base.ax - 34 || 1) : base.curve) : 0;
+    const power = tipo === 'forte' ? .93 : tipo === 'rasteiro' ? .64 : tipo === 'colocado' ? .6 : tipo === 'cavadinha' ? .3 : tipo === 'cabeca' ? .6 : .75;
+    return { kind: 'shot', ax: base.ax, power, curve, tipo };
+  }
+  /** Estilos do portador (ou de outro jogador) que ele tem, dentre os pedidos. */
+  tags(ids: PsId[], m = this.carrier): PsTag[] {
+    const P = m.e?.P;
+    return ids.map(id => psTag(id, psLevel(P, id))).filter((x): x is PsTag => !!x);
+  }
+  /** Estilo da defesa rival que agiu (o melhor nível entre quem está em campo). */
+  rivalTag(id: PsId): PsTag | null {
+    let lv: 0 | 1 | 2 = 0;
+    for (const e of this.M.B.xi) if (!e.red && e.pos !== 'GOL') lv = Math.max(lv, psLevel(e.P, id)) as 0 | 1 | 2;
+    return psTag(id, lv, true);
+  }
+  /** Menu do chute depois do traço: Rasteiro, Superchute e Colocado (+ Cavadinha para quem tem o estilo); na bola alta, Cabeçada ou Voleio. */
+  shotOptions(base: { ax: number; curve: number }): Opcao[] {
+    const c = this.carrier, D = Math.hypot(c.x - 34, c.y), P = c.e!.P, fp: PsId[] = ['finalizacao-precisa'];
+    const op = (tipo: ShotType, nome: string, dica: string, ids: PsId[]): Opcao => { const t = this.shotAs(base, tipo); return { t, nome, dica, p: this.prob(t), ps: this.tags(ids) }; };
+    if (this.firstTime) return [
+      op('cabeca', 'Cabeçada', 'Cabeceie para baixo, no canto. Longe do gol perde força.', [...fp, 'cabeceio', 'imposicao-fisica']),
+      op('voleio', psLevel(P, 'acrobatico') ? 'Bicicleta' : 'Voleio', 'De primeira, sem deixar a bola cair.', [...fp, 'acrobatico']),
+    ];
+    const out = [
+      op('rasteiro', 'Rasteiro', 'Reto, rente à grama: passa por baixo do goleiro e trava menos.', [...fp, 'chute-rasteiro']),
+      op('forte', 'Superchute', 'Reto e muito forte. Sem o estilo Super Chute, pode subir.', [...fp, 'chute-de-longe']),
+      op('colocado', 'Colocado', 'O único com curva: a bola segue a curva do seu traço.', [...fp, 'chute-colocado', 'trivela']),
+    ];
+    if (psLevel(P, 'cavadinha') && D < 24) out.push(op('cavadinha', 'Cavadinha', 'Por cima do goleiro.', [...fp, 'cavadinha']));
+    return out;
+  }
+  /** Menu do passe ao tocar num companheiro: rasteiro, alto ou enfiado no espaço à frente dele. */
+  passOptions(m: Actor): Opcao[] {
+    const c = this.carrier, L = dist(c, m), wing = c.x < 16 || c.x > 52;
+    const spot = { x: clamp(m.x + (34 - m.x) * .15, 3, 65), y: clamp(m.y - 6, 3, 44) };
+    const opts: Opcao[] = [
+      { t: { kind: 'pass', m }, nome: 'Rasteiro', dica: 'Rápido e no pé. Cuidado com quem está na linha do passe.', p: this.passP(m), ps: this.tags(L < 15 ? ['passe-preciso', 'passe-tenso', 'tiki-taka'] : ['passe-preciso', 'passe-tenso']) },
+      { t: { kind: 'pass', m, alto: true }, nome: wing ? 'Cruzamento' : 'Alto', dica: m.y < 17 ? 'Por cima da marcação. Na área, ele finaliza de primeira (cabeçada ou voleio).' : 'Por cima da marcação, mas mais lento: o marcador disputa no alto.', p: this.passP(m, true), ps: this.tags(wing ? ['cruzamento'] : ['lancamento']) },
+    ];
+    if (m.y > 5) opts.push({ t: { kind: 'lanc', m, x: spot.x, y: spot.y }, nome: 'Enfiado', dica: 'Na frente dele, no espaço: ele corre até a bola e ganha metros.', p: this.lancP(m, spot), ps: [...this.tags(['passe-em-profundidade']), ...this.tags(['velocista'], m)] });
+    return opts;
+  }
   prob(t: Target): number {
     return t.kind === 'pass' ? this.passP(t.m, t.alto) : t.kind === 'lanc' ? this.lancP(t.m, t) : t.kind === 'drib' ? this.dribP(t) : t.kind === 'finta' ? this.fintaP() : this.shotOdds(t.ax, t.power, t.curve, t.tipo).goal;
   }
@@ -391,22 +544,55 @@ export class LanceScene {
     return Array.from({ length: n + 1 }, (_, i) => bezier(this.setup!.ball, c, end, i / n));
   }
 
-  /** Reposiciona a defesa depois de cada ação. */
+  /**
+   * Movimentação depois de cada ação. Sem a bola, cada companheiro cumpre um papel (infiltrar nas costas da zaga,
+   * atacar a área, abrir o campo, dar apoio atrás da bola, chegar de trás na entrada da área, ultrapassar pelo lado).
+   * A defesa responde: um ou dois pressionam a bola (dois contra time de pressão) e os outros marcam quem entra no setor.
+   */
   react(): void {
-    const r = this.r, c = this.carrier;
-    const fs = this.field().slice().sort((a, b) => dist(a, c) - dist(b, c));
+    const r = this.r, c = this.carrier, line0 = this.offsideLine();
+    const pace = (a: Actor) => (a.e?.P.st && a.e.P.pos !== 'GOL' ? sub(a.e.P, 'Pique') : 72);
+    this.mates.forEach(m => {
+      if (m === c) return;
+      const sgn = m.x < 34 ? -1 : 1;
+      let tx: number, ty: number;
+      switch (m.papel) {
+        case 'infiltra': tx = m.x + (34 + sgn * rn(3, 9, r) - m.x) * .5; ty = line0 - rn(-1.5, 2.5, r); break;
+        case 'area': tx = 34 + rn(-6, 6, r); ty = rn(8, 13, r); break;
+        case 'aberto': tx = sgn < 0 ? rn(4, 9, r) : rn(59, 64, r); ty = clamp(c.y + rn(-6, 2, r), 10, 42); break;
+        case 'apoio': tx = clamp(c.x + (c.x < 34 ? 1 : -1) * rn(6, 11, r), 5, 63); ty = clamp(c.y + rn(3, 7, r), 8, 46); break;
+        case 'chega': tx = 34 + rn(-7, 7, r); ty = rn(16, 21, r); break;
+        case 'ultrapassa': { const out = c.x < 34 ? -1 : 1; tx = c.x + out * rn(4, 7, r); ty = c.y - rn(6, 11, r); break; }
+        default: tx = m.x + rn(-1.5, 1.5, r); ty = m.y - rn(1, 3.5, r);
+      }
+      // Cada um anda o quanto dá numa ação (mais rápido quem tem pique)
+      const dx = tx - m.x, dy = ty - m.y, L = Math.hypot(dx, dy), step = 8 * pace(m) / 75, k = L > step ? step / L : 1;
+      m.tx = clamp(m.x + dx * k, 3, 65); m.ty = clamp(m.y + dy * k, 5, 46);
+    });
+    // Defesa: pressão na bola, cobertura e marcação de quem chega
+    const nPress = this.M.B.style === 'pressao' ? 2 : 1;
+    const fs = this.field().slice().sort((a, b) => dist(a, c) - dist(b, c)), marcados = new Set<Actor>();
     fs.forEach((f, i) => {
       const d = dist(f, c);
-      if (i < 2) { const k = Math.min(3.4, Math.max(0, d - 1.9)) / (d || 1); f.tx = f.x + (c.x - f.x) * k; f.ty = f.y + (c.y - f.y) * k; }
-      else { f.tx = f.x + ((c.x + 34) / 2 - f.x) * .25; f.ty = clamp(Math.min(f.y, c.y - 2.5) - rn(0, 1.5, r), 3, 42); }
+      let tx: number, ty: number;
+      if (i < nPress + 1) {
+        // O primeiro (e o segundo contra time de pressão) fecha no portador; o seguinte faz a cobertura
+        const alvo = i < nPress ? 1.9 : 4.2, k = Math.min(3.4, Math.max(0, d - alvo)) / (d || 1);
+        tx = f.x + (c.x - f.x) * k; ty = f.y + (c.y - f.y) * k;
+      } else {
+        const alvo = this.mates.filter(m => m !== c && !marcados.has(m) && Math.hypot(m.tx - f.x, m.ty - f.y) < 9).sort((a, b) => a.ty - b.ty)[0];
+        if (alvo) { marcados.add(alvo); tx = alvo.tx + (34 - alvo.tx) * .12; ty = alvo.ty - 1.3; }
+        else { tx = f.x + ((c.x + 34) / 2 - f.x) * .3; ty = Math.min(f.y, c.y - 2.5) - rn(0, 1.5, r); }
+      }
+      const dx = tx - f.x, dy = ty - f.y, L = Math.hypot(dx, dy), k = L > 7 ? 7 / L : 1;
+      f.tx = clamp(f.x + dx * k, 3, 65); f.ty = clamp(f.y + dy * k, 2, 44);
     });
     const gk = this.goalie();
     gk.tx = 34 + (c.x - 34) * .28;
     gk.ty = clamp(.6 + (Math.hypot(c.x - 34, c.y) < 14 ? 1.4 : .4), .5, 2.5);
-    this.mates.forEach(m => { if (m === c) return; m.tx = clamp(m.x + rn(-1.5, 1.5, r), 3, 65); m.ty = clamp(m.y - rn(1, 3.5, r), 5, 44); });
     // Atacantes se ajeitam na linha do penúltimo defensor; às vezes um fica adiantado (impedido) e cabe a você perceber
     const line = this.foes.map(f => f.ty).sort((a, b) => a - b)[1] ?? 0;
-    this.mates.forEach(m => { if (m !== c && m.ty < line - .2 && r() < .75) m.ty = line + rn(.3, 1.3, r); });
+    this.mates.forEach(m => { if (m !== c && m.ty < line - .2 && r() < (m.papel === 'infiltra' ? .65 : .8)) m.ty = line + rn(.3, 1.3, r); });
   }
 
   private died(): Plan['end'] { return { res: { goal: false, shot: false, text: 'A defesa se fechou e a jogada morreu.' }, text: 'Recuou!', color: '#dddddd', goal: false }; }
@@ -417,28 +603,42 @@ export class LanceScene {
     // Bola parada: depois da cobrança, o lance segue normal (com impedimento)
     if ((t.kind === 'pass' || t.kind === 'lanc') && this.isOffside(t.m)) { this.actions--; return this.offsidePlan(t.m, t.kind === 'pass' && !!t.alto); }
     this.setPiece = false;
+    const riv = (...ids: PsId[]) => ids.map(id => this.rivalTag(id)).filter((x): x is PsTag => !!x);
+    // Primeiro Toque: quem recebe com domínio orientado ganha uma ação a mais (uma vez por jogador no lance)
+    const primeiroToque = (m: Actor): { bonus?: string; tag: PsTag[] } => {
+      const lv = psLevel(m.e?.P, 'primeiro-toque');
+      if (!lv || this.toque.has(m.id)) return { tag: [] };
+      this.toque.add(m.id);
+      return { bonus: `${m.e!.name}: +1 ação`, tag: [psTag('primeiro-toque', lv)!] };
+    };
     if (t.kind === 'lanc') {
       this.actions--;
       const p = this.lancP(t.m, t), L = dist(c, t), dur = Math.min(1100, 380 + L * 22), m = t.m;
       m.tx = t.x; m.ty = t.y + .8;
+      const ps = [...this.tags(['passe-em-profundidade']), ...this.tags(['velocista'], m)];
       if (r() < p) {
-        return { kind: 'lanc', ok: true, ball: arc(from, { x: t.x, y: t.y }, L > 18 ? 1.4 : .25, 12), dur,
-          commit: () => { this.lastPasser = c; m.x = t.x; m.y = t.y + .8; this.carrier = m; this.firstTime = false; this.react(); if (this.actions <= 0) this.done = true; },
-          end: this.actions <= 0 ? this.died() : undefined };
+        const pt = primeiroToque(m);
+        return { kind: 'lanc', ok: true, anim: 'passe', ps: [...ps, ...pt.tag], bonus: pt.bonus, ball: arc(from, { x: t.x, y: t.y }, L > 18 ? 1.4 : .25, 12), dur,
+          commit: () => { this.lastPasser = c; m.x = t.x; m.y = t.y + .8; this.carrier = m; this.firstTime = false; if (pt.bonus) this.actions++; this.react(); if (this.actions <= 0) this.done = true; },
+          end: this.actions <= 0 && !pt.bonus ? this.died() : undefined };
       }
       const f = this.field().sort((a, b) => dist(a, t) - dist(b, t))[0];
       if (f) { f.tx = t.x; f.ty = t.y - .6; }
       this.done = true;
-      return { kind: 'lanc', ok: false, ball: arc(from, { x: t.x, y: t.y }, .3, 10), dur, commit: () => {},
+      return { kind: 'lanc', ok: false, anim: 'passe', ps: [...ps, ...riv('antecipacao', 'interceptacao')], ball: arc(from, { x: t.x, y: t.y }, .3, 10), dur, commit: () => {},
         end: { res: { goal: false, shot: false, text: `lançamento de ${nm} cortado pela defesa.` }, text: 'Cortado!', color: '#f06a5a', goal: false } };
     }
     if (t.kind === 'pass') {
       this.actions--;
-      const p = this.passP(t.m, t.alto), L = dist(c, t.m), dur = t.alto ? Math.min(1300, 520 + L * 26) : Math.min(900, 280 + L * 20);
+      // Rasteiro é rápido e reto; alto é lento e faz arco (e chega na cabeça de quem está na área)
+      const p = this.passP(t.m, t.alto), L = dist(c, t.m), dur = t.alto ? Math.min(1400, 600 + L * 28) : Math.min(700, 220 + L * 14);
+      const wing = c.x < 16 || c.x > 52, naArea = !!t.alto && t.m.y < 17;
+      const ps = t.alto ? this.tags(wing ? ['cruzamento'] : ['lancamento']) : this.tags(L < 15 ? ['passe-preciso', 'passe-tenso', 'tiki-taka'] : ['passe-preciso', 'passe-tenso']);
       if (r() < p) {
-        return { kind: 'pass', ok: true, ball: arc(from, { x: t.m.x, y: t.m.y - .8 }, t.alto ? 2.6 + L * .09 : L > 20 ? 1.2 : .25, 14), dur,
-          commit: () => { this.lastPasser = c; this.carrier = t.m; this.firstTime = !!t.alto && t.m.y < 17; this.react(); if (this.actions <= 0) this.done = true; },
-          end: this.actions <= 0 ? this.died() : undefined };
+        const pt = naArea ? { tag: [] as PsTag[] } : primeiroToque(t.m);
+        return { kind: 'pass', ok: true, anim: 'passe', ps: [...ps, ...pt.tag], bonus: pt.bonus, ball: arc(from, { x: t.m.x + (naArea ? .1 : 0), y: t.m.y - (naArea ? .45 : .8) }, t.alto ? 2.6 + L * .09 : L > 20 ? .5 : .08, 14, from.h, naArea ? 1.85 : 0), dur,
+          commit: () => { this.lastPasser = c; this.carrier = t.m; this.firstTime = naArea; if (pt.bonus) this.actions++; this.react(); if (this.actions <= 0) this.done = true; },
+          end: this.actions <= 0 && !pt.bonus ? this.died() : undefined };
       }
       let f = this.field().sort((a, b) => segD(a, c, t.m) - segD(b, c, t.m))[0];
       const mk = this.field().sort((a, b) => dist(a, t.m) - dist(b, t.m))[0];
@@ -446,32 +646,34 @@ export class LanceScene {
       const to = f ?? t.m;
       if (f) { f.tx = f.x; f.ty = f.y; }
       this.done = true;
-      return { kind: 'pass', ok: false, ball: arc(from, to, t.alto ? 2.4 + L * .07 : .3, 10), dur: t.alto ? dur : 450, commit: () => {},
+      return { kind: 'pass', ok: false, anim: 'passe', ps: [...ps, ...(t.alto ? riv('imposicao-fisica', 'cabeceio') : riv('interceptacao', 'antecipacao'))], ball: arc(from, to, t.alto ? 2.4 + L * .07 : .08, 10, from.h), dur: t.alto ? dur : 420, commit: () => {},
         end: { res: { goal: false, shot: false, text: t.alto ? `passe alto de ${nm} perdido na disputa.` : `passe de ${nm} interceptado.` }, text: t.alto ? 'Perdeu no alto!' : 'Interceptado!', color: '#f06a5a', goal: false } };
     }
     if (t.kind === 'finta') {
       this.actions--;
-      const f = this.nearestFoe(), nome = this.fintaNome();
+      const f = this.nearestFoe(), nome = this.fintaNome(), ps = this.tags(['firula', 'drible-rapido']);
       // Direção: passa pelo marcador rumo ao gol (4 a 6 m)
       const gx = 34 - c.x, gy = -c.y, gl = Math.hypot(gx, gy) || 1, L = 4 + skillStars(c.e!.P) * .4;
       const to = { x: clamp(c.x + gx / gl * L + (f ? (c.x - f.x) * .3 : 0), 2, 66), y: clamp(c.y + gy / gl * L, 2, 44) };
       if (r() < this.fintaP()) {
         c.tx = to.x; c.ty = to.y;
         if (f) { f.tx = f.x + (f.x - c.x) * .4; f.ty = f.y + 2.2; } // o marcador fica para trás
-        return { kind: 'drib', ok: true, say: `${nome}!`, ball: arc(from, { x: to.x + .5, y: to.y - .8 }, nome === 'Chapéu' ? 1.8 : 0, 8), dur: 700,
+        return { kind: 'drib', ok: true, anim: 'drible', ps, say: `${nome}!`, ball: arc(from, { x: to.x + .5, y: to.y - .8 }, nome === 'Chapéu' ? 1.8 : 0, 8), dur: 700,
           commit: () => { c.x = to.x; c.y = to.y; if (f) { f.x = f.tx; f.y = f.ty; } this.firstTime = false; if (this.actions <= 0) this.done = true; },
           end: this.actions <= 0 ? this.died() : undefined };
       }
       this.done = true;
       if (f) { f.tx = c.x; f.ty = c.y - .6; }
-      return { kind: 'drib', ok: false, say: `${nome}…`, ball: arc(from, { x: c.x + .8, y: c.y - 1.4 }, 0, 6), dur: 500, commit: () => {},
+      return { kind: 'drib', ok: false, anim: 'drible', ps: [...ps, ...riv('desarme', 'contencao')], say: `${nome}…`, ball: arc(from, { x: c.x + .8, y: c.y - 1.4 }, 0, 6), dur: 500, commit: () => {},
         end: { res: { goal: false, shot: false, text: `${nm} tentou o ${nome.toLowerCase()} e perdeu a bola.` }, text: 'Desarmado!', color: '#f06a5a', goal: false } };
     }
     if (t.kind === 'drib') {
       this.actions--;
+      const close = this.field().some(f => dist(f, c) < 2.2);
+      const ps = this.tags(['drible-rapido', 'firula', 'tecnico', 'velocista', 'explosao', ...(close ? ['resistente-pressao'] as PsId[] : [])]);
       if (r() < this.dribP(t)) {
         c.tx = t.x; c.ty = t.y;
-        return { kind: 'drib', ok: true, ball: arc(from, { x: t.x + .5, y: t.y - .8 }, 0, 8), dur: 620,
+        return { kind: 'drib', ok: true, anim: 'drible', ps, ball: arc(from, { x: t.x + .5, y: t.y - .8 }, 0, 8), dur: 620,
           commit: () => { c.x = t.x; c.y = t.y; this.firstTime = false; this.react(); if (this.actions <= 0) this.done = true; },
           end: this.actions <= 0 ? this.died() : undefined };
       }
@@ -480,44 +682,52 @@ export class LanceScene {
       c.tx = mx; c.ty = my;
       if (f) { f.tx = mx; f.ty = my - .8; }
       this.done = true;
-      return { kind: 'drib', ok: false, ball: arc(from, { x: mx, y: my - .6 }, 0, 6), dur: 480, commit: () => {},
+      return { kind: 'drib', ok: false, anim: 'drible', ps: [...ps, ...riv('desarme', 'contencao')], ball: arc(from, { x: mx, y: my - .6 }, 0, 6), dur: 480, commit: () => {},
         end: { res: { goal: false, shot: false, text: `${nm} foi desarmado.` }, text: 'Desarmado!', color: '#f06a5a', goal: false } };
     }
     // Chute
     this.done = true;
     const sk = this.shotKind(t.power, t.curve, t.tipo), sp = this.shotOdds(t.ax, t.power, t.curve, t.tipo), as = this.lastPasser ? this.lastPasser.e!.name : null, gk = this.goalie();
-    const path = this.kind === 'penalti' ? [c, { x: t.ax, y: 0 }] : this.shotPath(t.ax, t.curve);
-    const speed = .55 + t.power;
-    const dur = Math.round(clamp(Math.hypot(c.x - t.ax, c.y) * 34 / speed, 320, 1100));
-    const toKeys = (pts: Pt[], hEnd: number, peak: number): BallKey[] => pts.map((p, i) => { const k = i / (pts.length - 1); return { x: p.x, y: p.y, h: hEnd * k + 4 * peak * k * (1 - k) }; });
-    // Cavadinha: bola sobe por cima do goleiro e cai no gol
+    const path = this.kind === 'penalti' || !sk.colocado && t.tipo && t.tipo !== 'auto' && t.tipo !== 'normal' ? [c, { x: t.ax, y: 0 }] : this.shotPath(t.ax, t.curve);
+    const D = Math.hypot(c.x - 34, c.y);
+    const ps = this.tags(['finalizacao-precisa', ...(sk.forte ? ['chute-de-longe'] as PsId[] : D >= 18 ? ['chute-de-longe'] as PsId[] : []), ...(sk.colocado ? ['chute-colocado', 'trivela'] as PsId[] : []),
+      ...(sk.rasteiro ? ['chute-rasteiro'] as PsId[] : []), ...(sk.cav ? ['cavadinha'] as PsId[] : []), ...(sk.cabeca ? ['cabeceio', 'imposicao-fisica'] as PsId[] : []), ...(sk.voleio ? ['acrobatico'] as PsId[] : [])]);
+    const anim: Plan['anim'] = sk.cabeca ? 'cabeca' : sk.voleio ? 'voleio' : sk.forte ? 'super' : 'chute';
+    // Superchute: a bola sai muito mais rápida (quase metade do tempo); cabeçada é mais lenta
+    const speed = .55 + (sk.forte ? 1.25 : t.power);
+    const dur = Math.round(clamp(Math.hypot(c.x - t.ax, c.y) * 34 / speed * (sk.forte ? .62 : sk.cabeca ? 1.12 : 1), sk.forte ? 200 : 320, 1100));
+    const h0 = from.h;
+    const toKeys = (pts: Pt[], hEnd: number, peak: number): BallKey[] => pts.map((p, i) => { const k = i / (pts.length - 1); return { x: p.x, y: p.y, h: h0 * (1 - k) + hEnd * k + 4 * peak * k * (1 - k) }; });
+    // Cavadinha: bola sobe por cima do goleiro e cai no gol; cabeçada: para baixo; superchute: reto e firme
     const chip = sk.cav, low = sk.rasteiro;
-    const hTarget = chip ? 1.5 : low ? .12 + r() * .12 : clamp(.25 + t.power * 1.9 + (r() - .5) * .5, .15, 2.2), peakS = chip ? 2.8 : low ? .02 : .3;
+    const hTarget = chip ? 1.5 : low ? .12 + r() * .12 : sk.cabeca ? .3 + r() * 1.1 : sk.forte ? clamp(.5 + r() * 1.3, .3, 2) : clamp(.25 + t.power * 1.9 + (r() - .5) * .5, .15, 2.2);
+    const peakS = chip ? 2.8 : low ? .02 : sk.cabeca ? .15 : sk.forte ? .08 : .3;
     const gkDive = (x: number): -1 | 0 | 1 => (Math.abs(x - gk.x) < .8 ? 0 : x < gk.x ? -1 : 1);
     if (this.kind !== 'penalti' && r() < sp.block) {
       const f = this.field().sort((a, b) => pathD(a, path) - pathD(b, path))[0];
-      return { kind: 'shot', ok: false, ball: toKeys([from, { x: f.x, y: f.y + .5 }], .9, .2), dur: 320, commit: () => {},
+      return { kind: 'shot', ok: false, anim, ps: [...ps, ...riv('bloqueio')], ball: toKeys([from, { x: f.x, y: f.y + .5 }], .9, .2), dur: 320, commit: () => {},
         end: { res: { goal: false, shot: true, onTarget: false, text: `chute de ${nm} bloqueado pela zaga.` }, text: 'Bloqueado!', color: '#f2b640', goal: false } };
     }
     if (r() < sp.miss) {
-      const side = t.ax >= 34 ? 1 : -1, post = r() < .25, over = !post && t.power > .85 && r() < .6;
+      const side = t.ax >= 34 ? 1 : -1, post = r() < .25, over = !post && (t.power > .85 || sk.cabeca) && r() < .6;
       const endX = post ? 34 + side * GOAL.half : over ? t.ax : t.ax + side * rn(1.5, 4, r);
-      const pts = this.kind === 'penalti' ? [c, { x: endX, y: 0 }] : this.shotPath(endX, t.curve);
+      const pts = path.length === 2 ? [c, { x: endX, y: 0 }] : this.shotPath(endX, t.curve);
       pts.push({ x: endX + side * (post ? -1 : .5), y: -3 });
-      return { kind: 'shot', ok: false, ball: toKeys([from, ...pts.slice(1)], post ? 1.4 : over ? 3.4 : hTarget, .4), dur, gk: { x: clamp(t.ax, 31, 37), y: .5, dive: gkDive(t.ax), h: .6 }, commit: () => {},
+      return { kind: 'shot', ok: false, anim, ps, ball: toKeys([from, ...pts.slice(1)], post ? 1.4 : over ? 3.4 : hTarget, .4), dur, gk: { x: clamp(t.ax, 31, 37), y: .5, dive: gkDive(t.ax), h: .6 }, commit: () => {},
         end: { res: { goal: false, shot: true, onTarget: false, text: post ? `${nm} acertou a trave!` : over ? `${nm} mandou por cima.` : `${nm} chutou pra fora.` }, text: post ? 'Na trave!' : over ? 'Por cima!' : 'Pra fora!', color: '#f2b640', goal: false } };
     }
     if (r() < sp.save) {
       const keys = toKeys([from, ...path.slice(1)], hTarget, peakS);
       const last = keys[keys.length - 1];
       keys.push({ x: last.x + (r() - .5) * 6, y: 4 + r() * 4, h: 1.2 });
-      return { kind: 'shot', ok: false, ball: keys, dur: dur + 260, gk: { x: clamp(t.ax, 30.8, 37.2), y: .6, dive: gkDive(t.ax), h: hTarget }, commit: () => {},
-        end: { res: { goal: false, shot: true, onTarget: true, text: `${this.gkE ? this.gkE.name : 'o goleiro'} defendeu o chute de ${nm}.` }, text: 'Defendeu!', color: '#9ec9ec', goal: false } };
+      const gkP = this.gkE?.P, gt = psTag('reflexos', psLevel(gkP, 'reflexos'), true);
+      return { kind: 'shot', ok: false, anim, ps: gt ? [...ps, gt] : ps, ball: keys, dur: dur + 260, gk: { x: clamp(t.ax, 30.8, 37.2), y: .6, dive: gkDive(t.ax), h: hTarget }, commit: () => {},
+        end: { res: { goal: false, shot: true, onTarget: true, text: `${this.gkE ? this.gkE.name : 'o goleiro'} defendeu ${sk.cabeca ? 'a cabeçada' : 'o chute'} de ${nm}.` }, text: 'Defendeu!', color: '#9ec9ec', goal: false } };
     }
     const keys = toKeys([from, ...path.slice(1)], hTarget, peakS);
     keys.push({ x: t.ax, y: -1.6, h: Math.min(hTarget, 2) * .8 });
-    return { kind: 'shot', ok: true, ball: keys, dur: dur + 180, gk: { x: 34 + (34 - t.ax) * .3, y: .6, dive: t.ax > 34 ? -1 : 1, h: .5 }, commit: () => {},
-      end: { res: { goal: true, shot: true, onTarget: true, scorer: nm, assist: as }, text: 'GOOOL!', color: '#e8c35f', goal: true } };
+    return { kind: 'shot', ok: true, anim, ps, ball: keys, dur: dur + 180, gk: { x: 34 + (34 - t.ax) * .3, y: .6, dive: t.ax > 34 ? -1 : 1, h: .5 }, commit: () => {},
+      end: { res: { goal: true, shot: true, onTarget: true, scorer: nm, assist: as }, text: sk.cabeca ? 'GOL DE CABEÇA!' : sk.forte ? 'GOLAÇO!' : 'GOOOL!', color: '#e8c35f', goal: true } };
   }
 
   /** Cobrança de falta a partir do gesto. */

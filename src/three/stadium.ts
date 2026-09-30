@@ -175,6 +175,9 @@ function subdivide(pts: number[], n: number): number[] {
 
 /** Rede parada de novo (para o replay mostrar o balanço outra vez). */
 export function resetNet(): void { if (net) net.hit = null; }
+let netForce = 1;
+/** Força com que a bola estufa a rede (superchute = mais). */
+export function setNetForce(f: number): void { netForce = f; }
 
 let net: { geo: THREE.BufferGeometry; base: Float32Array; hit: { x: number; y: number; t0: number } | null; off: THREE.Vector3 } | null = null;
 /**
@@ -189,7 +192,7 @@ export function tickNet(ball: THREE.Vector3, now = performance.now()): void {
   const t = (now - net.hit.t0) / 1000;
   if (t > 3.2) return;
   // Estufa rápido (a bola empurra), volta e ainda balança um pouco
-  const amp = .55 * (1 - Math.exp(-t * 14)) * Math.exp(-t * 1.6) + .12 * Math.exp(-t * 1.2) * Math.sin(t * 13);
+  const amp = .55 * netForce * (1 - Math.exp(-t * 14)) * Math.exp(-t * 1.6) + .12 * Math.exp(-t * 1.2) * Math.sin(t * 13);
   const pos = net.geo.getAttribute('position') as THREE.BufferAttribute, a = pos.array as Float32Array, b = net.base, { x: hx, y: hy } = net.hit;
   for (let i = 0; i < a.length; i += 3) {
     const x = b[i], y = b[i + 1], z = b[i + 2];

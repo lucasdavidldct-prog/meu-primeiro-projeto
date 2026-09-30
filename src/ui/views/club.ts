@@ -83,7 +83,7 @@ function uniformes(): string {
 function ambienteOpts(): string {
   const S = app.S, chips = (act: string, sel: string, ops: [string, string][]) => ops.map(([k, n]) => `<button class="chip" data-act="${act}" data-v="${k}" aria-pressed="${sel === k}">${n}</button>`).join('');
   return `<div style="margin-top:10px"><span class="small muted">Câmera dos lances (dá para trocar e girar 360° durante o lance)</span>
-      <div class="chips" style="margin-top:4px">${chips('setCamera', S.camera ?? 'padrao', [['padrao', 'Padrão'], ['tv', 'TV'], ['aerea', 'Aérea'], ['atras', 'Atrás do jogador']])}</div></div>
+      <div class="chips" style="margin-top:4px">${chips('setCamera', S.camera && S.camera !== 'aerea' ? S.camera : 'padrao', [['padrao', 'Padrão (atrás da jogada)'], ['tv', 'TV (de lado)'], ['atras', 'Atrás do jogador']])}</div></div>
     <div style="margin-top:10px"><span class="small muted">Clima das partidas</span>
       <div class="chips" style="margin-top:4px">${chips('setClima', S.clima ?? 'auto', [['auto', '🎲 Variado'], ...CLIMAS.map(c => [c, `${CLIMA_I[c]} ${CLIMA_N[c]}`] as [string, string])])}</div>
       <p class="small muted" style="margin:4px 0 0">Variado: cada jogo tem o seu (no Brasil não neva). Chuva e neve deixam passes e chutes um pouco mais difíceis.</p></div>

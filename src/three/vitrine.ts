@@ -4,6 +4,7 @@ import { kitsDoClube, goleiroKit } from '../engine/kits';
 import type { BasePlayer } from '../engine/types';
 import { W } from '../engine/world';
 import { makeBall, makePlayer } from './players';
+import { keeperDive } from './anim';
 import { createView } from './quality';
 import { addLights, buildGoal, buildPitch, buildStadium, tickNet, tickStadium } from './stadium';
 
@@ -29,7 +30,7 @@ export function vitrine(): () => void {
   const back = makePlayer(fla[0], 9, { seed: 99, P: find('Pedro') });
   back.root.position.set(3.6, 0, 3.4); back.body.rotation.y = .2; scene.add(back.root);
   const gk = makePlayer(goleiroKit(cam[0], fla[0]), 1, { gk: true, seed: 5, facing: 1, P: find('Everson') });
-  gk.root.position.set(-1.5, 0, .8); gk.body.rotation.z = .9; gk.body.position.y = .5; scene.add(gk.root);
+  gk.root.position.set(-1.5, 0, .8); keeperDive(gk, -1, true, .5); scene.add(gk.root);
   const { ball } = makeBall(); ball.position.set(1.8, 1.3, -1.7); scene.add(ball);
   const camera = new THREE.PerspectiveCamera(46, Wd / H, .1, 500);
   camera.position.set(1.5, 2.6, 12.5); camera.lookAt(0, 1.2, 2);

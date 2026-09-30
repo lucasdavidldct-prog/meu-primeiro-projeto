@@ -12,9 +12,10 @@ describe('cena do lance', () => {
     seedRng(1);
     const m = match();
     const at = new LanceScene(m, { kind: 'ataque' }, mulberry32(1));
-    expect(at.mates.length).toBeGreaterThanOrEqual(5);
+    expect(at.mates.length).toBeGreaterThanOrEqual(3);
     expect(at.foes.filter(f => f.gk)).toHaveLength(1);
-    expect(at.actions).toBe(6);
+    expect(at.actions).toBeGreaterThanOrEqual(4);
+    expect(at.actions).toBeLessThanOrEqual(7);
     const pen = new LanceScene(m, { kind: 'penalti', taker: penaltyTaker(m.A) }, mulberry32(2));
     expect(pen.mates).toHaveLength(1);
     expect(pen.foes).toHaveLength(1);
@@ -81,5 +82,81 @@ describe('cena do lance', () => {
     expect(plan.kind).toBe('fk');
     expect(plan.end).toBeDefined();
     expect(plan.ball.length).toBeGreaterThan(5);
+  });
+
+  it('as jogadas variam: cenários diferentes, com números diferentes de atacantes e defensores', () => {
+    const cen = new Set<string>(), ataque = new Set<number>(), defesa = new Set<number>();
+    for (let s = 1; s <= 60; s++) {
+      const sc = new LanceScene(match(), { kind: 'ataque' }, mulberry32(s));
+      cen.add(sc.cenario); ataque.add(sc.mates.length); defesa.add(sc.field().length);
+    }
+    expect(cen.size).toBeGreaterThanOrEqual(4);
+    expect(ataque.size).toBeGreaterThanOrEqual(3);
+    expect(defesa.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it('rival na retranca: mais gente atrás da bola do que contra quem ataca', () => {
+    const conta = (retranca: boolean) => {
+      let n = 0;
+      for (let s = 1; s <= 80; s++) { const m = match(); if (retranca) { m.B.style = 'retranca'; m.B.ment = -1; } n += new LanceScene(m, { kind: 'ataque' }, mulberry32(s)).field().length; }
+      return n;
+    };
+    expect(conta(true)).toBeGreaterThan(conta(false));
+  });
+
+  it('sem a bola, os companheiros se mexem com um papel (infiltrar, abrir, apoiar...)', () => {
+    const sc = new LanceScene(match(), { kind: 'ataque' }, mulberry32(9));
+    expect(sc.mates.filter(m => m !== sc.carrier).every(m => !!m.papel)).toBe(true);
+  });
+
+  it('menu do chute: Rasteiro e Superchute retos, Colocado com curva; na bola alta, Cabeçada ou Voleio', () => {
+    const sc = new LanceScene(match(), { kind: 'ataque' }, mulberry32(11));
+    sc.carrier.x = 34; sc.carrier.y = 15;
+    const ops = sc.shotOptions({ ax: 36, curve: .6 });
+    expect(ops.map(o => o.nome)).toEqual(expect.arrayContaining(['Rasteiro', 'Superchute', 'Colocado']));
+    for (const o of ops) if (o.t.kind === 'shot') expect(o.t.curve === 0).toBe(o.nome !== 'Colocado');
+    sc.firstTime = true;
+    const alto = sc.shotOptions({ ax: 36, curve: 0 });
+    expect(alto[0].nome).toBe('Cabeçada');
+    expect(sc.ballAt.h).toBeGreaterThan(1.5);
+    const plan = sc.perform(alto[0].t);
+    expect(plan.anim).toBe('cabeca');
+    expect(plan.ball[0].h).toBeGreaterThan(1.5);
+  });
+
+  it('superchute: a bola chega bem mais rápido que o rasteiro', () => {
+    const dur = (tipo: 'forte' | 'rasteiro') => {
+      const sc = new LanceScene(match(), { kind: 'ataque' }, mulberry32(12));
+      sc.carrier.x = 34; sc.carrier.y = 24; sc.foes.forEach(f => { if (!f.gk) { f.x = 3; f.y = 44; } });
+      const p = sc.perform(sc.shotAs({ ax: 36, curve: 0 }, tipo));
+      return p.dur;
+    };
+    expect(dur('forte')).toBeLessThan(dur('rasteiro') * .75);
+  });
+
+  it('menu do passe: rasteiro, alto e enfiado, com chances diferentes', () => {
+    const sc = new LanceScene(match(), { kind: 'ataque' }, mulberry32(13));
+    const m = sc.mates.find(x => x !== sc.carrier && !sc.isOffside(x))!;
+    const ops = sc.passOptions(m);
+    expect(ops.length).toBeGreaterThanOrEqual(2);
+    expect(ops[0].t).toMatchObject({ kind: 'pass' });
+    expect(ops[1].t).toMatchObject({ kind: 'pass', alto: true });
+  });
+
+  it('Primeiro Toque: quem recebe o passe com o estilo ganha uma ação a mais', () => {
+    for (let s = 1; s < 60; s++) {
+      const sc = new LanceScene(match(), { kind: 'ataque' }, mulberry32(s));
+      const m = sc.mates.filter(x => x !== sc.carrier && !sc.isOffside(x)).sort((a, b) => sc.passP(b) - sc.passP(a))[0];
+      if (!m) continue;
+      m.e = { ...m.e!, P: { ...m.e!.P, ps: ['primeiro-toque'] } };
+      const antes = sc.actions, plan = sc.perform({ kind: 'pass', m });
+      if (!plan.ok) continue;
+      expect(plan.bonus).toBeTruthy();
+      expect(plan.ps?.some(t => t.id === 'primeiro-toque')).toBe(true);
+      plan.commit();
+      expect(sc.actions).toBe(antes);
+      return;
+    }
+    throw new Error('nenhum passe completou');
   });
 });
