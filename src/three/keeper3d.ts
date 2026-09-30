@@ -44,7 +44,7 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
     camera.position.copy(V(34, -6.5, 2.6)); camera.lookAt(V(34, 12, .8));
 
     const kit = awayKit([M.A.c1, M.A.c2], [M.B.c1, M.B.c2]);
-    const gkMesh = makePlayer('#c6f432', '#111111', 1, { gk: true, facing: 1, seed: 3 });
+    const gkMesh = makePlayer('#c6f432', '#111111', (gk as { num?: number } | undefined)?.num ?? 1, { gk: true, facing: 1, seed: 3 });
     gkMesh.root.position.copy(V(34, .6)); gkMesh.root.scale.setScalar(1.15);
     // Goleiro de costas para a câmera, olhando o batedor
     gkMesh.body.rotation.y = Math.PI;

@@ -9,7 +9,7 @@ import { clubStrength } from '../engine/squads';
 import { PS_BY_ID, PS_CATS, parsePs, type PsCat, LEG_CATS } from '../engine/data/schema';
 import { oppFromClub, oppFromId } from '../engine/season';
 import { endSeason as careerEnd, nextFixture } from '../engine/career';
-import { teamStrength, setFormation, setOrder, setRole, applyPick, autoLineup, blankGame, cardByUid, duplicates, newCareerGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
+import { loadPreset, savePreset, teamStrength, setFormation, setOrder, setRole, applyPick, autoLineup, blankGame, cardByUid, duplicates, newCareerGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
 import type { FormationId, Pos, StyleId } from '../engine/types';
 import { exportJson, flushSave, importJson } from '../save/db';
 import { cardHTML } from './card';
@@ -107,6 +107,23 @@ const ACT: Record<string, Handler> = {
   },
   benchClear(d) { app.S.squad.bench[+d.i!] = 0; app.sel = null; closeSheet(); save(); render(); },
   auto() { autoLineup(app.S); save(); render(); toast('Melhor time escalado'); },
+  presetSave() {
+    openSheet(`<h2>Salvar elenco</h2><p class="small muted" style="margin-top:-4px">Guarda formação, titulares, reservas, funções, orientações e tática. Mesmo nome = substitui.</p>
+      <input id="presetNome" maxlength="24" placeholder="Ex.: Titular, Copa, Poupando" style="width:100%">
+      <button class="btn pri block" style="margin-top:12px" data-act="presetSaveOk">Salvar</button>`);
+    setTimeout(() => document.getElementById('presetNome')?.focus(), 50);
+  },
+  presetSaveOk() {
+    const r = savePreset(app.S, (document.getElementById('presetNome') as HTMLInputElement | null)?.value ?? '');
+    if (!r.ok) { toast(r.msg!); return; }
+    closeSheet(); save(); render(); toast('Elenco salvo');
+  },
+  presetLoad(d) {
+    const r = loadPreset(app.S, +d.i!);
+    if (!r.ok) return;
+    save(); render(); toast(r.faltando ? `Elenco carregado (${r.faltando} vaga(s) vazia(s): carta vendida)` : `Elenco "${app.S.elencos![+d.i!].nome}" carregado`);
+  },
+  presetDel(d) { app.S.elencos?.splice(+d.i!, 1); save(); render(); },
   form(d) { setFormation(app.S, d.f as FormationId); save(); render(); },
   style(d) { app.S.tac.style = d.s as StyleId; save(); render(); },
   ment(d) { app.S.tac.ment = +d.m!; save(); render(); },

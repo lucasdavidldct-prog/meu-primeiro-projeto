@@ -44,6 +44,9 @@ export function viewSquad(): string {
   <p class="small muted" style="margin:6px 0 0">Toque num jogador para trocar, ou <b>segure a carta e arraste</b> para outra posição (vale para as reservas também). Losangos verdes = química (0–3). Posição em amarelo = fora de posição.</p>
   <h3>Reservas</h3><div class="bench">${bench}</div>
   <div class="row" style="margin-top:6px"><button class="btn" data-act="auto">Escalar melhor time</button></div>
+  <h3>Elencos salvos</h3>
+  <div class="presets">${(S.elencos ?? []).map((e, i) => `<div class="preset"><button class="chip" data-act="presetLoad" data-i="${i}">${esc(e.nome)} <span class="muted">· ${e.squad.form}</span></button><button class="chip x" data-act="presetDel" data-i="${i}" aria-label="Apagar ${esc(e.nome)}">×</button></div>`).join('') || '<p class="small muted" style="margin:0">Salve o time atual para trocar de escalação num toque (até 5).</p>'}</div>
+  <button class="btn" style="margin-top:8px" data-act="presetSave">💾 Salvar este time</button>
   <h3>Formação</h3>
   <div class="chips">${FORM_IDS.map(f => `<button class="chip" data-act="form" data-f="${f}" aria-pressed="${f === S.squad.form}">${f}</button>`).join('')}</div>
   <h3>Estilo de jogo</h3>

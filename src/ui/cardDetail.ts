@@ -9,7 +9,7 @@ import type { OwnedCard } from '../engine/types';
 import { clubOf, leagueName, nationOf } from '../engine/world';
 import { cardHTML, flagHTML } from './card';
 import { app, save } from './ctx';
-import { esc, fmt, openSheet } from './dom';
+import { esc, fmt, openSheet, toast } from './dom';
 import { fotoDe, temFotoCommons } from './fotos';
 import { psIcon } from './psIcons';
 
@@ -43,6 +43,7 @@ export function showCard(u: number): void {
          <span>Posição</span><b>${P.pos}${P.alt.length ? ' · ' + P.alt.join(' ') : ''}</b>
          <span>Dribles</span><b>${stars(d.skills)}</b>
          <span>Perna ruim</span><b>${stars(d.weak)}</b>
+         ${P.num ? `<span>Camisa</span><b>${P.num}</b>` : ''}
          <span>Pé</span><b>${{ D: 'Direito', E: 'Esquerdo', A: 'Ambidestro' }[P.foot]}</b>
          ${P.fs ? '<span>Raridade</span><b class="fs-txt">⚡ Fora de Série</b>' : ''}
          ${P.quim ? `<span>Química</span><b>${esc(CHEM_BY_ID.get(P.quim)?.n ?? '')}</b>` : ''}
@@ -87,7 +88,10 @@ function customHTML(P: OwnedCard): string {
   const gk = P.pos === 'GOL', list = PLAYSTYLES.filter(p => p.gol === gk);
   const chip = (act: string, id: string, on: boolean, label: string) => `<button class="chip" data-act="${act}" data-u="${P.u}" data-id="${id}" aria-pressed="${on}">${id ? psIcon(id) : ''} ${esc(label)}</button>`;
   const q = chemOf(P.u);
-  return `<p class="small muted" style="margin-top:0">Escolha <b>um estilo +</b>, <b>um prata</b> e o <b>estilo de química</b> desta carta. Pode trocar quando quiser, de graça.</p>
+  return `<h3 style="margin-top:0">Número da camisa</h3>
+    <div class="row" style="gap:8px"><input id="cdNum" type="number" inputmode="numeric" min="1" max="99" value="${ex.num ?? ''}" placeholder="—" style="width:90px"><button class="btn" data-act="exNum" data-u="${P.u}">Salvar número</button>${ex.num ? `<button class="btn" data-act="exNum" data-u="${P.u}" data-clear="1">Tirar</button>` : ''}</div>
+    <p class="small muted">Aparece nas costas do jogador nos lances 3D.</p>
+    <p class="small muted">Escolha <b>um estilo +</b>, <b>um prata</b> e o <b>estilo de química</b> desta carta. Pode trocar quando quiser, de graça.</p>
     <h3>Estilo + (dourado)</h3><div class="chips cd-chips">${chip('exPlus', '', !ex.plus, 'Nenhum')}${list.map(p => chip('exPlus', p.id, ex.plus === p.id, p.nome)).join('')}</div>
     <h3>Estilo prata</h3><div class="chips cd-chips">${chip('exPrata', '', !ex.prata, 'Nenhum')}${list.filter(p => p.id !== ex.plus).map(p => chip('exPrata', p.id, ex.prata === p.id, p.nome)).join('')}</div>
     <h3>Estilo de química</h3>
@@ -133,6 +137,15 @@ function setEx(u: number, k: 'plus' | 'prata' | 'quim', id: string): void {
 }
 
 export const cardDetailActions = {
+  exNum(d: DOMStringMap) {
+    const c = app.S.cards.find(c => c.u === +d.u!); if (!c) return;
+    const n = d.clear ? 0 : Math.round(Number((document.getElementById('cdNum') as HTMLInputElement | null)?.value));
+    if (!d.clear && !(n >= 1 && n <= 99)) { toast('Escolha um número de 1 a 99'); return; }
+    c.ex = { ...(c.ex ?? {}) };
+    if (n) c.ex.num = n; else delete c.ex.num;
+    if (!Object.keys(c.ex).length) delete c.ex;
+    save(); showCard(c.u); toast(n ? `Camisa ${n}` : 'Número removido');
+  },
   cardTab(d: DOMStringMap) { tab = d.t as CardTab; showCard(cur); },
   exPlus(d: DOMStringMap) { setEx(+d.u!, 'plus', d.id ?? ''); },
   exPrata(d: DOMStringMap) { setEx(+d.u!, 'prata', d.id ?? ''); },

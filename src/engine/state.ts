@@ -13,7 +13,7 @@ export const SAVE_VERSION = 4;
 
 /** Carta da coleção. tr = negociável no mercado (elenco inicial e compras no leilão; cartas de pacote não). */
 /** Personalização da carta: um estilo de jogo + (dourado), um prata e o estilo de química. */
-export interface CardExtra { plus?: string; prata?: string; quim?: string }
+export interface CardExtra { plus?: string; prata?: string; quim?: string; /** Número da camisa (1 a 99). */ num?: number }
 export interface CardRef { u: number; p: string; v: Variant; tr?: boolean; ex?: CardExtra }
 export interface GameState {
   v: number;
@@ -30,6 +30,8 @@ export interface GameState {
     ord?: (Order | null)[];
   };
   tac: { style: StyleId; ment: number };
+  /** Elencos salvos (até 5): formação, titulares, reservas, funções, orientações e tática. */
+  elencos?: { nome: string; squad: GameState['squad']; tac: GameState['tac'] }[];
   /** Modo carreira (null = ainda não escolheu o clube). */
   career: Career | null;
   rec: { w: number; d: number; l: number; gf: number; ga: number; packs: number };
@@ -118,6 +120,7 @@ function owned(c: CardRef): OwnedCard {
   const P = cardData(c.p, c.v), ex = c.ex;
   const o: OwnedCard = { ...P, u: c.u, tr: c.tr };
   if (ex?.quim) o.quim = ex.quim;
+  if (ex?.num) o.num = ex.num;
   if (ex?.plus || ex?.prata) o.ps = mergePs(P.ps, ex.plus, ex.prata);
   return o;
 }
@@ -194,6 +197,30 @@ export function replaceUnavailable(S: GameState): string[] {
     out.push(`${P.short} → ${best.short}`);
   });
   return out;
+}
+
+export const MAX_ELENCOS = 5;
+const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
+/** Salva o time atual como elenco predefinido (mesmo nome = substitui). */
+export function savePreset(S: GameState, nome: string): { ok: boolean; msg?: string } {
+  const L = S.elencos ??= [], n = nome.trim().slice(0, 24) || `Elenco ${L.length + 1}`;
+  const i = L.findIndex(e => e.nome === n);
+  if (i < 0 && L.length >= MAX_ELENCOS) return { ok: false, msg: `No máximo ${MAX_ELENCOS} elencos salvos: apague um antes` };
+  const e = { nome: n, squad: clone(S.squad), tac: clone(S.tac) };
+  if (i >= 0) L[i] = e; else L.push(e);
+  return { ok: true };
+}
+/** Carrega um elenco salvo; cartas que você não tem mais ficam vazias na vaga. */
+export function loadPreset(S: GameState, i: number): { ok: boolean; faltando: number } {
+  const e = S.elencos?.[i];
+  if (!e) return { ok: false, faltando: 0 };
+  const tem = new Set(S.cards.map(c => c.u));
+  const sq = clone(e.squad);
+  let faltando = 0;
+  sq.xi = sq.xi.map(u => (u && tem.has(u) ? u : (u && faltando++, 0)));
+  sq.bench = sq.bench.map(u => (u && tem.has(u) ? u : 0));
+  S.squad = sq; S.tac = clone(e.tac);
+  return { ok: true, faltando };
 }
 
 export function autoLineup(S: GameState): void {

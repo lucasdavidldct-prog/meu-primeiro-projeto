@@ -503,3 +503,7 @@ table tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
 .card.fs .c-tag{background:linear-gradient(90deg,#b8860b,#ffd766,#b8860b);color:#2a1c00}
 .fs-txt{color:#ffd766}
 .fs-box{display:grid;gap:4px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:linear-gradient(90deg,rgba(255,215,102,.18),rgba(255,215,102,.04));border:1px solid rgba(255,215,102,.55);font-size:13px}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.preset{display:inline-flex}
+.preset .chip:first-child{border-radius:99px 0 0 99px}
+.preset .chip.x{border-radius:0 99px 99px 0;border-left:0;padding:7px 10px}

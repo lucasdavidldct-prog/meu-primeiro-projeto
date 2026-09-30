@@ -95,7 +95,8 @@ export class LanceScene {
     this.dm = defenseMods(B.xi);
     this.setup = kind === 'falta' ? fkSetup(r) : null;
     this.actions = kind === 'penalti' || kind === 'falta' ? 1 : kind === 'escanteio' ? 3 : req.treino ? 8 : 6;
-    const num = (e?: SideEntry) => (e ? (A.xi.indexOf(e) + 1 === 1 ? 1 : A.xi.indexOf(e) + 1) : 0);
+    // Número da camisa: o escolhido pelo usuário ou o da vaga
+    const num = (e?: SideEntry) => (e ? ((e.P as { num?: number }).num ?? A.xi.indexOf(e) + 1) : 0);
     const mk = (x: number, y: number, team: 0 | 1, e?: SideEntry, gk = false, n = 0): Actor => ({ id: this.nid++, x, y, tx: x, ty: y, e, gk, team, num: n || num(e) });
     if (kind === 'penalti' || kind === 'falta') {
       const taker = req.taker ?? pickShooter(A, { ATA: 6, MEI: 4 });
