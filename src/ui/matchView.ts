@@ -21,6 +21,14 @@ import { haptic, sfx } from './sfx';
 
 /** Lance 3D (carregado sob demanda); o 2D só entra sozinho se o aparelho não tiver WebGL ou se o 3D falhar. */
 export async function runMoment(m: Match, req: Parameters<typeof runMoment2D>[1]): Promise<Awaited<ReturnType<typeof runMoment2D>>> {
+  if (req.kind === 'defesa') {
+    if (webglAvailable()) {
+      try { const { runDefense3D } = await import('../three/defense3d'); return await runDefense3D(m, req); }
+      catch (e) { console.warn('Lance de defesa 3D indisponível, usando 2D', e); }
+    }
+    const { runDefense2D } = await import('./defense2d');
+    return runDefense2D(m, req);
+  }
   if (req.kind === 'goleiro') {
     if (webglAvailable()) {
       try { const { runKeeper3D } = await import('../three/keeper3d'); return await runKeeper3D(m, req); }
@@ -103,7 +111,7 @@ export function startMatch(opp: OppTeam, fx: Fixture | null): void {
   const cl = S.career ? classico(S.career.club, opp.club) : undefined;
   lastOpp = opp;
   const m = new Match(A, sideOpp(opp, d.boost + classicoBoost(cl)), {
-    home, keeperBoost: d.keeper, classico: cl, keeper: S.moments && S.goleiro !== false ? d.gk : 0,
+    home, keeperBoost: d.keeper, classico: cl, keeper: S.moments && S.goleiro !== false ? d.gk : 0, defesas: S.moments && S.goleiro !== false ? d.gk : 0,
     moments: S.moments ? d.moments : 0,
     onMoment: S.moments ? async (mm, req) => {
       L!.busy = true; renderMatch();
@@ -118,6 +126,8 @@ export function startMatch(opp: OppTeam, fx: Fixture | null): void {
   L = { m, fx, speed: 1, paused: false, busy: false, naoTrocar: new Set() };
   const ov = document.createElement('div');
   ov.className = 'match'; ov.id = 'match';
+  // O corpo é redesenhado a cada minuto; a troca rápida fica numa área fixa que só muda quando a sugestão muda
+  ov.innerHTML = '<div id="mBody"></div><div class="sub-dock" id="subDock"></div>';
   document.body.appendChild(ov);
   renderMatch(); loop(); sfx.whistle(1);
 }
@@ -182,8 +192,8 @@ export async function quickPlay(opp: OppTeam, fx: Fixture): Promise<void> {
 }
 
 export function renderMatch(): void {
-  const ov = document.getElementById('match');
-  if (!ov || !L) return;
+  const root = document.getElementById('match'), ov = root?.querySelector<HTMLElement>('#mBody');
+  if (!root || !ov || !L) return;
   const M = L.m, A = M.A, B = M.B;
   const poss = M.possessionPct;
   const ms = (lab: string, a: number, b: number) => { const t = a + b || 1; return `<div class="ms"><span class="lab">${lab}</span><span>${a}</span><div class="dual"><b style="width:${a / t * 100}%"></b><i style="width:${b / t * 100}%"></i></div><span>${b}</span></div>`; };
@@ -203,7 +213,6 @@ export function renderMatch(): void {
      ${A.goals < B.goals ? '<button class="btn block" style="margin-bottom:8px" data-act="revanche">🔁 Revanche (amistoso, na hora)</button>' : ''}
      <button class="btn pri block" data-act="closeMatch">Continuar</button></div>` : ''}
    ${M.ht && !M.over ? `<div class="ht"><b>Intervalo.</b> <span class="muted small">Ajuste o time e volte para o segundo tempo.</span><div class="row" style="margin-top:10px"><button class="btn pri" style="flex:1" data-act="secondHalf">Começar 2º tempo</button><button class="btn" data-act="subs">Substituições (${A.subs})</button></div></div>` : ''}
-   ${subHint()}
    ${!M.over ? `<div class="mctl">
      <button class="chip" data-act="mPause" aria-pressed="${L.paused}">${L.paused ? 'Continuar' : 'Pausar'}</button>
      ${[1, 2, 3].map(s => `<button class="chip" data-act="mSpeed" data-s="${s}" aria-pressed="${L!.speed === s}">${['', '1×', '2×', '4×'][s]}</button>`).join('')}
@@ -221,18 +230,28 @@ export function renderMatch(): void {
   </div>`;
   const st = ov.querySelector<HTMLSelectElement>('#mStyle');
   if (st) st.onchange = () => { M.setStyle(st.value as StyleId); renderMatch(); };
+  updateSubDock(root.querySelector<HTMLElement>('#subDock')!);
+}
+
+/** Atualiza a troca rápida só quando a sugestão (ou o fôlego, de 5 em 5%) muda: sem piscar e sem perder o toque. */
+function updateSubDock(dock: HTMLElement): void {
+  const h = subHint();
+  const key = h ? h.key : '';
+  if (dock.dataset.key === key) return;
+  dock.dataset.key = key;
+  dock.innerHTML = h ? h.html : '';
 }
 
 /** Aviso de troca rápida quando um titular está cansado (um toque troca; "Agora não" some com a sugestão). */
-function subHint(): string {
-  if (!L || L.m.over || L.m.ht) return '';
+function subHint(): { key: string; html: string } | null {
+  if (!L || L.m.over || L.m.ht || L.busy) return null;
   const M = L.m, s = M.suggestSub(70, L.naoTrocar);
-  if (!s) return '';
+  if (!s) return null;
   const e = M.A.xi[s.out], P = M.A.bench[s.inIdx];
   if (L.avisado !== e.name) { L.avisado = e.name; haptic('leve'); }
-  return `<div class="sub-hint"><span class="sh-ic">🔋</span><div><b>${esc(e.name)}</b> está cansado · fôlego <b class="${s.folego < 55 ? 'down' : ''}">${s.folego}%</b>
+  return { key: `${s.out}|${s.inIdx}|${Math.round(s.folego / 5)}|${Math.round(s.ganho)}`, html: `<div class="sub-hint"><span class="sh-ic">🔋</span><div><b>${esc(e.name)}</b> está cansado · fôlego <b class="${s.folego < 55 ? 'down' : ''}">${s.folego}%</b>
       <div class="small muted">Entra <b>${esc(P.short)}</b> (${P.pos} · ${P.ovr})${s.ganho > 0 ? ` · +${Math.round(s.ganho)} de rendimento` : ''}</div></div>
-    <div class="sh-acts"><button class="btn pri" data-act="quickSub" data-o="${s.out}" data-i="${s.inIdx}">Trocar</button><button class="btn" data-act="skipSub" data-n="${esc(e.name)}">Agora não</button></div></div>`;
+    <div class="sh-acts"><button class="btn pri" data-act="quickSub" data-o="${s.out}" data-i="${s.inIdx}">Trocar</button><button class="btn" data-act="skipSub" data-n="${esc(e.name)}">Agora não</button></div></div>` };
 }
 
 function openSubs(): void {
@@ -298,6 +317,7 @@ export function devMoment(kind: MomentKind, pen = false, oppId?: string, home: 0
   const m = new Match(A, sideOpp(oppFromClub(opp)), { home });
   aplicarClima(m, opp.lg);
   if (kind === 'goleiro') return runMoment(m, { kind, taker: penaltyTaker(m.B), pen });
+  if (kind === 'defesa') return runMoment(m, { kind, taker: penaltyTaker(m.B), creator: m.B.xi.find(e => e.pos === 'MEI' || e.pos === 'MC') });
   const taker = kind === 'falta' ? freeKickTaker(A) : kind === 'penalti' ? penaltyTaker(A) : undefined;
   return runMoment(m, { kind, taker, ...(kind === 'ataque' || kind === 'contra' ? m.origin(A) : {}) });
 }

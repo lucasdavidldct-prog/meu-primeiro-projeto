@@ -22,7 +22,7 @@ const lab = {
   tally: {} as Record<string, [number, number][]>,
 };
 
-const LANCE_N: Record<MomentKind, string> = { ataque: 'Ataque', contra: 'Contra-ataque', falta: 'Falta', penalti: 'Pênalti', goleiro: 'Lance de goleiro', escanteio: 'Escanteio', lateral: 'Lateral' };
+const LANCE_N: Record<MomentKind, string> = { ataque: 'Ataque', contra: 'Contra-ataque', falta: 'Falta', penalti: 'Pênalti', goleiro: 'Lance de goleiro', escanteio: 'Escanteio', lateral: 'Lateral', defesa: 'Lance de defesa' };
 const basePlayer = () => (lab.u != null ? cardByUid(app.S, lab.u) ?? undefined : undefined);
 
 export function viewLab(): string {
@@ -41,7 +41,7 @@ export function viewLab(): string {
     ${info.lado === 'ataque' ? `<div class="row" style="gap:8px;margin-top:10px;align-items:center"><span class="small muted">Jogador:</span><button class="btn" data-act="labPick">${base ? esc(base.short) + ` (${base.ovr})` : 'Neutro 80'} ▾</button>${base ? '<button class="btn" data-act="labNeutral">Usar neutro</button>' : ''}</div>` : ''}
     <p class="small tip" style="margin-top:10px">💡 ${esc(info.dica)}</p>
     ${info.lances.length ? `<div class="lab-play">${info.lances.map(k => `<button class="btn pri" data-act="labPlay" data-k="${k}">Jogar: ${LANCE_N[k]} (${LVL_N[lab.lvl]})</button>`).join('')}</div>
-      <div class="small muted" style="margin-top:8px">Seus lances aqui (acertos = gol no ataque, defesa no lance de goleiro): ${([0, 1, 2] as Lvl[]).map(l => `${LVL_N[l]} <b>${tally[l][1]}/${tally[l][0]}</b>`).join(' · ')}</div>`
+      <div class="small muted" style="margin-top:8px">Seus lances aqui (acertos = gol no ataque; defesa no lance de goleiro e no de defesa): ${([0, 1, 2] as Lvl[]).map(l => `${LVL_N[l]} <b>${tally[l][1]}/${tally[l][0]}</b>`).join(' · ')}</div>`
       : '<p class="small muted">Esse estilo não tem lance jogável: ele age só na simulação (veja abaixo).</p>'}
   </div>
   ${info.efeitos.length ? `<h3>Efeitos do estilo</h3><div class="panel"><table class="lab-t"><tr><th></th>${LVL_N.map((n, i) => `<th class="${i === lab.lvl ? 'cur' : ''}">${n}</th>`).join('')}</tr>
@@ -79,12 +79,13 @@ export const labActions = {
     const mine = s.lado === 'ataque' ? s.tested : undefined;
     const fwd = s.A.xi.find(e => e.pos === 'ATA')!, mid = s.A.xi.find(e => e.pos === 'MC')!;
     const res = kind === 'goleiro' ? await runMoment(m, { kind, taker: s.B.xi.find(e => e.pos === 'ATA')!, pen: lab.ps === 'pegador-de-penalti' })
+      : kind === 'defesa' ? await runMoment(m, { kind, taker: s.B.xi.find(e => e.pos === 'ATA')!, creator: s.B.xi.find(e => e.pos === 'MC') })
       : kind === 'falta' || kind === 'penalti' ? await runMoment(m, { kind, taker: mine ?? fwd })
       : await runMoment(m, { kind, lado: 'meio', creator: mine ?? mid });
     const key = lab.ps + '|' + (lab.u ?? 'n'), t = lab.tally[key] ??= [[0, 0], [0, 0], [0, 0]];
-    const gol = kind === 'goleiro' ? !res.goal : res.goal;
+    const gol = kind === 'goleiro' || kind === 'defesa' ? !res.goal : res.goal;
     t[lab.lvl][0]++; if (gol) t[lab.lvl][1]++;
-    toast(kind === 'goleiro' ? (res.goal ? 'Gol do rival' : 'Defendeu!') : res.goal ? 'Gol!' : res.text ?? 'Sem gol');
+    toast(kind === 'goleiro' || kind === 'defesa' ? (res.goal ? 'Gol do rival' : res.text ?? 'Defendeu!') : res.goal ? 'Gol!' : res.text ?? 'Sem gol');
     render();
   },
   async labSim() {

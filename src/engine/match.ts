@@ -38,7 +38,7 @@ export interface Side {
 }
 export type EvType = 'info' | 'goal' | 'goal opp' | 'goal lance' | 'chance' | 'card-y' | 'card-r' | 'lance';
 export interface MatchEvent { l: string; side: 0 | 1; type: EvType; text: string }
-export type MomentKind = 'ataque' | 'contra' | 'penalti' | 'falta' | 'goleiro' | 'escanteio' | 'lateral';
+export type MomentKind = 'ataque' | 'contra' | 'penalti' | 'falta' | 'goleiro' | 'escanteio' | 'lateral' | 'defesa';
 export interface MomentRequest {
   kind: MomentKind;
   /** Cobrador (pênalti e falta). */
@@ -51,7 +51,11 @@ export interface MomentRequest {
   lado?: 'esq' | 'dir' | 'meio';
   creator?: SideEntry;
 }
-export interface MomentResult { goal: boolean; shot: boolean; onTarget?: boolean; scorer?: string; assist?: string | null; text?: string }
+export interface MomentResult {
+  goal: boolean; shot: boolean; onTarget?: boolean; scorer?: string; assist?: string | null; text?: string;
+  /** Lance de defesa: quem roubou a bola, e quem levou amarelo na falta. */
+  defensor?: string; amarelo?: string;
+}
 export type MomentHandler = (m: Match, req: MomentRequest) => Promise<MomentResult>;
 
 type Tick = { m: number; l: string } | { ht: true };
@@ -162,8 +166,11 @@ export class Match {
   /** Lances de goleiro restantes (você defende o chute que ia virar gol). */
   keeperLeft: number;
   lastKeeper = -99;
+  /** Lances de defesa restantes (você comanda a zaga quando o rival ataca). */
+  defLeft: number;
+  lastDef = -99;
 
-  constructor(public A: Side, public B: Side, opts: { moments?: number; onMoment?: MomentHandler; home?: 0 | 1 | null; keeperBoost?: number; keeper?: number; classico?: Classico } = {}) {
+  constructor(public A: Side, public B: Side, opts: { moments?: number; onMoment?: MomentHandler; home?: 0 | 1 | null; keeperBoost?: number; keeper?: number; defesas?: number; classico?: Classico } = {}) {
     this.classico = opts.classico;
     this.momentsLeft = opts.onMoment ? (opts.moments ?? 3) : 0;
     this.onMoment = opts.onMoment;
@@ -172,6 +179,7 @@ export class Match {
     A.kit = kits.a; B.kit = kits.b;
     this.keeperBoost = opts.keeperBoost ?? 0;
     this.keeperLeft = opts.onMoment ? (opts.keeper ?? 0) : 0;
+    this.defLeft = opts.onMoment ? (opts.defesas ?? 0) : 0;
     const s1 = 1 + Math.floor(R() * 3), s2 = 2 + Math.floor(R() * 4);
     for (let m = 1; m <= 45; m++) this.seq.push({ m, l: m + "'" });
     for (let k = 1; k <= s1; k++) this.seq.push({ m: 45, l: '45+' + k + "'" });
@@ -354,6 +362,30 @@ export class Match {
     else { this.st.on[si]++; if (gk) (gk.sx ??= { g: 0, a: 0, d: 0, s: 0, c: 0 }).s += 2; this.addEv(0, 'lance', `Lance jogado: ${gk ? gk.name : 'o goleiro'} defendeu ${pen ? 'o pênalti' : 'o chute'} de ${shooter.name}!`); }
   }
 
+  /** Lance de defesa: o rival vai finalizar e você comanda a zaga antes. */
+  private canDefesa(att: Side): boolean {
+    return !att.you && this.A.you && !!this.onMoment && this.defLeft > 0 && this.min - this.lastDef >= 8 && this.min - this.lastKeeper >= 3;
+  }
+  private async playDefesa(att: Side, si: 0 | 1): Promise<void> {
+    this.defLeft--; this.lastDef = this.min;
+    const shooter = weightedPlayer(att, SCORE_W), helper = R() < .6 ? weightedPlayer(att, ASSIST_W, shooter) : null;
+    const res = await this.onMoment!(this, { kind: 'defesa', taker: shooter, creator: helper ?? undefined });
+    if (res.shot) this.st.sh[si]++;
+    if (res.amarelo) {
+      const e = this.A.xi.find(x => x.name === res.amarelo && !x.red);
+      if (e) { if (e.yc) { e.red = true; this.inc.r.push(e.P.id); this.addEv(0, 'card-r', tx('rc', { p: e.name })); } else { e.yc = 1; this.st.yc[0]++; this.inc.y.push(e.P.id); this.addEv(0, 'card-y', tx('yc', { p: e.name })); } }
+    }
+    if (res.goal) {
+      const sc = att.xi.find(e => e.name === res.scorer) ?? shooter;
+      this.goal(att, si, sc, `Lance jogado: ${sc.name} passou pela sua zaga e marcou.`, '', sc === shooter ? helper : null);
+      return;
+    }
+    if (res.onTarget) this.st.on[si]++;
+    const d = res.defensor ? this.A.xi.find(e => e.name === res.defensor) : undefined;
+    bump(d, 'd');
+    this.addEv(0, 'lance', `Lance jogado: ${res.text}`);
+  }
+
   /** Lance jogável para o usuário, se ainda houver e o intervalo mínimo tiver passado. */
   private canMoment(att: Side): boolean {
     return att.you && !!this.onMoment && this.momentsLeft > 0 && this.min - this.lastMom >= 10;
@@ -397,6 +429,8 @@ export class Match {
   private async shot(att: Side, def: Side, ra: Ratings, si: 0 | 1): Promise<void> {
     const gkE = def.xi.find(e => e.pos === 'GOL' && !e.red), gk = gkE ? gkE.name : 'o goleiro';
     const isPen = R() < CALIB.penChance;
+    // Parte das finalizações do rival vira lance de defesa: você comanda a zaga
+    if (!isPen && this.canDefesa(att) && R() < .5) { await this.playDefesa(att, si); return; }
     if (this.canMoment(att) && (isPen || R() < .3)) {
       await this.playMoment(att, si, isPen ? { kind: 'penalti', taker: penaltyTaker(att) } : { kind: att.style === 'contra' || R() < .25 ? 'contra' : 'ataque', ...this.origin(att) });
       return;

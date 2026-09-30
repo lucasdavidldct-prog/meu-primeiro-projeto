@@ -1,6 +1,9 @@
 // Menu de escolha dos lances (3D e 2D): depois de traçar a linha do chute, ou de tocar num companheiro,
 // aparece um botão por opção com a chance e os estilos de jogo do jogador que ajudam naquela opção.
-import type { Opcao, PsTag } from '../engine/lanceScene';
+import type { PsTag } from '../engine/lanceScene';
+
+/** Item do menu: nome, dica, chance e estilos que ajudam. */
+export interface ItemMenu { nome: string; dica: string; p: number; ps: PsTag[] }
 import { esc } from './dom';
 import { haptic } from './sfx';
 
@@ -16,7 +19,7 @@ export const psChips = (ps: PsTag[]): string => ps.map(t => `<span class="psc${t
  * Abre o menu. `onPick` recebe a opção escolhida; tocar em Cancelar (ou fora) chama `onCancel`.
  * Devolve uma função para fechar o menu por fora.
  */
-export function openChoice(root: HTMLElement, title: string, ops: Opcao[], onPick: (o: Opcao) => void, onCancel: () => void, onFocus?: (o: Opcao) => void): () => void {
+export function openChoice<T extends ItemMenu>(root: HTMLElement, title: string, ops: T[], onPick: (o: T) => void, onCancel: () => void, onFocus?: (o: T) => void): () => void {
   const box = root.querySelector<HTMLElement>('#mChoice')!;
   box.innerHTML = `<div class="ch-t">${esc(title)}</div><div class="ch-ops">${ops.map((o, i) => `<button data-i="${i}" style="--pc:${probColor(o.p)}">
       <b>${esc(o.nome)}</b><span class="ch-p">${Math.round(o.p * 100)}%</span>

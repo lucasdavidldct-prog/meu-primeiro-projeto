@@ -32,7 +32,7 @@ export function viewClub(): string {
     </div>
     ${uniformes()}
     <div class="row" style="margin-top:12px;justify-content:space-between"><span class="small muted">Lances jogáveis nas partidas</span><button class="chip" data-act="togMom" aria-pressed="${S.moments}">${S.moments ? 'Ligados' : 'Desligados'}</button></div>
-    <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Lance de goleiro (defender o chute que ia virar gol)</span><button class="chip" data-act="togGk" aria-pressed="${S.goleiro !== false}">${S.goleiro !== false ? 'Ligado' : 'Desligado'}</button></div>
+    <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Lances de defesa (goleiro e zaga: defender o ataque do rival)</span><button class="chip" data-act="togGk" aria-pressed="${S.goleiro !== false}">${S.goleiro !== false ? 'Ligado' : 'Desligado'}</button></div>
     ${webglAvailable() ? `<div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Gráficos 3D</span><div class="chips">${(['alta', 'media', 'leve'] as const).map(q => `<button class="chip" data-act="graficos" data-q="${q}" aria-pressed="${quality() === q}">${QUALITY_N[q]}</button>`).join('')}</div></div>
     <p class="small muted" style="margin:4px 0 0">Alta: sombras, brilho dos refletores e torcida cheia (celulares topo de linha). Leve: mais rápido.</p>
     ${ambienteOpts()}` : ''}

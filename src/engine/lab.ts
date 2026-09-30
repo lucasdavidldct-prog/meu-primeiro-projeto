@@ -30,17 +30,17 @@ export const LAB: Record<string, LabInfo> = {
   // Finalização
   'finalizacao-precisa': { lado: 'ataque', pos: 'ATA', lances: ['ataque', 'penalti'], dica: 'Chute de qualquer jeito: ele erra menos o alvo.',
     efeitos: [L('Chance de errar o alvo', FX.chuteErro, 'mult', 'menor'), S('Chance de gol nas finalizações', FX.finalizacao, 'mult', 'maior'), S('Conversão de pênalti', FX.penaltiBatedor, 'add', 'maior')] },
-  'chute-colocado': { lado: 'ataque', pos: 'ATA', lances: ['ataque'], dica: 'Faça o traço do chute CURVO (chute colocado no canto).',
+  'chute-colocado': { lado: 'ataque', pos: 'ATA', lances: ['ataque'], dica: 'Trace a linha até o gol e escolha Colocado (curve o traço para o canto).',
     efeitos: [L('Erro no chute com curva', FX.colocadoErro, 'mult', 'menor'), L('Defesa do goleiro no chute com curva', FX.colocadoDefesa, 'mult', 'menor'), S('Gols nas finalizações', FX.colocadoSim, 'mult', 'maior')] },
-  'chute-de-longe': { lado: 'ataque', pos: 'MEI', lances: ['ataque'], dica: 'Chute de FORA da área com traço RÁPIDO (super chute).',
+  'chute-de-longe': { lado: 'ataque', pos: 'MEI', lances: ['ataque'], dica: 'De fora da área, trace a linha e escolha Superchute: sem o estilo a bola sobe mais.',
     efeitos: [L('Penalidade pela distância', FX.chuteDistancia, 'mult', 'menor'), L('Defesa do goleiro no chute forte', FX.superChuteDefesa, 'mult', 'menor'), L('Força máxima sem isolar a bola', FX.superChuteLimite, 'prob', 'maior'), S('Gols de fora da área', FX.chuteLonge, 'mult', 'maior')] },
-  'chute-rasteiro': { lado: 'ataque', pos: 'ATA', lances: ['ataque'], dica: 'Escolha o chute RASTEIRO no seletor (ou traço rápido e baixo) de dentro ou da entrada da área.',
+  'chute-rasteiro': { lado: 'ataque', pos: 'ATA', lances: ['ataque'], dica: 'Trace a linha e escolha Rasteiro, de dentro ou da entrada da área.',
     efeitos: [L('Defesa do goleiro no chute rasteiro', FX.rasteiroDefesa, 'mult', 'menor'), L('Chance de o marcador travar', FX.rasteiroBloqueio, 'mult', 'menor')] },
-  'cavadinha': { lado: 'ataque', pos: 'ATA', lances: ['ataque'], dica: 'Perto do gol, faça um traço CURTO e LENTO: vira cavadinha.',
+  'cavadinha': { lado: 'ataque', pos: 'ATA', lances: ['ataque'], dica: 'Perto do gol, trace a linha: a Cavadinha aparece no menu só para quem tem o estilo.',
     efeitos: [L('Erro na cavadinha (soma)', FX.cavadinhaErro, 'prob', 'menor'), L('Defesa do goleiro na cavadinha', FX.cavadinhaDefesa, 'mult', 'menor'), S('Gols nas finalizações', FX.cavadinhaSim, 'mult', 'maior')] },
   'cobranca-de-falta': { lado: 'ataque', pos: 'MEI', lances: ['falta', 'ataque'], dica: 'Na falta, curve o traço por cima/ao lado da barreira.',
     efeitos: [L('Alcance da curva', FX.curva, 'mult', 'maior'), L('Dispersão da cobrança', FX.faltaDispersao, 'm', 'menor'), S('Gol de falta direta', FX.falta, 'prob', 'maior'), S('Conversão de pênalti', FX.penaltiBatedor, 'add', 'maior')] },
-  'cabeceio': { lado: 'ataque', pos: 'ATA', lances: ['ataque', 'escanteio'], dica: 'Cruze com 2 toques (passe alto) para ele dentro da área e finalize de primeira.',
+  'cabeceio': { lado: 'ataque', pos: 'ATA', lances: ['ataque', 'escanteio'], dica: 'Toque nele dentro da área e escolha Alto/Cruzamento; depois trace a linha e escolha Cabeçada.',
     efeitos: [L('Defesa do goleiro na cabeçada', FX.cabecaDefesa, 'mult', 'menor'), S('Chance de gol de cabeça', FX.cabeceio, 'mult', 'maior')] },
   // Passe
   'passe-preciso': { lado: 'ataque', pos: 'MC', lances: ['ataque'], dica: 'Toque em companheiros marcados: o passe passa mais.',
@@ -56,7 +56,7 @@ export const LAB: Record<string, LabInfo> = {
   'cruzamento': { lado: 'ataque', pos: 'PD', lances: ['ataque', 'escanteio'], dica: 'Vá até a ponta e cruze com passe alto (2 toques).',
     efeitos: [L('Acerto do cruzamento da ponta', [1, 1.12, 1.22], 'mult', 'maior'), S('Peso nas assistências de cabeça', FX.cruzamento, 'mult', 'maior')] },
   // Controle
-  'primeiro-toque': { lado: 'ataque', pos: 'MEI', lances: ['ataque'], dica: 'Conduza perto dos marcadores.',
+  'primeiro-toque': { lado: 'ataque', pos: 'MEI', lances: ['ataque'], dica: 'Passe para ele: ao receber, ganha uma ação a mais no lance (aparece na tela).',
     efeitos: [L('Chance de perder a bola no drible', [1, .93, .93], 'mult', 'menor')] },
   'drible-rapido': { lado: 'ataque', pos: 'PE', lances: ['ataque'], dica: 'Conduza a bola passando pelos marcadores.',
     efeitos: [L('Chance do marcador tomar a bola', FX.dribleMarcador, 'mult', 'menor')] },
@@ -69,19 +69,19 @@ export const LAB: Record<string, LabInfo> = {
   'velocista': { lado: 'ataque', pos: 'PD', lances: ['ataque', 'contra'], dica: 'Conduza em velocidade: cada condução vai mais longe.',
     efeitos: [L('Metros por condução', FX.dribleAlcance, 'm', 'maior'), S('Criação no contra-ataque', FX.velocista, 'add', 'maior')] },
   // Defesa (a defesa RIVAL carrega o estilo: tente atacar contra ela)
-  'desarme': { lado: 'defesa', pos: 'ZAG', lances: ['ataque'], dica: 'Os marcadores rivais têm o estilo: tente driblar e veja quantas bolas eles tomam.',
-    efeitos: [L('Chance do marcador tomar a bola', FX.defDesarme, 'mult', 'maior'), S('Chances do rival tiradas (por defensor)', FX.desarme, 'add', 'maior')] },
-  'interceptacao': { lado: 'defesa', pos: 'ZAG', lances: ['ataque'], dica: 'Os marcadores rivais têm o estilo: tente passes rasteiros entre eles.',
-    efeitos: [L('Raio de interceptação dos passes', FX.defIntercepta, 'mult', 'maior'), S('Chances do rival tiradas (por defensor)', FX.intercept, 'add', 'maior')] },
-  'antecipacao': { lado: 'defesa', pos: 'ZAG', lances: ['ataque'], dica: 'Os marcadores rivais têm o estilo: passe para companheiros marcados e lançamentos.',
-    efeitos: [L('Alcance do marcador sobre o receptor', FX.defAntecipa, 'mult', 'maior'), S('Chances do rival tiradas (por defensor)', FX.antecipacao, 'add', 'maior')] },
-  'contencao': { lado: 'defesa', pos: 'ZAG', lances: ['ataque'], dica: 'Os marcadores rivais têm o estilo: tente o drible.',
-    efeitos: [L('Chance do marcador tomar a bola', FX.defContencao, 'mult', 'maior'), S('Chances do rival tiradas (por defensor)', FX.contencao, 'add', 'maior')] },
-  'bloqueio': { lado: 'defesa', pos: 'ZAG', lances: ['ataque'], dica: 'Os marcadores rivais têm o estilo: chute com gente na frente.',
-    efeitos: [L('Parte do chute que passa por cada marcador', FX.defBloqueio, 'prob', 'menor'), S('Chance de bloquear o chute', FX.bloqueio, 'add', 'maior')] },
+  'desarme': { lado: 'defesa', pos: 'ZAG', lances: ['defesa', 'ataque'], dica: 'No lance de defesa, use Bote ou Carrinho com ele: rouba mais e o carrinho quase nunca vira falta. No ataque, é a defesa rival que tem.',
+    efeitos: [L('Bote e carrinho no lance de defesa', [1, 1.2, 1.35], 'mult', 'maior'), L('Chance de falta no carrinho', [.3, .12, .05], 'prob', 'menor'), L('Chance do marcador rival tomar a bola', FX.defDesarme, 'mult', 'maior'), S('Chances do rival tiradas (por defensor)', FX.desarme, 'add', 'maior')] },
+  'interceptacao': { lado: 'defesa', pos: 'ZAG', lances: ['defesa', 'ataque'], dica: 'No lance de defesa, escolha Cortar o passe com ele. No ataque, é a defesa rival que tem.',
+    efeitos: [L('Cortar o passe no lance de defesa', [1, 1.25, 1.45], 'mult', 'maior'), L('Raio de interceptação dos passes (rival)', FX.defIntercepta, 'mult', 'maior'), S('Chances do rival tiradas (por defensor)', FX.intercept, 'add', 'maior')] },
+  'antecipacao': { lado: 'defesa', pos: 'ZAG', lances: ['defesa', 'ataque'], dica: 'No lance de defesa, ele lê a jogada: a tela mostra o que o atacante vai fazer. No ataque, é a defesa rival que tem.',
+    efeitos: [L('Leitura da jogada no lance de defesa', [0, .6, 1], 'prob', 'maior'), L('Alcance do marcador sobre o receptor (rival)', FX.defAntecipa, 'mult', 'maior'), S('Chances do rival tiradas (por defensor)', FX.antecipacao, 'add', 'maior')] },
+  'contencao': { lado: 'defesa', pos: 'ZAG', lances: ['defesa', 'ataque'], dica: 'No lance de defesa, dê o Bote: se errar, ele não fica para trás. No ataque, é a defesa rival que tem.',
+    efeitos: [L('Bote no lance de defesa', [1, 1.15, 1.3], 'mult', 'maior'), L('Chance do marcador rival tomar a bola', FX.defContencao, 'mult', 'maior'), S('Chances do rival tiradas (por defensor)', FX.contencao, 'add', 'maior')] },
+  'bloqueio': { lado: 'defesa', pos: 'ZAG', lances: ['defesa', 'ataque'], dica: 'No lance de defesa, escolha Fechar o chute com ele. No ataque, é a defesa rival que tem.',
+    efeitos: [L('Fechar o chute no lance de defesa', [1, 1.3, 1.55], 'mult', 'maior'), L('Parte do chute que passa por cada marcador (rival)', FX.defBloqueio, 'prob', 'menor'), S('Chance de bloquear o chute', FX.bloqueio, 'add', 'maior')] },
   // Físico
-  'imposicao-fisica': { lado: 'defesa', pos: 'ZAG', lances: ['ataque'], dica: 'Os marcadores rivais têm o estilo: cruze (passe alto) para a área.',
-    efeitos: [L('Disputa pelo alto do seu receptor', FX.defFisico, 'mult', 'menor')] },
+  'imposicao-fisica': { lado: 'defesa', pos: 'ZAG', lances: ['defesa', 'ataque'], dica: 'Na defesa: ganha o bote e corta cruzamento. No ataque, a sua cabeçada entra mais; contra, a defesa rival ganha no alto.',
+    efeitos: [L('Bote no lance de defesa', [1, 1.06, 1.12], 'mult', 'maior'), L('Disputa pelo alto do seu receptor (rival)', FX.defFisico, 'mult', 'menor')] },
   'acrobatico': { lado: 'ataque', pos: 'ATA', lances: ['ataque', 'escanteio'], dica: 'Cruze (passe alto) para ele e finalize de primeira (voleio).',
     efeitos: [L('Defesa do goleiro no voleio', FX.acrobaticoDefesa, 'mult', 'menor'), S('Gols de cabeça/voleio', FX.acrobaticoSim, 'mult', 'maior')] },
   'trivela': { lado: 'ataque', pos: 'PD', lances: ['ataque', 'falta'], dica: 'Chute ou bata falta com o traço bem curvo.',
@@ -152,7 +152,13 @@ export function labSetup(ps: string, lvl: Lvl, base?: BasePlayer, lance?: Moment
     const g = slots.findIndex(s => s.p === 'GOL');
     if (lance && lance !== 'goleiro') theirs[g] = { ...P, short: P.short + ' (rival)' }; else mine[g] = P;
   }
-  else {
+  else if (lance === 'defesa') {
+    // Lance de defesa: a SUA zaga tem o estilo (o testado e mais dois zagueiros/laterais)
+    const order = ['ZAG', 'LD', 'LE', 'VOL', 'MC'];
+    const ids = slots.map((s, i) => [order.indexOf(s.p), i]).filter(([o]) => o >= 0).sort((a, b) => a[0] - b[0]).slice(0, 3).map(([, i]) => i);
+    ids.forEach((i, k) => { mine[i] = k === 0 ? { ...P, pos: slots[i].p } : withStyle(neutral(slots[i].p, 'Neutro'), ps, lvl); });
+    idx = ids[0];
+  } else {
     // Três marcadores rivais com o estilo (zagueiros primeiro, depois laterais)
     const order = ['ZAG', 'LD', 'LE', 'MC'];
     const ids = slots.map((s, i) => [order.indexOf(s.p), i]).filter(([o]) => o >= 0).sort((a, b) => a[0] - b[0]).slice(0, 3).map(([, i]) => i);
@@ -160,7 +166,7 @@ export function labSetup(ps: string, lvl: Lvl, base?: BasePlayer, lance?: Moment
   }
   const A = side(true, 'Teste', '#e8c35f', '#1d1403', mine), B = side(false, 'Rival de teste', '#3a6fd8', '#ffffff', theirs);
   const gkOf = (sd: Side) => sd.xi.find(e => e.pos === 'GOL')!;
-  const tested = info.lado === 'defesa' ? B.xi.find(e => e.P.id === P.id)! : info.lado === 'goleiro' ? (lance && lance !== 'goleiro' ? gkOf(B) : gkOf(A)) : A.xi[idx];
+  const tested = info.lado === 'defesa' ? (lance === 'defesa' ? A.xi[idx] : B.xi.find(e => e.P.id === P.id)!) : info.lado === 'goleiro' ? (lance && lance !== 'goleiro' ? gkOf(B) : gkOf(A)) : A.xi[idx];
   return { A, B, tested, lado: info.lado };
 }
 

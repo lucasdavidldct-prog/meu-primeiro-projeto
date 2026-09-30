@@ -415,12 +415,12 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       }
       const depth = Math.max(c.y, 12); // perto do gol a câmera não avança mais
       // TV: de lado, do alto da arquibancada, como na transmissão (o gol fica de um lado da tela)
-      if (camMode === 'tv') return portrait ? [V(-44, depth * .55 + 3, 30), V(c.x * .55 + 34 * .45, depth * .55 + 1, 0)] : [V(-38, depth * .6 + 2, 21), V(c.x * .6 + 34 * .4, depth * .6, 0)];
+      if (camMode === 'tv') return portrait ? [V(-15, depth * .6 + 2, 19), V(c.x * .5 + 34 * .5, depth * .6, 0)] : [V(-13, depth * .65 + 2, 15), V(c.x * .6 + 34 * .4, depth * .65, 0)];
       // Atrás do jogador: baixa, por cima do ombro, olhando para o gol
       if (camMode === 'atras') return portrait ? [V(c.x + (c.x - 34) * .08, depth + 7, 3.6), V(34 + (c.x - 34) * .35, Math.max(0, depth - 13), 1)] : [V(c.x + (c.x - 34) * .08, depth + 7.5, 3), V(34 + (c.x - 34) * .35, Math.max(0, depth - 14), 1)];
       // Padrão: atrás da jogada, a meia altura (vê o gol, a área e os jogadores em pé, com a torcida ao fundo)
       const cx = c.x * .75 + 34 * .25;
-      return portrait ? [V(cx, depth + 15, 11), V(cx * .8 + 34 * .2, depth - 12, 0)] : [V(cx, depth + 16, 9), V(cx * .7 + 34 * .3, depth - 14, 0)];
+      return portrait ? [V(cx, depth + 14, 12.5), V(cx * .8 + 34 * .2, depth - 5, 0)] : [V(cx, depth + 15, 9.5), V(cx * .7 + 34 * .3, depth - 9, 0)];
     }
     // Abertura: a câmera começa no alto, mostrando o estádio e a torcida, e desce até a jogada
     const introAte = performance.now() + (pen || fk ? 1100 : 1700);

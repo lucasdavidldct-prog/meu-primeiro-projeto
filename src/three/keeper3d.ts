@@ -82,7 +82,8 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
 
     // ---------- Escolha ----------
     let dive: Canto | null = null, fase: 'espera' | 'corrida' | 'voo' | 'fim' = 'espera';
-    const t0 = performance.now();
+    // O tempo só começa a contar quando o 3D já está na tela (celular lento não perde a escolha carregando)
+    let t0 = 0;
     let tCorrida = 0, desfecho: KeeperRes | null = null;
     const RUN = 850, KICK = 360, FLY = pen ? 520 : 600;
     const el = renderer.domElement;
@@ -137,7 +138,9 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
     let raf = 0;
     function frame() {
       raf = requestAnimationFrame(frame);
-      const now = performance.now(), t = now - t0;
+      const now = performance.now();
+      if (!t0) t0 = now + 400;
+      const t = Math.max(0, now - t0);
       // ---------- Espera: o batedor ajeita a bola, o goleiro balança nas pernas ----------
       if (fase === 'espera') {
         const left = Math.max(0, 1 - t / LIMITE);

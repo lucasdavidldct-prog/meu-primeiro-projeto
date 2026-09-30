@@ -57,7 +57,7 @@ export interface Plan {
   end?: { res: MomentResult; text: string; color: string; goal: boolean };
 }
 
-export const TITLES: Record<MomentKind, string> = { ataque: 'Chance de ataque', contra: 'Contra-ataque!', penalti: 'Pênalti!', falta: 'Falta perigosa!', goleiro: 'Defenda!', escanteio: 'Escanteio!', lateral: 'Lateral no ataque' };
+export const TITLES: Record<MomentKind, string> = { ataque: 'Chance de ataque', contra: 'Contra-ataque!', penalti: 'Pênalti!', falta: 'Falta perigosa!', goleiro: 'Defenda!', escanteio: 'Escanteio!', lateral: 'Lateral no ataque', defesa: 'Defenda com a zaga!' };
 
 /** Subatributo de um jogador em campo (para escolher cobrador e cabeceadores). */
 const sub1 = (e: SideEntry, n: SubName) => (e.P.st && e.P.pos !== 'GOL' ? sub(e.P, n) : e.base);

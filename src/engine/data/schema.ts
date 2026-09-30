@@ -88,12 +88,12 @@ export interface PlaystyleDef { id: string; nome: string; gol: boolean; cat: PsC
 export const PLAYSTYLES: PlaystyleDef[] = [
   // Finalização
   { id: 'finalizacao-precisa', cat: 'finalizacao', nome: 'Finalização Precisa', gol: false, icone: '⚽', desc: 'Erra menos o alvo e finaliza melhor dentro da área.', descPlus: 'Quase não erra o alvo dentro da área.' },
-  { id: 'chute-colocado', cat: 'finalizacao', nome: 'Chute Colocado', gol: false, icone: '🎯', desc: 'Chutes com curva (traço curvo) no canto: erra menos e engana o goleiro.', descPlus: 'Colocado no ângulo: o chute curvo vira quase gol certo.' },
-  { id: 'chute-de-longe', cat: 'finalizacao', nome: 'Super Chute', gol: false, icone: '💥', desc: 'Chute forte (traço rápido) e de longe: mais potência, o goleiro defende menos.', descPlus: 'Bomba: gols de fora da área com frequência.' },
+  { id: 'chute-colocado', cat: 'finalizacao', nome: 'Chute Colocado', gol: false, icone: '🎯', desc: 'No menu do chute, o Colocado (o único com curva) erra menos e engana o goleiro.', descPlus: 'Colocado no ângulo: o chute curvo vira quase gol certo.' },
+  { id: 'chute-de-longe', cat: 'finalizacao', nome: 'Super Chute', gol: false, icone: '💥', desc: 'Superchute sem isolar a bola: mais potência, o goleiro defende menos. Pesa de fora da área.', descPlus: 'Bomba: gols de fora da área com frequência.' },
   { id: 'chute-rasteiro', cat: 'finalizacao', nome: 'Chute Rasteiro', gol: false, icone: '🥾', desc: 'Chute rasteiro e firme (tipo Rasteiro no lance): passa por baixo do goleiro e trava menos na defesa.', descPlus: 'Bola no canto, rente à grama: o goleiro quase não chega.' },
-  { id: 'cavadinha', cat: 'finalizacao', nome: 'Cavadinha', gol: false, icone: '🪂', desc: 'Traço curto e lento perto do gol vira cavadinha por cima do goleiro.', descPlus: 'Cavadinha de craque: o goleiro só olha.' },
+  { id: 'cavadinha', cat: 'finalizacao', nome: 'Cavadinha', gol: false, icone: '🪂', desc: 'Libera a Cavadinha no menu do chute, perto do gol: por cima do goleiro.', descPlus: 'Cavadinha de craque: o goleiro só olha.' },
   { id: 'cobranca-de-falta', cat: 'finalizacao', nome: 'Bola Parada', gol: false, icone: '🌀', desc: 'Bate faltas com curva e precisão. Libera o lance de falta.', descPlus: 'Especialista: faltas perigosas de qualquer distância.' },
-  { id: 'cabeceio', cat: 'finalizacao', nome: 'Cabeçada Forte', gol: false, icone: '🗣️', desc: 'Ganha pelo alto: finaliza melhor de cabeça depois do cruzamento.', descPlus: 'Dominante no jogo aéreo, nos dois lados do campo.' },
+  { id: 'cabeceio', cat: 'finalizacao', nome: 'Cabeçada Forte', gol: false, icone: '🗣️', desc: 'Cabeçada mais certeira depois do cruzamento; na defesa, corta mais cruzamentos.', descPlus: 'Dominante no jogo aéreo, nos dois lados do campo.' },
   // Passe
   { id: 'passe-preciso', cat: 'passe', nome: 'Passe Preciso', gol: false, icone: '📐', desc: 'Passes curtos e médios mais certeiros.', descPlus: 'Raramente perde a bola no passe.' },
   { id: 'passe-tenso', cat: 'passe', nome: 'Passe Tenso', gol: false, icone: '➡️', desc: 'Passe rasteiro forte: chega antes do marcador cortar.', descPlus: 'Passe à queima-roupa que ninguém intercepta.' },
@@ -102,18 +102,18 @@ export const PLAYSTYLES: PlaystyleDef[] = [
   { id: 'tiki-taka', cat: 'passe', nome: 'Tiki-Taka', gol: false, icone: '🔁', desc: 'Toques curtos de primeira quase sem erro.', descPlus: 'Tabelinhas perfeitas: a bola não para.' },
   { id: 'cruzamento', cat: 'passe', nome: 'Cruzamento', gol: false, icone: '↪️', desc: 'Cruzamentos na medida para a área.', descPlus: 'Cruzamentos que viram gol com frequência.' },
   // Controle de bola
-  { id: 'primeiro-toque', cat: 'controle', nome: 'Primeiro Toque', gol: false, icone: '🪶', desc: 'Domina bem e ganha tempo para a jogada.', descPlus: 'Domínio perfeito mesmo sob pressão.' },
+  { id: 'primeiro-toque', cat: 'controle', nome: 'Primeiro Toque', gol: false, icone: '🪶', desc: 'Domínio orientado: ao receber o passe, ganha uma ação a mais no lance.', descPlus: 'Domínio perfeito mesmo sob pressão.' },
   { id: 'drible-rapido', cat: 'controle', nome: 'Drible Rápido', gol: false, icone: '💨', desc: 'Vence o marcador no um contra um com mais facilidade.', descPlus: 'Quase impossível de parar no mano a mano.' },
   { id: 'firula', cat: 'controle', nome: 'Firula', gol: false, icone: '✨', desc: 'Dribles de efeito que deixam o marcador no chão.', descPlus: 'Humilha a defesa com a bola no pé.' },
   { id: 'tecnico', cat: 'controle', nome: 'Técnico', gol: false, icone: '🎩', desc: 'Conduz com a bola colada: perde menos e vai mais longe.', descPlus: 'A bola parece presa no pé.' },
   { id: 'resistente-pressao', cat: 'controle', nome: 'Resistente à Pressão', gol: false, icone: '🛡️', desc: 'Não perde a bola com marcador colado.', descPlus: 'Pressão alta não funciona contra ele.' },
   { id: 'velocista', cat: 'controle', nome: 'Velocista', gol: false, icone: '⚡', desc: 'Arranque forte, ótimo no contra-ataque.', descPlus: 'Ninguém alcança na corrida.' },
   // Defesa
-  { id: 'desarme', cat: 'defesa', nome: 'Carrinho', gol: false, icone: '🦶', desc: 'Rouba a bola com mais frequência.', descPlus: 'Desarmes limpos e decisivos.' },
-  { id: 'interceptacao', cat: 'defesa', nome: 'Interceptação', gol: false, icone: '✋', desc: 'Lê o jogo e corta passes.', descPlus: 'Antecipa quase todos os passes pelo seu setor.' },
-  { id: 'antecipacao', cat: 'defesa', nome: 'Antecipação', gol: false, icone: '👁️', desc: 'Chega antes do atacante na bola.', descPlus: 'Rouba a bola antes do domínio.' },
-  { id: 'contencao', cat: 'defesa', nome: 'Contenção', gol: false, icone: '🧲', desc: 'Acompanha o driblador sem dar o bote errado.', descPlus: 'Não passa ninguém por ele.' },
-  { id: 'bloqueio', cat: 'defesa', nome: 'Bloqueio', gol: false, icone: '🧱', desc: 'Se joga na frente dos chutes.', descPlus: 'Bloqueia até chute à queima-roupa.' },
+  { id: 'desarme', cat: 'defesa', nome: 'Carrinho', gol: false, icone: '🦶', desc: 'No lance de defesa: bote e carrinho roubam mais, e o carrinho quase nunca vira falta.', descPlus: 'Desarmes limpos e decisivos.' },
+  { id: 'interceptacao', cat: 'defesa', nome: 'Interceptação', gol: false, icone: '✋', desc: 'No lance de defesa: Cortar o passe funciona muito mais.', descPlus: 'Antecipa quase todos os passes pelo seu setor.' },
+  { id: 'antecipacao', cat: 'defesa', nome: 'Antecipação', gol: false, icone: '👁️', desc: 'No lance de defesa: lê a jogada e mostra o que o atacante vai fazer.', descPlus: 'Rouba a bola antes do domínio.' },
+  { id: 'contencao', cat: 'defesa', nome: 'Contenção', gol: false, icone: '🧲', desc: 'No lance de defesa: bote mais forte e, se errar, não fica para trás.', descPlus: 'Não passa ninguém por ele.' },
+  { id: 'bloqueio', cat: 'defesa', nome: 'Bloqueio', gol: false, icone: '🧱', desc: 'No lance de defesa: Fechar o chute bloqueia muito mais.', descPlus: 'Bloqueia até chute à queima-roupa.' },
   // Físico
   { id: 'imposicao-fisica', cat: 'fisico', nome: 'Trombador', gol: false, icone: '💪', desc: 'Ganha as divididas no corpo.', descPlus: 'Parede: não perde disputa física.' },
   { id: 'acrobatico', cat: 'fisico', nome: 'Acrobático', gol: false, icone: '🤸', desc: 'Voleios e bicicletas: finaliza melhor de primeira.', descPlus: 'Gols de bicicleta viram rotina.' },
@@ -121,9 +121,9 @@ export const PLAYSTYLES: PlaystyleDef[] = [
   { id: 'explosao', cat: 'fisico', nome: 'Explosão', gol: false, icone: '🔥', desc: 'Arrancada curta: conduz mais longe e escapa do bote.', descPlus: 'Some na frente do marcador em dois passos.' },
   { id: 'incansavel', cat: 'fisico', nome: 'Incansável', gol: false, icone: '🔋', desc: 'Cansa menos no segundo tempo.', descPlus: 'Joga os 90 minutos no mesmo ritmo.' },
   // Goleiro
-  { id: 'reflexos', cat: 'goleiro', nome: 'Reflexos', gol: true, icone: '🧤', desc: 'Defesas difíceis à queima-roupa.', descPlus: 'Reflexos felinos: defende o indefensável.' },
+  { id: 'reflexos', cat: 'goleiro', nome: 'Reflexos', gol: true, icone: '🧤', desc: 'No lance de goleiro: se pular para o lado errado, ainda salva com o pé o chute no meio.', descPlus: 'Reflexos felinos: defende o indefensável.' },
   { id: 'saida-do-gol', cat: 'goleiro', nome: 'Saída do Gol', gol: true, icone: '🏃', desc: 'Sai bem nos cruzamentos e no um contra um.', descPlus: 'Domina a área inteira.' },
-  { id: 'pegador-de-penalti', cat: 'goleiro', nome: 'Pegador de Pênalti', gol: true, icone: '🥅', desc: 'Adivinha o canto com mais frequência.', descPlus: 'Pesadelo dos cobradores.' },
+  { id: 'pegador-de-penalti', cat: 'goleiro', nome: 'Pegador de Pênalti', gol: true, icone: '🥅', desc: 'No pênalti: lê melhor o batedor (a tela mostra a leitura) e tem mais tempo para escolher.', descPlus: 'Pesadelo dos cobradores.' },
   { id: 'reposicao-longa', cat: 'goleiro', nome: 'Reposição Longa', gol: true, icone: '🚀', desc: 'Lança o contra-ataque com a mão ou o pé.', descPlus: 'Reposição que vira assistência.' },
 ];
 export const PS_BY_ID = new Map(PLAYSTYLES.map(p => [p.id, p]));

@@ -145,6 +145,20 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.9.0
+
+- **Goleiro**: o batedor ajeita a bola e **espera você escolher** (com o tempo na tela). Só 3 chutes: **alto esquerdo**, **meio** e **alto direito**. Arraste para o lado ou toque para ficar no meio: acertou, o goleiro defende. Câmera mais afastada, e o goleiro agora defende com as mãos (mergulho com os braços esticados), com o corpo (bloqueio no meio) e com o pé.
+- **Chute**: trace a linha até o gol e escolha **Rasteiro**, **Superchute** ou **Colocado** (só o Colocado faz curva; os outros vão retos). Quem tem o estilo Cavadinha ganha a opção de cavadinha.
+- **Superchute** com cara de superchute: o jogador arma a perna, a bola sai quase no dobro da velocidade com rastro de fogo, a câmera treme e a rede estufa mais.
+- **Cabeceio**: cruzamento ou passe alto na área chega na cabeça; trace a linha e escolha **Cabeçada** ou **Voleio** (Bicicleta com o estilo Acrobático).
+- **Passe**: toque no companheiro e escolha **Rasteiro** (rápido, no pé), **Alto/Cruzamento** (por cima, mais lento) ou **Enfiado** (no espaço à frente dele). Cada opção mostra a chance e os estilos que ajudam.
+- **Estilos de jogo aparecem**: embaixo da tela ficam os estilos de quem está com a bola, e cada vez que um estilo age (seu ou da defesa rival) ele pisca na tela. Primeiro Toque dá uma ação a mais ao receber.
+- **Lance de defesa com a zaga**: o rival ataca e você escolhe o defensor e a ação (**Bote**, **Carrinho**, **Cortar o passe**, **Fechar o chute**). Carrinho, Interceptação, Antecipação (mostra o que o atacante vai fazer), Contenção, Bloqueio, Trombador e Cabeçada Forte passam a ter função de verdade. Também no Laboratório.
+- **Meio-campo com vida**: as jogadas variam (saída pelo meio, contra-ataque, roubada no ataque, defesa fechada, pela ponta), com números diferentes de atacantes e defensores conforme o estilo e a mentalidade dos dois times. Sem a bola, cada companheiro tem um papel (infiltra, abre, apoia, chega de trás, ultrapassa) e a defesa marca e pressiona.
+- **Troca rápida** não pisca mais: fica presa embaixo da tela e dá para trocar sem pausar o jogo.
+- **Câmeras novas**: Padrão (atrás da jogada, como na transmissão), TV (de lado, da arquibancada) e Atrás do jogador. A câmera de cima saiu. Pênalti com câmera baixa atrás do batedor.
+- **Gráfico**: gramado mais vivo, com faixas, manchas e desgaste perto do gol; placas de LED em volta do campo inteiro (com o texto andando); torcida com cabeça e arquibancada maior; bancos de reservas, fotógrafos e staff na beira do campo; jogadores com braços e joelhos articulados.
+
 ## Versão 1.8.0
 
 - **Uniformes**: cada clube tem titular e reserva com desenho (listras, aros, faixa, diagonal); o **Galo tem 3** (listrado, branco e o terceiro preto e dourado). O visitante troca quando as camisas se confundem, e os goleiros ganham cor própria. Dá para fixar o uniforme no Clube.
