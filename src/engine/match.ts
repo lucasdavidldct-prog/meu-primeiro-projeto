@@ -35,6 +35,8 @@ export interface MomentRequest {
   kind: MomentKind;
   /** Cobrador (pênalti e falta). */
   taker?: SideEntry;
+  /** Lance de treino: defesa mais leve e mais ações. */
+  treino?: boolean;
 }
 export interface MomentResult { goal: boolean; shot: boolean; onTarget?: boolean; scorer?: string; assist?: string | null; text?: string }
 export type MomentHandler = (m: Match, req: MomentRequest) => Promise<MomentResult>;
@@ -46,12 +48,12 @@ const ASSIST_W: Record<Pos, number> = { GOL: .05, ZAG: .3, LD: .9, LE: .9, VOL: 
 const FOUL_W: Record<Pos, number> = { GOL: .1, ZAG: 1.4, LD: 1.1, LE: 1.1, VOL: 1.5, MC: 1, MEI: .6, MD: .8, ME: .8, PD: .5, PE: .5, ATA: .5 };
 /** Constantes calibradas com npm run calibrar (média ~2,6 gols entre times do mesmo nível). */
 export const CALIB = {
-  chanceBase: .112,   // chance base de criar uma finalização por minuto
+  chanceBase: .12,    // chance base de criar uma finalização por minuto
   penChance: .013,    // fração das finalizações que viram pênalti
   penConv: .78,       // conversão base do pênalti
   shotBase: .042,     // chance mínima de gol numa finalização
   shotQ: .15,         // parte que depende da qualidade da chance
-  attExp: 2.1,        // peso da relação ataque/defesa na criação de chances (diferença de nível pesa mais)
+  attExp: 2.5,        // peso da relação ataque/defesa na criação de chances (diferença de nível pesa mais)
   possExp: 2.8,       // peso do meio-campo na posse
   finExp: 1.5,        // peso da qualidade do finalizador contra o goleiro
   home: 1.3,         // multiplicador de chances do mandante

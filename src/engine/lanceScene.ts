@@ -72,7 +72,7 @@ export class LanceScene {
     this.gkOvr = (this.gkE ? effNow(this.gkE, M.min) + (gP?.st ? .7 * (.35 * gP.st[3] + .35 * gP.st[0] + .3 * gP.st[5] - gP.ovr) : 0) : 35) + (M.keeperBoost ?? 0);
     this.km = keeperMods(this.gkE?.P);
     this.setup = kind === 'falta' ? fkSetup(r) : null;
-    this.actions = kind === 'penalti' || kind === 'falta' ? 1 : 6;
+    this.actions = kind === 'penalti' || kind === 'falta' ? 1 : req.treino ? 8 : 6;
     const num = (e?: SideEntry) => (e ? (A.xi.indexOf(e) + 1 === 1 ? 1 : A.xi.indexOf(e) + 1) : 0);
     const mk = (x: number, y: number, team: 0 | 1, e?: SideEntry, gk = false, n = 0): Actor => ({ id: this.nid++, x, y, tx: x, ty: y, e, gk, team, num: n || num(e) });
     if (kind === 'penalti' || kind === 'falta') {
@@ -107,7 +107,7 @@ export class LanceScene {
         Y -= depth;
         this.mates.push(mk(clamp(X + rn(-2, 2, r), 3, 65), clamp(Y + rn(-2, 2, r), 6, 43), 0, e));
       });
-      const nOut = counter ? 3 : 4, nMid = counter ? 1 : 2;
+      const nOut = req.treino ? 3 : counter ? 3 : 4, nMid = req.treino ? 0 : counter ? 1 : 2;
       const ball0 = this.mates.filter(m => m.y >= 22);
       this.carrier = ball0.length ? pick(ball0, r) : this.mates.reduce((a, b) => (a.y > b.y ? a : b));
       const nums = [2, 3, 4, 6, 5, 8];

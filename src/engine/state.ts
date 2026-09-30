@@ -1,6 +1,6 @@
 // Estado do jogo (o que vai para o save) e operações sobre o elenco.
 import { cardData, inPos } from './cards';
-import { calcChem, effOvr, rate, type Chem, type Ratings } from './chemistry';
+import { calcChem, effOvr, power, rate, type Chem, type Ratings } from './chemistry';
 import { slotsOf } from './positions';
 import { pick } from './rng';
 import { newCareer, type Career, type CareerOpts } from './career';
@@ -232,7 +232,4 @@ export function sanitizeState(S: GameState): number {
 }
 
 /** Força do seu time na mesma escala da "Força" dos clubes (para comparar com o adversário). */
-export function teamStrength(T: TeamInfo): number {
-  const v = T.slots.map((s, i) => effOvr(T.xi[i], s.p, 1) - 1);
-  return Math.round(v.reduce((a, b) => a + b, 0) / 11);
-}
+export const teamStrength = (T: TeamInfo): number => power(T.r);

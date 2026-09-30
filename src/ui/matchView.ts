@@ -1,6 +1,7 @@
 import { inPos } from '../engine/cards';
 import { type Nota, Match, effNow, fatigue, freeKickTaker, matchReward, penaltyShootout, penaltyTaker, sideFromTeam, sideOpp, simulate, type Shootout, type Side } from '../engine/match';
 import { allClubs } from '../engine/world';
+import { clubStrength } from '../engine/squads';
 import { clamp } from '../engine/rng';
 import { oppFromClub, type OppTeam } from '../engine/season';
 import { needsPens, recordResult, type Fixture } from '../engine/career';
@@ -200,6 +201,29 @@ function openSubs(): void {
   draw();
 }
 
+/** Treino de lances: com o seu time contra um adversário mediano, sem valer nada. */
+export async function trainingMoment(kind: 'ataque' | 'penalti' | 'falta' = 'ataque'): Promise<void> {
+  const S = app.S, T = teamInfo(S);
+  if (!T.full) { toast('Complete os 11 titulares antes de treinar'); return; }
+  const bench = S.squad.bench.filter(Boolean).map(u => cardByUid(S, u)!) as CardPlayer[];
+  const ord = T.slots.map((sl, i) => orderAt(S, i, T.xi[i], sl.p));
+  const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench, ord });
+  const uc = userClub();
+  Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2 });
+  const opp = allClubs().filter(c => c.id !== S.career?.club).sort((a, b) => Math.abs(clubStrength(a.id) - 70) - Math.abs(clubStrength(b.id) - 70))[0];
+  const m = new Match(A, sideOpp(oppFromClub(opp)), { keeperBoost: -8 });
+  m.label = 'Treino';
+  const taker = kind === 'falta' ? freeKickTaker(A) : kind === 'penalti' ? penaltyTaker(A) : undefined;
+  const res = await runMoment(m, { kind, taker, treino: true });
+  openSheet(`<h2>${res.goal ? 'Gol no treino!' : 'Treino'}</h2>
+    <p class="small muted" style="margin-top:-4px">${res.goal ? `Belo gol de ${esc(res.scorer ?? '')}.` : esc(res.text ?? '')} O treino não vale nada: repita quantas vezes quiser.</p>
+    <div style="display:grid;gap:8px">
+      <button class="btn pri block" data-act="treino" data-k="ataque">Treinar ataque (passo a passo)</button>
+      <div class="row" style="gap:8px"><button class="btn" style="flex:1" data-act="treino" data-k="falta">Treinar falta</button><button class="btn" style="flex:1" data-act="treino" data-k="penalti">Treinar pênalti</button></div>
+      <button class="btn block" data-act="closeSheet">Fechar</button>
+    </div>`);
+}
+
 /** Só em desenvolvimento: abre um lance direto (usado nos testes de navegador). */
 export function devMoment(kind: 'ataque' | 'contra' | 'penalti' | 'falta'): Promise<unknown> {
   const S = app.S, T = teamInfo(S);
@@ -224,4 +248,5 @@ export const matchActions = {
     renderMatch();
   },
   subs() { openSubs(); },
+  treino(d: DOMStringMap) { closeSheet(); void trainingMoment((d.k ?? 'ataque') as 'ataque' | 'penalti' | 'falta'); },
 };

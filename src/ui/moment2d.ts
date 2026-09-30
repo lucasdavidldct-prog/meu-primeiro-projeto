@@ -7,9 +7,9 @@ import { endSound, planSound } from './sfx';
 import { awayKit } from '../engine/kits';
 
 export const HELP = {
-  ataque: 'Toque num <b>companheiro</b> para passar · dentro do <b>gol</b> para chutar · no <b>campo</b> para conduzir. Arraste para ver a chance de dar certo e solte para executar.',
-  penalti: 'Toque dentro do gol para escolher onde bater. Cantos são mais difíceis de defender e mais fáceis de errar.',
-  falta: 'Arraste da bola em direção ao gol: a <b>direção</b> mira, o <b>comprimento</b> dá a força e a <b>curva do traço</b> dá o efeito. Passe por cima ou em volta da barreira.',
+  ataque: '<b>1 toque</b> no companheiro: passe rasteiro · <b>2 toques</b>: passe alto · toque no <b>campo</b>: conduzir · <b>traço até o gol</b>: chute (rápido = forte, curvo = efeito) ou toque dentro do gol · traço para o <b>espaço</b>: lançamento',
+  penalti: '<b>Desenhe um traço</b> até o canto (a velocidade dá a força) ou toque dentro do gol.',
+  falta: '<b>Desenhe o traço</b> da bola até o gol: a direção mira, a <b>curva</b> dá o efeito e a <b>velocidade</b> dá a força.',
 };
 export const probColor = (p: number): string => (p >= .6 ? '#56d086' : p >= .35 ? '#f2b640' : '#f06a5a');
 
@@ -30,7 +30,6 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
     const SX = (x: number) => x * U, SY = (y: number) => (y - Y0) * U;
 
     let ball: BallKey = sc.ballAt, anim: { plan: Plan; t0: number } | null = null, hover: Target | null = null, finished = false;
-    let gesture: Pt[] | null = null;
     function flash(text: string, color: string) { msgEl.textContent = text; msgEl.style.color = color; msgEl.classList.remove('show'); void msgEl.offsetWidth; msgEl.classList.add('show'); }
     function run(plan: Plan) {
       planSound(plan); anim = { plan, t0: performance.now() }; hover = null;
@@ -46,34 +45,74 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
     }
     const busy = () => !!anim || finished;
 
-    const toWorld = (e: PointerEvent): Pt => { const b = cv.getBoundingClientRect(); return { x: (e.clientX - b.left) / U, y: (e.clientY - b.top) / U + Y0 }; };
+    const toWorld = (e: { clientX: number; clientY: number }): Pt => { const b = cv.getBoundingClientRect(); return { x: (e.clientX - b.left) / U, y: (e.clientY - b.top) / U + Y0 }; };
+    // Mesmos controles do 3D: 1 toque = passe rasteiro, 2 toques = passe alto, toque no campo = conduzir,
+    // traço até o gol = chute (velocidade = força, curva = efeito), traço para o espaço = lançamento. Toque dentro do gol também chuta.
+    interface Stroke { pts: Pt[]; scr: { x: number; y: number; t: number }[]; drag: boolean }
+    let stroke: Stroke | null = null;
+    let pendingTap: { m: Target & { kind: 'pass' }; t: number; timer: ReturnType<typeof setTimeout> } | null = null;
+    const cancelTap = () => { if (pendingTap) { clearTimeout(pendingTap.timer); pendingTap = null; } };
+    const mateAt = (w: Pt) => { let best = null as (Target & { kind: 'pass' }) | null, bd = 3.4; for (const m of sc.mates) { if (m === sc.carrier) continue; const d = Math.hypot(m.x - w.x, m.y - w.y); if (d < bd) { bd = d; best = { kind: 'pass', m }; } } return best; };
+    function strokePower(st: Stroke): number {
+      let len = 0;
+      for (let i = 1; i < st.scr.length; i++) len += Math.hypot(st.scr[i].x - st.scr[i - 1].x, st.scr[i].y - st.scr[i - 1].y);
+      const ms = Math.max(60, st.scr[st.scr.length - 1].t - st.scr[0].t);
+      return clamp((len / Ht / (ms / 1000) - .5) / 3.6, .12, 1);
+    }
+    cv.style.touchAction = 'none';
     cv.addEventListener('pointerdown', e => {
       if (busy()) return;
-      const w = toWorld(e);
-      if (fk) { cv.setPointerCapture(e.pointerId); gesture = [w]; return; }
-      hover = sc.target(w.x, w.y);
+      cv.setPointerCapture(e.pointerId);
+      stroke = { pts: [toWorld(e)], scr: [{ x: e.clientX, y: e.clientY, t: performance.now() }], drag: false };
     });
     cv.addEventListener('pointermove', e => {
       if (busy()) return;
       const w = toWorld(e);
-      if (fk) { if (gesture) gesture.push(w); return; }
-      hover = sc.target(w.x, w.y);
+      if (stroke) {
+        stroke.pts.push(w); stroke.scr.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+        if (!stroke.drag && Math.hypot(e.clientX - stroke.scr[0].x, e.clientY - stroke.scr[0].y) > 12) { stroke.drag = true; cancelTap(); hover = null; }
+      } else if (e.pointerType === 'mouse' && !fk) hover = mateAt(w) ?? sc.target(w.x, w.y);
     });
     cv.addEventListener('pointerup', e => {
-      if (busy()) return;
+      if (busy() || !stroke) { stroke = null; return; }
+      const st = stroke; stroke = null;
       const w = toWorld(e);
-      if (fk) {
-        if (!gesture) return;
-        gesture.push(w);
-        const g = analyzeGesture(gesture, 16), pv = g && sc.fkFromGesture(g);
-        gesture = null;
-        if (pv) run(sc.performFk(pv.shot));
+      st.pts.push(w); st.scr.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+      if (st.drag) {
+        const g = analyzeGesture(st.pts, 1);
+        if (!g) return;
+        const power = strokePower(st);
+        if (fk) { const pv = sc.fkFromGesture({ ...g, power }); if (pv) run(sc.performFk(pv.shot)); return; }
+        const shot = sc.shotFromGesture({ ...g, power });
+        if (shot) { run(sc.perform(shot)); return; }
+        if (pen) return;
+        const t = sc.throughTarget(w.x, w.y);
+        if (t && t.kind !== 'shot') run(sc.perform(t));
         return;
       }
+      if (fk) return;
+      const pm = pen ? null : mateAt(w);
+      if (pm) {
+        if (pendingTap && pendingTap.m.m === pm.m && performance.now() - pendingTap.t < 340) { cancelTap(); run(sc.perform({ ...pm, alto: true })); return; }
+        cancelTap(); hover = pm;
+        pendingTap = { m: pm, t: performance.now(), timer: setTimeout(() => { pendingTap = null; if (!busy()) run(sc.perform(pm)); }, 280) };
+        return;
+      }
+      cancelTap();
       const t = sc.target(w.x, w.y);
       if (t) run(sc.perform(t));
     });
-    cv.addEventListener('pointerleave', () => { hover = null; });
+    cv.addEventListener('pointerleave', () => { if (!pendingTap) hover = null; });
+    const trail = () => {
+      if (!stroke?.drag || stroke.scr.length < 2) return;
+      const b = cv.getBoundingClientRect();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const [lw, c] of [[10, 'rgba(232,195,95,.3)'], [4, '#fff']] as const) {
+        ctx.lineWidth = lw; ctx.strokeStyle = c; ctx.beginPath();
+        stroke.scr.forEach((p, i) => (i ? ctx.lineTo(p.x - b.left, p.y - b.top) : ctx.moveTo(p.x - b.left, p.y - b.top)));
+        ctx.stroke();
+      }
+    };
 
     function label(text: string, x: number, y: number, col: string) {
       ctx.font = `700 ${Math.max(12, U * 1.9)}px Saira, sans-serif`;
@@ -112,20 +151,6 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
         if (hover.kind === 'shot') { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(SX(tx2), SY(ty2), .7 * U, 0, 7); ctx.fill(); }
         label((hover.kind === 'pass' ? 'Passe ' : hover.kind === 'drib' ? 'Conduzir ' : hover.kind === 'lanc' ? 'Lançamento ' : 'Chute · gol ') + Math.round(p * 100) + '%', SX(tx2), SY(ty2) + (hover.kind === 'shot' ? U * 4.5 : -U * 3.2), col);
       }
-      if (fk && gesture && !busy()) {
-        ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2; ctx.beginPath();
-        gesture.forEach((p, i) => (i ? ctx.lineTo(SX(p.x), SY(p.y)) : ctx.moveTo(SX(p.x), SY(p.y)))); ctx.stroke();
-        const g = analyzeGesture(gesture, 16), pv = g && sc.fkFromGesture(g);
-        if (pv) {
-          const path = sc.fkPath(pv.shot), col = probColor(pv.goal * 1.6), end = path[path.length - 1];
-          ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.setLineDash([7, 5]); ctx.beginPath();
-          path.forEach((p, i) => (i ? ctx.lineTo(SX(p.x), SY(p.y)) : ctx.moveTo(SX(p.x), SY(p.y)))); ctx.stroke(); ctx.setLineDash([]);
-          const pw = pv.shot.power;
-          ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(8, Ht - 18, 120, 10);
-          ctx.fillStyle = pw > .8 ? '#f06a5a' : pw > .42 ? '#56d086' : '#f2b640'; ctx.fillRect(8, Ht - 18, 120 * pw, 10);
-          label(`Falta · gol ${Math.round(pv.goal * 100)}%`, SX(end.x), SY(0) + U * 4.5, col);
-        }
-      }
       const rad = 1.7 * U;
       for (const f of sc.foes) { ctx.fillStyle = f.gk ? '#1f1f1f' : bKit[0]; ctx.strokeStyle = f.gk ? '#e8e8e8' : bKit[1]; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(SX(f.x), SY(f.y), rad, 0, 7); ctx.fill(); ctx.stroke(); }
       ctx.textAlign = 'center';
@@ -141,6 +166,7 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
       const br = .62 * U * (1 + ball.h * .12);
       ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(SX(ball.x), SY(ball.y), .6 * U, .4 * U, 0, 0, 7); ctx.fill();
       ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(SX(ball.x), SY(ball.y) - ball.h * U * .5, br, 0, 7); ctx.fill(); ctx.stroke();
+      trail();
       const ae = ov.querySelector('#moActs');
       if (ae) ae.textContent = pen ? 'Cobrança' : fk ? `Cobrador: ${c.e!.name}` : `${sc.actions} ações`;
       requestAnimationFrame(draw);

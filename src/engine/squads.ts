@@ -1,6 +1,7 @@
 // Montagem de times a partir de elencos reais (IA e simulação de clubes).
 import { inPos } from './cards';
-import { calcChem, effOvr } from './chemistry';
+import { calcChem, effOvr, power, rate } from './chemistry';
+import { orderFx, suggestOrder } from './orders';
 import { FORM_IDS, slotsOf } from './positions';
 import type { BasePlayer, FormationId, Pos } from './types';
 import { W, clubOf } from './world';
@@ -71,14 +72,14 @@ export function bestFormation(players: BasePlayer[], clubId?: string): Formation
 const strCache = new Map<string, number>();
 export function clearStrengthCache(): void { strCache.clear(); }
 
-/** Força do clube: média do overall efetivo do melhor XI (sem bônus de química). */
+/** Força do clube na mesma escala do seu time: setores do melhor XI (atributos, playstyles, química e funções sugeridas). */
 export function clubStrength(clubId: string): number {
   const hit = strCache.get(clubId);
   if (hit != null) return hit;
   const players = W.byClub.get(clubId) ?? [];
   const { xi } = bestXI(players, '4-3-3', clubId, 0);
-  const slots = slotsOf('4-3-3');
-  const v = Math.round(xi.reduce((s, P, i) => s + effOvr(P, slots[i].p, 1) - 1, 0) / 11);
+  const slots = slotsOf('4-3-3'), chem = calcChem(xi, '4-3-3');
+  const v = power(rate(xi.map((P, i) => ({ pos: slots[i].p, eff: effOvr(P, slots[i].p, chem.per[i]), P, ofx: orderFx(slots[i].p, suggestOrder(P, slots[i].p)) }))));
   strCache.set(clubId, v);
   return v;
 }

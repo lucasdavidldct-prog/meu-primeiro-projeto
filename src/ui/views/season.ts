@@ -60,7 +60,7 @@ export function viewSeason(): string {
     const pos = leagueStandings(C.league).findIndex(t => t.id === C.club) + 1;
     next = `<div class="panel"><h2 style="margin-top:0">Temporada ${C.year} encerrada</h2><p>Você terminou em <b>${pos}º lugar</b> no ${esc(C.league.name)}${C.lib ? ` · Libertadores: <b>${esc(libUserStatus(C.lib, C.club))}</b>` : ''}.</p><button class="btn pri block" data-act="endSeason">Receber prêmios e começar ${C.year + 1}</button></div>`;
   } else {
-    const f = nextFixture(C)!, T = teamInfo(S), o = oppFromId(f.opp, T.ovr);
+    const f = nextFixture(C)!, T = teamInfo(S), o = oppFromId(f.opp, teamStrength(T));
     const you = `<div>${crestHTML(userClub(), 'team')}<div class="nm">${esc(S.name)}</div><div class="small muted">Força ${teamStrength(T)} · ${S.squad.form}</div></div>`;
     const them = `<div>${crestHTML(clubC(f.opp), 'team')}<div class="nm">${esc(o.n)}</div><div class="small muted">Força ${o.str} · ${o.form}</div></div>`;
     const ko = f.ko && f.ko.leg === 1 ? `<div class="tip">Jogo de volta. Agregado: <b>${f.ko.agg[0]} × ${f.ko.agg[1]}</b>. Empate no agregado vai para os pênaltis.</div>` : f.ko?.phase === 'final' ? '<div class="tip">Final em jogo único, campo neutro. Empate vai para os pênaltis.</div>' : '';

@@ -33,7 +33,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     ov.className = 'moment m3d m3d-full';
     ov.innerHTML = `<div class="m3d-wrap" id="m3dWrap">
         <canvas class="m3d-trail" id="m3dTrail"></canvas>
-        <div class="m3d-top"><span class="mo-tag">${M.label}</span><b>${TITLES[kind]}</b><span class="acts" id="moActs"></span><button class="m3d-q" id="m3dQ" aria-label="Ajuda">?</button></div>
+        <div class="m3d-top"><span class="mo-tag">${M.label}</span><b>${req.treino ? 'Treino de lances' : TITLES[kind]}</b><span class="acts" id="moActs"></span><button class="m3d-q" id="m3dQ" aria-label="Ajuda">?</button></div>
         <div class="m3d-label" id="m3dLabel"></div>
         <div class="m3d-help show" id="m3dHelp">${HELP3D[kind === 'contra' ? 'ataque' : kind]}</div>
         <div class="m3d-replay" id="m3dReplay">REPLAY</div>
@@ -46,7 +46,21 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     const W = ov.clientWidth, H = ov.clientHeight, portrait = W / H < 1;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     trail.width = W * dpr; trail.height = H * dpr; tctx.scale(dpr, dpr);
-    let helpTimer = setTimeout(() => helpEl.classList.remove('show'), 4500);
+    // Treino guiado: passo a passo, a dica fica na tela até você fazer a ação pedida
+    const COACH = [
+      '<b>Treino 1/3</b> · Toque <b>1 vez</b> num companheiro: <b>passe rasteiro</b>. O número verde ao lado do nome é a chance de dar certo.',
+      '<b>Treino 2/3</b> · Agora toque <b>2 vezes rápido</b> num companheiro: <b>passe alto</b>, por cima da marcação.',
+      '<b>Treino 3/3</b> · Toque no <b>campo</b> para conduzir até perto da área. Depois <b>desenhe um traço rápido</b> da bola até o canto do gol. Curve o traço para dar efeito.',
+    ];
+    let coach = req.treino ? 0 : -1;
+    const showCoach = () => { if (coach >= 0) { helpEl.innerHTML = COACH[coach]; helpEl.classList.add('show'); } };
+    const coachAct = (t: Target) => {
+      if (coach === 0 && t.kind === 'pass' && !t.alto) coach = 1;
+      else if (coach === 1 && t.kind === 'pass' && t.alto) coach = 2;
+      setTimeout(showCoach, 900);
+    };
+    let helpTimer = setTimeout(() => { if (coach < 0) helpEl.classList.remove('show'); }, 4500);
+    showCoach();
     $('m3dQ').addEventListener('click', () => { clearTimeout(helpTimer); helpEl.classList.toggle('show'); });
 
     // ---------- Three.js ----------
@@ -106,6 +120,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       ov.remove();
       resolve(res);
     }
+    function act(t: Target) { if (coach >= 0) coachAct(t); run(sc.perform(t)); }
     function run(plan: Plan) {
       clearPreview(); cancelTap();
       helpEl.classList.remove('show');
@@ -156,11 +171,11 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     function tapMate(m: Actor) {
       if (busy()) return;
       if (pendingTap && pendingTap.m === m && performance.now() - pendingTap.t < DOUBLE_TAP_MS + 60) {
-        cancelTap(); run(sc.perform({ kind: 'pass', m, alto: true })); return;
+        cancelTap(); act({ kind: 'pass', m, alto: true }); return;
       }
       cancelTap();
       showTarget({ kind: 'pass', m });
-      pendingTap = { m, t: performance.now(), timer: setTimeout(() => { pendingTap = null; if (!busy()) run(sc.perform({ kind: 'pass', m })); }, DOUBLE_TAP_MS) };
+      pendingTap = { m, t: performance.now(), timer: setTimeout(() => { pendingTap = null; if (!busy()) act({ kind: 'pass', m }); }, DOUBLE_TAP_MS) };
     }
     for (const [id, el] of names) el.addEventListener('click', e => { e.stopPropagation(); const m = sc.mates.find(a => a.id === id)!; if (m !== sc.carrier) tapMate(m); });
 
@@ -224,7 +239,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       if (m) { tapMate(m); return; }
       cancelTap();
       const t = p ? sc.target(p.x, p.y) : null;
-      if (t && t.kind !== 'shot') run(sc.perform(t));
+      if (t && t.kind !== 'shot') act(t);
     });
     el.addEventListener('pointercancel', () => { stroke = null; tctx.clearRect(0, 0, W, H); });
     el.addEventListener('pointerleave', () => { if (!stroke && !pendingTap) clearPreview(); });
@@ -235,11 +250,11 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       const power = strokePower(s);
       if (fk) { const r = sc.fkFromGesture({ ...g, power }); if (r) run(sc.performFk(r.shot)); return; }
       const shot = sc.shotFromGesture({ ...g, power });
-      if (shot) { run(sc.perform(shot)); return; }
+      if (shot) { act(shot); return; }
       if (pen) return;
       const end = s.pts[s.pts.length - 1];
       const t = end ? sc.throughTarget(end.x, end.y) : null;
-      if (t && t.kind !== 'shot') run(sc.perform(t));
+      if (t && t.kind !== 'shot') act(t);
     }
 
     // ---------- Linha prevista (toque no companheiro / mouse) ----------

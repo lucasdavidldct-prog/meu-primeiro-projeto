@@ -138,12 +138,22 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 
 ## Partida, mando e dificuldade
 
-- Calibragem nova (`npm run calibrar`): ~2,2 gols por jogo entre times do mesmo nível; mandante vence 44% e perde 25%;
-  goleada só com diferença grande (+15 de força: 90% de vitórias, 3 gols por jogo).
+- Calibragem (`npm run calibrar`): ~2,5 gols por jogo entre times do mesmo nível; mandante vence ~53% e perde ~24%;
+  goleada só com diferença grande (+15 de força: 85% de vitórias, 3 gols por jogo).
 - Narração mais viva: construção das jogadas com os nomes e funções (pivô ajeita, falso 9 recua, ala cruza…),
   escanteios, impedimentos, pressão; a IA lê o jogo aos 30 minutos e muda o plano.
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
+
+## Versão 1.3
+
+- **Treino de lances** (Clube → Treino de lances, ou no guia inicial): lance guiado em 3 passos (passe rasteiro,
+  passe alto, conduzir e chutar com o traço), com defesa mais leve; também dá para treinar falta e pênalti. Não vale nada.
+- **Força numa escala só**: seu time e os clubes usam a mesma conta (setores com atributos, playstyles, química e
+  funções), recentralizada no overall dos jogadores. As barras ATA/MEI/DEF/GOL estão na mesma escala da Força.
+- **Modo 2D** com os controles novos: 1 toque = passe rasteiro, 2 toques = passe alto, traço até o gol = chute
+  (velocidade = força, curva = efeito), traço para o espaço = lançamento; tocar dentro do gol também chuta.
+- **Um pouco mais de gols**: ~2,5 por jogo entre times do mesmo nível; goleada só com diferença grande.
 
 ## Ajustes da primeira jogada de teste (1.2)
 

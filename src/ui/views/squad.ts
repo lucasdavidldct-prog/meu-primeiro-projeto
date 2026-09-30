@@ -1,7 +1,8 @@
 import { inPos } from '../../engine/cards';
 import { FORM_IDS } from '../../engine/positions';
 import { clamp } from '../../engine/rng';
-import { cardByUid, teamInfo } from '../../engine/state';
+import { SCALE_OFFSET } from '../../engine/chemistry';
+import { cardByUid, teamInfo, teamStrength } from '../../engine/state';
 import { MENT, STYLES, STYLE_IDS } from '../../engine/tactics';
 import { cardHTML, pips } from '../card';
 import { app } from '../ctx';
@@ -10,7 +11,7 @@ import { esc } from '../dom';
 export function viewSquad(): string {
   const S = app.S, sel = app.sel;
   const T = teamInfo(S), { xi, chem, slots, r } = T;
-  const bar = (l: string, v: number) => `<div class="bar">${l}<i><b style="width:${clamp((v - 45) / 50 * 100, 4, 100)}%"></b></i><span>${Math.round(v)}</span></div>`;
+  const bar = (l: string, raw: number) => { const v = raw - SCALE_OFFSET; return `<div class="bar">${l}<i><b style="width:${clamp((v - 45) / 50 * 100, 4, 100)}%"></b></i><span>${Math.round(v)}</span></div>`; };
   let pitch = `<div class="pitch"><svg class="lines" viewBox="0 0 100 140" preserveAspectRatio="none" fill="none" stroke="rgba(255,255,255,.28)" stroke-width=".5"><rect x="3" y="3" width="94" height="134"/><path d="M3 70h94"/><circle cx="50" cy="70" r="11"/><rect x="24" y="3" width="52" height="19"/><rect x="37" y="3" width="26" height="7"/><rect x="24" y="118" width="52" height="19"/><rect x="37" y="130" width="26" height="7"/></svg>`;
   slots.forEach((s, i) => {
     // Goleiro um pouco mais baixo para não ficar atrás dos zagueiros
@@ -31,11 +32,12 @@ export function viewSquad(): string {
   }).join('');
   return `
   <div class="summary">
-    <div class="stat"><small>Geral</small><b>${T.ovr}</b></div>
+    <div class="stat"><small>Força</small><b>${teamStrength(T)}</b></div>
     <div class="stat"><small>Química</small><b>${chem.total}<span class="muted" style="font-size:16px">/33</span></b></div>
     <div class="stat"><small>Formação</small><b style="font-size:22px">${S.squad.form}</b></div>
   </div>
   <div class="bars">${bar('ATA', r.att)}${bar('MEI', r.mid)}${bar('DEF', r.def)}${bar('GOL', r.gk)}</div>
+  <p class="small muted" style="margin:4px 0 0">Força = média dos setores (atributos, playstyles, química e funções). É a mesma escala da Força dos adversários. Média dos overalls: ${T.ovr}.</p>
   ${pitch}
   <p class="small muted" style="margin:6px 0 0">Toque num jogador para trocar, ou <b>segure a carta e arraste</b> para outra posição (vale para as reservas também). Losangos verdes = química (0–3). Posição em amarelo = fora de posição.</p>
   <h3>Reservas</h3><div class="bench">${bench}</div>

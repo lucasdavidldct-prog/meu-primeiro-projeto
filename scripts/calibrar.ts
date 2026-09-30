@@ -1,5 +1,5 @@
 // npm run calibrar — simulação em massa para conferir se o motor está realista.
-// Alvo: ~2,3 gols por jogo entre times do mesmo nível, mando de campo pesando e goleadas só com diferença grande.
+// Alvo: ~2,45 gols por jogo entre times do mesmo nível, mando de campo pesando e goleadas só com diferença grande.
 import { CALIB, sideOpp, simulate } from '../src/engine/match';
 import { R, seedRng } from '../src/engine/rng';
 import { clubStrength, squadOf, aiTactics } from '../src/engine/squads';
@@ -54,7 +54,7 @@ for (const diff of [3, 6, 10, 15]) {
   console.log(`  +${String(diff).padEnd(2)} → V ${r.w} · E ${r.d} · D ${r.l} · ${r.avg.toFixed(2)} gols/jogo (${r.n} jogos)`);
 }
 const ok = [
-  ['Média de gols entre 2,15 e 2,5', eq.avg >= 2.15 && eq.avg <= 2.5],
+  ['Média de gols entre 2,3 e 2,65', eq.avg >= 2.3 && eq.avg <= 2.65],
   ['Pênaltis convertidos entre 0,15 e 0,35 por jogo', eq.pen >= .15 && eq.pen <= .35],
   ['Mandante vence bem mais do que perde (≥ 1,5×)', hm.wr >= hm.lr * 1.5],
   ['Vitórias do mais forte crescem com a diferença', rows.every((r, i) => i === 0 || r.wr >= rows[i - 1].wr - .03)],

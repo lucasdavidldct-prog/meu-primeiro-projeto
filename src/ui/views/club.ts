@@ -33,7 +33,7 @@ export function viewClub(): string {
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Sons</span><button class="chip" data-act="togSom" aria-pressed="${S.som !== false}">${S.som !== false ? 'Ligados' : 'Desligados'}</button></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Vibração</span><button class="chip" data-act="togVib" aria-pressed="${S.vibrar !== false}">${S.vibrar !== false ? 'Ligada' : 'Desligada'}</button></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Fotos dos jogadores (internet, Wikimedia Commons)</span><button class="chip" data-act="togFotos" aria-pressed="${S.fotos !== false}">${S.fotos !== false ? 'Ligadas' : 'Desligadas'}</button></div>
-    <button class="btn block" style="margin-top:12px" data-act="help">Como jogar</button>
+    <div class="row" style="gap:8px;margin-top:12px"><button class="btn" style="flex:1" data-act="help">Como jogar</button><button class="btn" style="flex:1" data-act="treino" data-k="ataque">Treino de lances</button></div>
   </div>
   ${dups.length ? `<button class="btn block" style="margin-top:12px" data-act="sellDups">Vender ${dups.length} repetida${dups.length > 1 ? 's' : ''} por ${fmt(dupV)} moedas</button>` : ''}
   <h3>Coleção</h3>

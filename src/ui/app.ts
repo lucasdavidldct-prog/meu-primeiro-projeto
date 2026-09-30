@@ -7,7 +7,7 @@ import { clubStrength } from '../engine/squads';
 import { PS_BY_ID, parsePs } from '../engine/data/schema';
 import { oppFromClub, oppFromId } from '../engine/season';
 import { endSeason as careerEnd, nextFixture } from '../engine/career';
-import { setFormation, setOrder, setRole, applyPick, autoLineup, blankGame, cardByUid, duplicates, newCareerGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
+import { teamStrength, setFormation, setOrder, setRole, applyPick, autoLineup, blankGame, cardByUid, duplicates, newCareerGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
 import type { FormationId, Pos, StyleId } from '../engine/types';
 import { exportJson, flushSave, importJson } from '../save/db';
 import { cardHTML } from './card';
@@ -77,7 +77,7 @@ function showHelp(): void {
    <h3>Mando e dificuldade</h3><p>Jogar em casa ajuda (torcida, mais chances); fora é mais difícil e você tem um lance a menos. A dificuldade fica em <b>Clube</b>.</p>
    <h3>Playstyles</h3><p>Os ícones na carta são habilidades (Chute de Longe, Velocista…). As versões <b>+</b> são mais fortes. Elas pesam na simulação e nos lances.</p>
   </div>
-  <button class="btn pri block" style="margin-top:14px" data-act="closeSheet">Entendi</button>`);
+  <div class="row" style="gap:8px;margin-top:14px"><button class="btn pri" style="flex:1" data-act="treino" data-k="ataque">Fazer o treino de lances</button><button class="btn" style="flex:1" data-act="closeSheet">Entendi</button></div>`);
 }
 
 function photoPanel(id: string): string {
@@ -201,17 +201,18 @@ const ACT: Record<string, Handler> = {
   },
   play() {
     const C = app.S.career!, f = nextFixture(C);
-    if (f) startMatch(oppFromId(f.opp, teamInfo(app.S).ovr), f);
+    if (f) startMatch(oppFromId(f.opp, teamStrength(teamInfo(app.S))), f);
   },
   simPlay() {
     const C = app.S.career!, f = nextFixture(C);
-    if (f) void quickPlay(oppFromId(f.opp, teamInfo(app.S).ovr), f);
+    if (f) void quickPlay(oppFromId(f.opp, teamStrength(teamInfo(app.S))), f);
   },
   friendly() {
     const T = teamInfo(app.S);
     // Um clube real de nível parecido com o seu time
-    const near = allClubs().filter(c => c.id !== app.S.career?.club).map(c => ({ c, d: Math.abs(clubStrength(c.id) - T.ovr) })).sort((a, b) => a.d - b.d).slice(0, 12);
-    startMatch(oppFromClub(pick(near).c, T.ovr), null);
+    const my = teamStrength(T);
+    const near = allClubs().filter(c => c.id !== app.S.career?.club).map(c => ({ c, d: Math.abs(clubStrength(c.id) - my) })).sort((a, b) => a.d - b.d).slice(0, 12);
+    startMatch(oppFromClub(pick(near).c, my), null);
   },
   endSeason() {
     const S = app.S, r = careerEnd(S.career!);

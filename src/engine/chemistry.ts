@@ -99,3 +99,8 @@ export function rate(entries: RateEntry[]): Ratings {
   const reds = entries.filter(e => e.red).length, pen = Math.pow(.95, reds);
   return { att: f(W_ATT, REF.att, 'att') * pen, def: f(W_DEF, REF.def, 'def') * pen, mid: f(W_MID, REF.mid, 'mid') * pen, gk: gk ? gkEff(gk) : 30 };
 }
+
+/** Força do time numa escala só (a mesma para você e para os clubes da IA): média dos setores, goleiro com peso menor. */
+export const power = (r: Ratings): number => Math.round(.3 * r.att + .3 * r.mid + .3 * r.def + .1 * r.gk - SCALE_OFFSET);
+/** Os setores somam química, playstyles e atributos; para exibir, a escala é recentralizada no overall dos jogadores. */
+export const SCALE_OFFSET = 6.5;
