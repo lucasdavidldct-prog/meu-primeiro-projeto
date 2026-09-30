@@ -33,6 +33,12 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
+      # Fotos livres (Wikimedia Commons) dos jogadores: só procura quem ainda não está em data/fotos.json
+      - name: Buscar fotos dos jogadores
+        continue-on-error: true
+        timeout-minutes: 30
+        run: npm run fotos
+
       - name: Testes e validação dos dados
         run: |
           npm test
@@ -64,3 +70,15 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Esquadrão FC — APK mais recente" \
             --notes "Build #${{ github.run_number }} da branch ${{ github.ref_name }} ($(git log -1 --format=%h)). Baixe o esquadrao-fc.apk no celular e instale (permita 'instalar apps desconhecidos')."
+
+      - name: Guardar as fotos encontradas no repositório
+        continue-on-error: true
+        run: |
+          if ! git diff --quiet -- data/fotos.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/fotos.json
+            git commit -m "Fotos dos jogadores (Wikidata / Wikimedia Commons)"
+            git pull --rebase origin "${{ github.ref_name }}"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi

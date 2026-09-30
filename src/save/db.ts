@@ -6,12 +6,14 @@ const STORE = 'saves';
 const SLOT = 'principal';
 /** Loja com as ligas editadas no Editor de elencos (chave = id da liga). */
 export const STORE_DADOS = 'dados';
+/** Fotos de jogadores escolhidas por você (chave = id do jogador, valor = data URL JPEG). */
+export const STORE_FOTOS = 'fotos';
 
 export function openDb(): Promise<IDBDatabase> {
   return new Promise((res, rej) => {
-    const rq = indexedDB.open(DB_NAME, 2);
+    const rq = indexedDB.open(DB_NAME, 3);
     rq.onupgradeneeded = () => {
-      for (const s of [STORE, STORE_DADOS]) if (!rq.result.objectStoreNames.contains(s)) rq.result.createObjectStore(s);
+      for (const s of [STORE, STORE_DADOS, STORE_FOTOS]) if (!rq.result.objectStoreNames.contains(s)) rq.result.createObjectStore(s);
     };
     rq.onsuccess = () => res(rq.result);
     rq.onerror = () => rej(rq.error);

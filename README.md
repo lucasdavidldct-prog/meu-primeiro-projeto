@@ -129,6 +129,15 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Modo teste:** a carreira começa com +1.000.000 moedas (opção na tela de escolha do clube) e em **Clube → Modo teste**
   dá para somar mais 1.000.000 a qualquer momento.
 
+## Fotos dos jogadores
+
+- As cartas mostram a foto do jogador quando existe uma **foto livre na Wikimedia Commons** (achada pelo Wikidata:
+  precisa ser jogador de futebol e ter o ano de nascimento compatível com a idade, para não pegar homônimo).
+  A lista fica em `data/fotos.json` e é preenchida por `npm run fotos` (roda sozinho no GitHub Actions a cada push).
+- As fotos carregam da internet; sem conexão a carta mostra a silhueta com a camisa do clube.
+- **Sua foto:** abra a carta e toque em **Escolher foto** (galeria ou câmera). Ela fica salva no aparelho e tem
+  prioridade sobre a da Commons. Dá para desligar as fotos da internet em **Clube**.
+
 ## Sons, vibração e dicas
 
 - Efeitos sintetizados com Web Audio (sem arquivos): apito de início/intervalo/fim, torcida no gol, lamento no gol

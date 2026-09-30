@@ -27,6 +27,7 @@ import { sfx, unlockAudio } from './sfx';
 import { initNative, isNative, shareFile } from './native';
 import { HELP } from './moment2d';
 import { initSquadDrag } from './squadDrag';
+import { definirMinhaFoto, fotoDe, removerMinhaFoto, temFotoCommons } from './fotos';
 import { bindEditorInputs, editorActions, resumeEditorIfNeeded, viewEditor } from './editor';
 
 function renderApp(): void {
@@ -42,6 +43,13 @@ function renderApp(): void {
   if (app.tab === 'editor') bindEditorInputs(v);
 }
 
+/** Redesenha a tela e reabre o detalhe da carta aberta (após trocar a foto). */
+function refreshCard(id: string): void {
+  render();
+  const u = app.S.cards.find(c => c.p === id)?.u;
+  if (u && document.getElementById('sheet')) showCard(u);
+}
+
 function showCard(u: number): void {
   const S = app.S, P = cardByUid(S, u);
   if (!P) return;
@@ -54,6 +62,7 @@ function showCard(u: number): void {
    <dl class="kv"><dt>Pé bom</dt><dd>${{ D: 'Direito', E: 'Esquerdo', A: 'Ambidestro' }[P.foot]}</dd>${P.leg ? '' : `<dt>Idade</dt><dd>${P.age} anos</dd>`}${P.legClub === 'CAM' ? '<dt>Ídolo</dt><dd>Atlético Mineiro</dd>' : ''}</dl>
    <div class="bars" style="margin-top:12px">${P.st.map((s, i) => `<div class="bar">${L[i]}<i><b style="width:${s}%"></b></i><span>${s}</span></div>`).join('')}</div>
    ${P.ps.length ? `<h3>Playstyles</h3><div class="ps-list">${P.ps.map(x => { const { id, plus } = parsePs(x), d = PS_BY_ID.get(id); return d ? `<div class="ps-item ${plus ? 'plus' : ''}"><span class="ic">${d.icone}</span><div><b>${d.nome}</b><span class="muted">${plus ? d.descPlus : d.desc}</span></div></div>` : ''; }).join('')}</div>` : ''}
+   ${photoPanel(P.id)}
    <div style="margin-top:16px">${inSq ? '<p class="small muted">Está no seu elenco. Tire do time para poder vender.</p>' : `<button class="btn danger block" data-act="sell" data-u="${P.u}">Vender por ${fmt(sellValue(P))} moedas</button>`}</div>`);
 }
 
@@ -68,6 +77,14 @@ function showHelp(): void {
    <h3>Playstyles</h3><p>Os ícones na carta são habilidades (Chute de Longe, Velocista…). As versões <b>+</b> são mais fortes. Elas pesam na simulação e nos lances.</p>
   </div>
   <button class="btn pri block" style="margin-top:14px" data-act="closeSheet">Entendi</button>`);
+}
+
+function photoPanel(id: string): string {
+  const f = fotoDe(id);
+  const credit = f?.fonte === 'commons' ? `<a href="${esc(f.pagina!)}" target="_blank" rel="noopener">Foto: Wikimedia Commons (licença livre)</a>` : f?.fonte === 'minha' ? 'Foto escolhida por você' : temFotoCommons(id) && app.S.fotos === false ? 'Fotos da internet desligadas em Clube' : 'Sem foto';
+  return `<h3>Foto</h3><div class="row" style="gap:8px;flex-wrap:wrap"><span class="small muted" style="flex:1 1 100%">${credit}</span>
+    <button class="btn" data-act="photoPick" data-id="${esc(id)}">${f?.fonte === 'minha' ? 'Trocar minha foto' : 'Escolher foto'}</button>
+    ${f?.fonte === 'minha' ? `<button class="btn" data-act="photoDel" data-id="${esc(id)}">Remover minha foto</button>` : ''}</div>`;
 }
 
 function replaceState(S: GameState): void { app.S = S; app.sel = null; }
@@ -127,6 +144,19 @@ const ACT: Record<string, Handler> = {
   togSom() { app.S.som = app.S.som === false; save(); render(); if (app.S.som) sfx.coin(); },
   togVib() { app.S.vibrar = app.S.vibrar === false; save(); render(); },
   help() { showHelp(); },
+  togFotos() { app.S.fotos = app.S.fotos === false; save(); render(); },
+  photoPick(d) {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = async () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      try { await definirMinhaFoto(d.id!, f); refreshCard(d.id!); toast('Foto salva'); }
+      catch (e) { toast('Não foi possível usar essa imagem'); console.warn(e); }
+    };
+    inp.click();
+  },
+  async photoDel(d) { await removerMinhaFoto(d.id!); refreshCard(d.id!); toast('Foto removida'); },
   reset(_d, el) {
     if (!el.dataset.ok) { el.dataset.ok = '1'; el.textContent = 'Tem certeza? Toque de novo para apagar tudo'; return; }
     replaceState(blankGame()); save(); app.tab = 'start'; render(); window.scrollTo(0, 0);

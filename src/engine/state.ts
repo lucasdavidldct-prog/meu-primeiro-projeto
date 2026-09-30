@@ -30,6 +30,8 @@ export interface GameState {
   som?: boolean;
   /** Vibração no celular (padrão: ligada). */
   vibrar?: boolean;
+  /** Fotos dos jogadores da Wikimedia Commons (padrão: ligadas). */
+  fotos?: boolean;
   /** Já viu as dicas de como jogar. */
   dicasVistas?: boolean;
   titles: number;

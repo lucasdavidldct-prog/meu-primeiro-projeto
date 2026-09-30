@@ -13,11 +13,13 @@ import { loadEditedLigas } from './save/dados';
 import { applyEdits } from './engine/world';
 import { startApp } from './ui/app';
 import { devMoment } from './ui/matchView';
+import { loadMinhasFotos } from './ui/fotos';
 
 async function boot(): Promise<void> {
   // Correções feitas no Editor de elencos (quando não há servidor local) valem por cima dos arquivos.
   try { const edits = await loadEditedLigas(); if (Object.keys(edits).length) applyEdits(edits); }
   catch (e) { console.warn('Não foi possível ler as edições de elenco', e); }
+  try { await loadMinhasFotos(); } catch (e) { console.warn('Não foi possível ler as fotos', e); }
   let S = null;
   try { S = await loadSave(); } catch (e) { console.warn('Não foi possível ler o save', e); }
   if (!S) { S = blankGame(); await flushSave(S).catch(e => console.warn('Não foi possível salvar', e)); }

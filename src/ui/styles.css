@@ -297,3 +297,8 @@ body.is-dragging{cursor:grabbing}
 .c-cap .crest-box.badge{width:18px;height:21px;justify-self:center}
 .card.md .c-rib .flag,.card.lg .c-rib .flag,.card.xl .c-rib .flag{width:1.45em;height:.95em}
 .card.md .c-rib .crest-box.badge,.card.lg .c-rib .crest-box.badge,.card.xl .c-rib .crest-box.badge{width:1.5em;height:1.8em}
+
+/* Foto do jogador na carta */
+.c-face{overflow:hidden}
+.c-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 20%;
+  -webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}

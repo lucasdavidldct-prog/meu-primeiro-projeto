@@ -12,7 +12,8 @@
     "validar-dados": "tsx scripts/validar-dados.ts",
     "calibrar": "tsx scripts/calibrar.ts",
     "apk": "node scripts/apk.mjs",
-    "android": "npm run build && npx cap sync android && npx cap open android"
+    "android": "npm run build && npx cap sync android && npx cap open android",
+    "fotos": "tsx scripts/buscar-fotos.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
