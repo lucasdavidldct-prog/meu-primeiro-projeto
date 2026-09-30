@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Esquadrão FC</string>
+    <string name="title_activity_main">Esquadrão FC</string>
+    <string name="package_name">br.esquadraofc.app</string>
+    <string name="custom_url_scheme">br.esquadraofc.app</string>
+</resources>

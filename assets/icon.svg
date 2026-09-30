@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#1d4a37"/><stop offset="1" stop-color="#06110c"/></radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbe49a"/><stop offset=".55" stop-color="#e2b650"/><stop offset="1" stop-color="#a8761f"/></linearGradient>
+    <linearGradient id="inner" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12281f"/><stop offset="1" stop-color="#08140f"/></linearGradient>
+  </defs>
+  <rect data-bg="1" width="1024" height="1024" fill="url(#bg)"/>
+  <g data-fg="1">
+    <path d="M512 196 L752 268 V520 C752 660 650 760 512 832 C374 760 272 660 272 520 V268 Z" fill="url(#gold)"/>
+    <path d="M512 236 L716 297 V520 C716 640 632 726 512 790 C392 726 308 640 308 520 V297 Z" fill="url(#inner)"/>
+    <path d="M512 262 l14 30 33 4 -24 23 6 33 -29 -16 -29 16 6 -33 -24 -23 33 -4z" fill="url(#gold)"/>
+    <g fill="url(#gold)">
+      <path d="M418 400 H616 L604 452 H478 V514 H588 L576 562 H478 V626 H612 L600 678 H418 Z"/>
+    </g>
+  </g>
+</svg>

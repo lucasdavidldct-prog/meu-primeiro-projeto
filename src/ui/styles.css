@@ -273,3 +273,11 @@ input[type=color]{width:44px;height:32px;padding:2px;vertical-align:middle;curso
 .m3d-replay{position:absolute;top:10px;right:12px;display:none;font-family:var(--f-disp);font-weight:900;letter-spacing:.1em;color:#fff;background:#c0392b;padding:2px 10px;border-radius:5px;animation:pulse 1s infinite}
 .m3d-replay.on{display:block}
 @keyframes pulse{50%{opacity:.5}}
+
+/* Etapa 6: guia, toque no celular, app nativo */
+.help h3{margin:14px 0 4px}
+.help p{margin:0 0 6px;font-size:14px;color:var(--fg)}
+button,.chip,.btn,[data-act]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+html{overscroll-behavior:none}
+.native body{user-select:none;-webkit-user-select:none}
+.native input,.native select,.native textarea{user-select:text;-webkit-user-select:text}

@@ -23,6 +23,9 @@ import { viewClub } from './views/club';
 import { viewSeason } from './views/season';
 import { viewSquad } from './views/squad';
 import { viewStore } from './views/store';
+import { sfx, unlockAudio } from './sfx';
+import { initNative, isNative, shareFile } from './native';
+import { HELP } from './moment2d';
 import { bindEditorInputs, editorActions, resumeEditorIfNeeded, viewEditor } from './editor';
 
 function renderApp(): void {
@@ -51,6 +54,19 @@ function showCard(u: number): void {
    <div class="bars" style="margin-top:12px">${P.st.map((s, i) => `<div class="bar">${L[i]}<i><b style="width:${s}%"></b></i><span>${s}</span></div>`).join('')}</div>
    ${P.ps.length ? `<h3>Playstyles</h3><div class="ps-list">${P.ps.map(x => { const { id, plus } = parsePs(x), d = PS_BY_ID.get(id); return d ? `<div class="ps-item ${plus ? 'plus' : ''}"><span class="ic">${d.icone}</span><div><b>${d.nome}</b><span class="muted">${plus ? d.descPlus : d.desc}</span></div></div>` : ''; }).join('')}</div>` : ''}
    <div style="margin-top:16px">${inSq ? '<p class="small muted">Está no seu elenco. Tire do time para poder vender.</p>' : `<button class="btn danger block" data-act="sell" data-u="${P.u}">Vender por ${fmt(sellValue(P))} moedas</button>`}</div>`);
+}
+
+/** Guia rápido: aparece na primeira carreira e fica em Clube → Como jogar. */
+function showHelp(): void {
+  openSheet(`<h2>Como jogar</h2>
+  <div class="help">
+   <h3>Carreira</h3><p>Na aba <b>Temporada</b> você joga a próxima partida do Brasileirão ou da Libertadores. <b>Jogar</b> abre a partida com narração e lances; <b>Simular</b> resolve na hora. Terminar entre os 5 primeiros leva à Libertadores; os 4 últimos caem.</p>
+   <h3>Time e química</h3><p>Em <b>Time</b>, toque numa posição para trocar o jogador. Jogadores do mesmo clube, liga ou país ligados na formação somam química; fora de posição, o rendimento cai. <b>Melhor time</b> escala automaticamente.</p>
+   <h3>Pacotes</h3><p>Ganhe moedas nos jogos e compre pacotes em <b>Pacotes</b>. Todo dia há um pacote grátis. Repetidas podem ser vendidas.</p>
+   <h3>Lances jogáveis</h3><p>${HELP.ataque}</p><p>${HELP.falta}</p><p>${HELP.penalti}</p>
+   <h3>Playstyles</h3><p>Os ícones na carta são habilidades (Chute de Longe, Velocista…). As versões <b>+</b> são mais fortes. Elas pesam na simulação e nos lances.</p>
+  </div>
+  <button class="btn pri block" style="margin-top:14px" data-act="closeSheet">Entendi</button>`);
 }
 
 function replaceState(S: GameState): void { app.S = S; app.sel = null; }
@@ -82,20 +98,20 @@ const ACT: Record<string, Handler> = {
   sellPackDups(d, el) {
     let v = 0;
     for (const u of d.u!.split(',').map(Number)) { const P = cardByUid(app.S, u); if (P) { v += sellValue(P); removeCard(app.S, u); } }
-    app.S.coins += v; save(); render(); toast(`+${fmt(v)} moedas`); el.remove();
+    app.S.coins += v; save(); render(); sfx.coin(); toast(`+${fmt(v)} moedas`); el.remove();
   },
   sellDups() {
     const S = app.S, us = duplicates(S);
     let v = 0;
     for (const u of us) { v += sellValue(cardByUid(S, u)!); removeCard(S, u); }
-    S.coins += v; save(); render(); toast(`${us.length} vendidas: +${fmt(v)} moedas`);
+    S.coins += v; save(); render(); sfx.coin(); toast(`${us.length} vendidas: +${fmt(v)} moedas`);
   },
   card(d) { showCard(+d.u!); },
   sell(d, el) {
     if (!el.dataset.ok) { el.dataset.ok = '1'; el.textContent = 'Toque de novo para confirmar'; return; }
     const P = cardByUid(app.S, +d.u!);
     if (!P) return;
-    app.S.coins += sellValue(P); removeCard(app.S, P.u); closeSheet(); save(); render(); toast(`${P.short} vendido`);
+    app.S.coins += sellValue(P); removeCard(app.S, P.u); closeSheet(); save(); render(); sfx.coin(); toast(`${P.short} vendido`);
   },
   cf(d) { app.clubFilter = d.f!; render(); },
   cs() { app.clubSort = app.clubSort === 'ovr' ? 'rec' : 'ovr'; render(); },
@@ -105,15 +121,20 @@ const ACT: Record<string, Handler> = {
   },
   togMom() { app.S.moments = !app.S.moments; save(); render(); },
   lance3d(d) { app.S.lance3d = d.v === '1'; save(); render(); toast(app.S.lance3d ? 'Lances em 3D' : 'Lances em 2D (modo leve)'); },
+  togSom() { app.S.som = app.S.som === false; save(); render(); if (app.S.som) sfx.coin(); },
+  togVib() { app.S.vibrar = app.S.vibrar === false; save(); render(); },
+  help() { showHelp(); },
   reset(_d, el) {
     if (!el.dataset.ok) { el.dataset.ok = '1'; el.textContent = 'Tem certeza? Toque de novo para apagar tudo'; return; }
     replaceState(blankGame()); save(); app.tab = 'start'; render(); window.scrollTo(0, 0);
   },
   exportSave() {
+    const name = `esquadrao-save-${new Date().toISOString().slice(0, 10)}.json`;
+    if (isNative()) { void shareFile(name, exportJson(app.S)).catch(e => toast('Não foi possível exportar: ' + (e as Error).message)); return; }
     const blob = new Blob([exportJson(app.S)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `esquadrao-save-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     toast('Save exportado');
@@ -164,6 +185,7 @@ const ACT: Record<string, Handler> = {
     replaceState(newCareerGame(c.id, { short: app.startShort, libNow: app.startLib && c.lg !== 'serie-b' }));
     app.tab = 'squad'; saveNow(); render(); window.scrollTo(0, 0);
     toast(`Bem-vindo ao ${c.n}! Temporada ${app.S.career!.year}.`);
+    if (!app.S.dicasVistas) { app.S.dicasVistas = true; save(); setTimeout(showHelp, 600); }
   },
   closeSheet() { closeSheet(); },
   ...matchActions,
@@ -172,6 +194,11 @@ const ACT: Record<string, Handler> = {
 
 export function startApp(S: GameState): void {
   app.S = S;
+  unlockAudio();
+  void initNative(() => { void flushSave(app.S); });
+  // Erros inesperados: avisa em vez de deixar a tela travada sem explicação
+  window.addEventListener('error', e => { console.error(e.error ?? e.message); toast('Ops, algo deu errado. Seu progresso está salvo.'); });
+  window.addEventListener('unhandledrejection', e => { console.error(e.reason); toast('Ops, algo deu errado. Seu progresso está salvo.'); });
   setRender(renderApp);
   document.addEventListener('click', e => {
     const t = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');

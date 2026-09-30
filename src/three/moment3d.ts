@@ -10,6 +10,7 @@ import { esc } from '../ui/dom';
 import { probColor } from '../ui/moment2d';
 import { carrierRing, makeBall, makePlayer, type PlayerMesh } from './players';
 import { addLights, buildGoal, buildPitch, buildStadium } from './stadium';
+import { endSound, planSound } from '../ui/sfx';
 
 const HELP3D = {
   ataque: 'Toque num <b>companheiro</b> para passar · no <b>campo</b> para conduzir · <b>arraste em direção ao gol</b> para chutar: a direção mira, o comprimento dá a força e a curva do traço dá o efeito.',
@@ -40,7 +41,8 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
 
     // ---------- Three.js ----------
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // Celular: resolução um pouco menor deixa o lance fluido sem perder nitidez perceptível
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, matchMedia('(pointer: coarse)').matches ? 1.5 : 2));
     renderer.setSize(W, H);
     wrap.prepend(renderer.domElement);
     const scene = new THREE.Scene();
@@ -89,7 +91,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     }
     function run(plan: Plan) {
       clearPreview();
-      anim = { plan, t0: performance.now() };
+      planSound(plan); anim = { plan, t0: performance.now() };
       if (plan.gk) { const g = sc.goalie(); g.tx = plan.gk.x; g.ty = plan.gk.y; gkState.dive = plan.gk.dive; gkState.t0 = performance.now() + plan.dur * .45; gkState.h = plan.gk.h; }
     }
     function endAnim(plan: Plan) {
@@ -97,7 +99,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       plan.commit();
       if (plan.end && !finished) {
         finished = true;
-        flash(plan.end.text, plan.end.color);
+        flash(plan.end.text, plan.end.color); endSound(plan.end);
         if (plan.end.goal) {
           const res = plan.end.res;
           setTimeout(() => { msgEl.textContent = ''; replay = { frames: frames.slice(-Math.min(frames.length, 150)), i: 0, res }; replayEl.classList.add('on'); }, 1300);

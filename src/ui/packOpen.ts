@@ -7,6 +7,7 @@ import { cardHTML, flagHTML } from './card';
 import { crestHTML } from './crest';
 import { app, render, saveNow } from './ctx';
 import { esc, fmt } from './dom';
+import { sfx } from './sfx';
 
 export interface Got { u: number; P: OwnedCard; dup: boolean }
 
@@ -43,7 +44,7 @@ export function walkout(P: OwnedCard, done: () => void): void {
     `${cardHTML(P, 'xl')}<div style="margin-top:14px;font-size:22px;color:${glow}">${esc(P.name)}${P.v !== 'base' ? ' · ' + VAR[P.v].n : ''}</div>`,
   ];
   let i = 0, timer: ReturnType<typeof setTimeout>;
-  const show = () => { w.innerHTML = `<div class="beam"></div><div class="step" style="display:grid;justify-items:center">${steps[i]}</div><div class="skip">${i < 3 ? 'Toque para pular' : 'Toque para continuar'}</div>`; };
+  const show = () => { if (i === 3) sfx.reveal(4); else sfx.boom(); w.innerHTML = `<div class="beam"></div><div class="step" style="display:grid;justify-items:center">${steps[i]}</div><div class="skip">${i < 3 ? 'Toque para pular' : 'Toque para continuar'}</div>`; };
   const next = () => {
     clearTimeout(timer);
     if (i >= 3) { w.remove(); done(); return; }
@@ -66,4 +67,6 @@ function showReveal(got: Got[]): void {
    <button class="btn pri" data-act="closeReveal">Guardar no clube</button></div></div>`;
   ov.querySelectorAll<HTMLElement>('.reveal .card').forEach((c, k) => { c.style.animationDelay = (k * 90) + 'ms'; });
   document.body.appendChild(ov);
+  const top = got[0].P;
+  sfx.reveal(isSpecial(top.tier) ? 3 : top.ovr >= 76 ? 2 : top.ovr >= 68 ? 1 : 0);
 }

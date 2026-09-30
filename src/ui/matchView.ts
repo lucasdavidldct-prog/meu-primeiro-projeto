@@ -13,6 +13,7 @@ import { crestHTML } from './crest';
 import { closeSheet, esc, fmt, openSheet, toast } from './dom';
 import { runMoment2D } from './moment2d';
 import { webglAvailable } from '../three/support';
+import { sfx } from './sfx';
 
 /** Lance 3D (carregado sob demanda), ou 2D se desligado nas configurações, sem WebGL ou se o 3D falhar. */
 export async function runMoment(m: Match, req: Parameters<typeof runMoment2D>[1]): Promise<Awaited<ReturnType<typeof runMoment2D>>> {
@@ -71,7 +72,7 @@ export function startMatch(opp: OppTeam, fx: Fixture | null): void {
   const ov = document.createElement('div');
   ov.className = 'match'; ov.id = 'match';
   document.body.appendChild(ov);
-  renderMatch(); loop();
+  renderMatch(); loop(); sfx.whistle(1);
 }
 
 function loop(): void {
@@ -80,8 +81,13 @@ function loop(): void {
   if (L.paused || L.m.ht || L.busy) return;
   L.timer = setTimeout(async () => {
     if (!L) return;
-    const r = await L.m.step();
-    if (r === 'end') endMatch();
+    const n0 = L.m.ev.length, r = await L.m.step();
+    // Sons dos eventos novos (gols do lance jogado já tocam no próprio lance)
+    for (const e of L.m.ev.slice(0, L.m.ev.length - n0)) {
+      if (e.type === 'goal') sfx.goal(); else if (e.type === 'goal opp') sfx.groan();
+    }
+    if (r === 'ht') sfx.whistle(2);
+    if (r === 'end') { sfx.whistle(3); endMatch(); }
     renderMatch(); loop();
   }, DELAYS[L.speed]);
 }
@@ -186,7 +192,7 @@ export function devMoment(kind: 'ataque' | 'contra' | 'penalti' | 'falta'): Prom
 
 export const matchActions = {
   closeMatch() { document.getElementById('match')?.remove(); if (L) clearTimeout(L.timer); L = null; app.tab = 'season'; render(); },
-  secondHalf() { if (!L) return; L.m.secondHalf(); renderMatch(); loop(); },
+  secondHalf() { if (!L) return; L.m.secondHalf(); sfx.whistle(1); renderMatch(); loop(); },
   mPause() { if (!L) return; L.paused = !L.paused; renderMatch(); loop(); },
   mSpeed(d: DOMStringMap) { if (!L) return; L.speed = +d.s!; renderMatch(); loop(); },
   mMent(d: DOMStringMap) {

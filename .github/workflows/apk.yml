@@ -1,0 +1,66 @@
+# Gera o APK Android a cada push e publica em Releases (tag "apk").
+name: APK Android
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Testes e validação dos dados
+        run: |
+          npm test
+          npm run validar-dados
+
+      - name: Build web + sincronizar com o Android
+        run: |
+          npm run build
+          npx cap sync android
+
+      - name: Compilar APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk ../esquadrao-fc.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esquadrao-fc-apk
+          path: esquadrao-fc.apk
+
+      - name: Publicar em Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk --cleanup-tag --yes || true
+          gh release create apk esquadrao-fc.apk \
+            --target "$GITHUB_SHA" \
+            --title "Esquadrão FC — APK mais recente" \
+            --notes "Build #${{ github.run_number }} da branch ${{ github.ref_name }} ($(git log -1 --format=%h)). Baixe o esquadrao-fc.apk no celular e instale (permita 'instalar apps desconhecidos')."

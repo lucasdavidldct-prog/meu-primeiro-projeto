@@ -96,8 +96,36 @@ com a camisa do clube e número, bola com sombra.
 
 ## Save
 
-O progresso fica no IndexedDB do navegador. Em **Clube → Save** dá para exportar o save em JSON e importar de volta,
-inclusive em outro aparelho.
+O progresso fica no IndexedDB do navegador (ou do app, no APK). Em **Clube → Save** dá para exportar o save em JSON e importar de volta,
+inclusive em outro aparelho. No APK, "Exportar save" abre o menu de compartilhar do Android (Drive, Arquivos, WhatsApp…).
+
+## APK Android
+
+O app Android é o mesmo jogo empacotado com [Capacitor](https://capacitorjs.com) (pasta `android/`).
+
+**Sem instalar nada (recomendado):** a cada push, o GitHub Actions (`.github/workflows/apk.yml`) roda os testes,
+gera o APK e publica em **Releases → "Esquadrão FC — APK mais recente"** (tag `apk`). Abra essa página no celular,
+baixe `esquadrao-fc.apk` e instale (o Android pede para permitir "instalar apps desconhecidos" do navegador).
+O APK também fica como artefato da execução em **Actions**.
+
+**No seu computador:** instale o Android Studio (traz o Android SDK) e o Java 21, depois:
+
+```bash
+npm run apk       # gera apk/esquadrao-fc.apk
+npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/emulador
+```
+
+- O APK é assinado com uma chave fixa de uso pessoal (`android/app/esquadrao.keystore`): versões novas instalam
+  por cima da antiga e **o save continua**. Não use essa chave para publicar na Play Store.
+- No app: botão voltar do Android fecha janelas/pausa a partida, vibração nos gols e aberturas de pacote,
+  tela sempre em pé (retrato).
+- Ícone e tela de abertura vêm de `assets/` (regerar com `npx capacitor-assets generate --android`).
+
+## Sons, vibração e dicas
+
+- Efeitos sintetizados com Web Audio (sem arquivos): apito de início/intervalo/fim, torcida no gol, lamento no gol
+  sofrido, chute, "uuuh" na defesa, revelação de cartas e moedas.
+- Em **Clube**: ligar/desligar sons e vibração, e **Como jogar** (o guia também aparece ao começar a primeira carreira).
 
 ## Etapas
 
@@ -106,4 +134,4 @@ inclusive em outro aparelho.
 3. ✅ Playstyles
 4. ✅ Carreira e competições
 5. ✅ Lances 3D
-6. Polimento
+6. ✅ Polimento e APK Android

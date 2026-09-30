@@ -3,6 +3,7 @@ import { GOAL, analyzeGesture, type Pt } from '../engine/lance';
 import { LanceScene, TITLES, type BallKey, type Plan, type Target } from '../engine/lanceScene';
 import type { Match, MomentRequest, MomentResult } from '../engine/match';
 import { clamp } from '../engine/rng';
+import { endSound, planSound } from './sfx';
 
 export const HELP = {
   ataque: 'Toque num <b>companheiro</b> para passar · dentro do <b>gol</b> para chutar · no <b>campo</b> para conduzir. Arraste para ver a chance de dar certo e solte para executar.',
@@ -30,14 +31,14 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
     let gesture: Pt[] | null = null;
     function flash(text: string, color: string) { msgEl.textContent = text; msgEl.style.color = color; msgEl.classList.remove('show'); void msgEl.offsetWidth; msgEl.classList.add('show'); }
     function run(plan: Plan) {
-      anim = { plan, t0: performance.now() }; hover = null;
+      planSound(plan); anim = { plan, t0: performance.now() }; hover = null;
       if (plan.gk) { const g = sc.goalie(); g.tx = plan.gk.x; g.ty = plan.gk.y; }
     }
     function endAnim(plan: Plan) {
       anim = null;
       plan.commit();
       if (plan.end && !finished) {
-        finished = true; flash(plan.end.text, plan.end.color);
+        finished = true; flash(plan.end.text, plan.end.color); endSound(plan.end);
         setTimeout(() => { ov.remove(); resolve(plan.end!.res); }, plan.end.goal ? 1700 : 1400);
       }
     }

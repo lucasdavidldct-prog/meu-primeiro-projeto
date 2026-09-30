@@ -26,6 +26,12 @@ export interface GameState {
   moments: boolean;
   /** Lances em 3D (false = canvas 2D, para aparelhos mais fracos). */
   lance3d?: boolean;
+  /** Efeitos sonoros (padrão: ligados). */
+  som?: boolean;
+  /** Vibração no celular (padrão: ligada). */
+  vibrar?: boolean;
+  /** Já viu as dicas de como jogar. */
+  dicasVistas?: boolean;
   titles: number;
   /** Mensagem para mostrar uma vez ao abrir o jogo (não é salva de volta). */
   aviso?: string;

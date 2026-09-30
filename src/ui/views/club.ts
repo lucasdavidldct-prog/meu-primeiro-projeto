@@ -5,6 +5,7 @@ import { cardHTML } from '../card';
 import { app } from '../ctx';
 import { webglAvailable } from '../../three/support';
 import { esc, fmt } from '../dom';
+import { isNative } from '../native';
 
 export function viewClub(): string {
   const S = app.S, all = allCards(S);
@@ -25,6 +26,9 @@ export function viewClub(): string {
     </div>
     <div class="row" style="margin-top:12px;justify-content:space-between"><span class="small muted">Lances jogáveis nas partidas</span><button class="chip" data-act="togMom" aria-pressed="${S.moments}">${S.moments ? 'Ligados' : 'Desligados'}</button></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Visual dos lances${webglAvailable() ? '' : ' (sem 3D neste aparelho)'}</span><div class="chips"><button class="chip" data-act="lance3d" data-v="1" aria-pressed="${S.lance3d !== false && webglAvailable()}" ${webglAvailable() ? '' : 'disabled'}>3D</button><button class="chip" data-act="lance3d" data-v="0" aria-pressed="${S.lance3d === false || !webglAvailable()}">2D (leve)</button></div></div>
+    <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Sons</span><button class="chip" data-act="togSom" aria-pressed="${S.som !== false}">${S.som !== false ? 'Ligados' : 'Desligados'}</button></div>
+    <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Vibração</span><button class="chip" data-act="togVib" aria-pressed="${S.vibrar !== false}">${S.vibrar !== false ? 'Ligada' : 'Desligada'}</button></div>
+    <button class="btn block" style="margin-top:12px" data-act="help">Como jogar</button>
   </div>
   ${dups.length ? `<button class="btn block" style="margin-top:12px" data-act="sellDups">Vender ${dups.length} repetida${dups.length > 1 ? 's' : ''} por ${fmt(dupV)} moedas</button>` : ''}
   <h3>Coleção</h3>
@@ -36,9 +40,10 @@ export function viewClub(): string {
     <button class="btn block" data-act="openEditor">Editor de elencos</button></div>
   <h3>Save</h3>
   <div class="panel">
-    <p class="small muted" style="margin:0">O progresso fica salvo neste navegador (IndexedDB). Exporte um arquivo para guardar uma cópia ou levar para outro aparelho.</p>
+    <p class="small muted" style="margin:0">O progresso fica salvo ${isNative() ? 'neste aparelho' : 'neste navegador (IndexedDB)'}. Exporte um arquivo para guardar uma cópia ou levar para outro aparelho.</p>
     <div class="file-row"><button class="btn" data-act="exportSave">Exportar save</button><button class="btn" data-act="importSave">Importar save</button></div>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
   </div>
-  <div class="row" style="margin-top:24px"><button class="btn danger" data-act="reset">Recomeçar do zero</button></div>`;
+  <div class="row" style="margin-top:24px"><button class="btn danger" data-act="reset">Recomeçar do zero</button></div>
+  <p class="small muted" style="margin-top:18px;text-align:center">Esquadrão FC · versão ${__APP_VERSION__}</p>`;
 }

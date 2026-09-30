@@ -5,3 +5,6 @@ declare module 'virtual:escudos' {
   const siglas: string[];
   export default siglas;
 }
+
+/** Versão do package.json (definida no vite.config.ts). */
+declare const __APP_VERSION__: string;

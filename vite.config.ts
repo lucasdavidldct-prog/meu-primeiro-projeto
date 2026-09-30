@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { IncomingMessage } from 'node:http';
 import { defineConfig, type Plugin } from 'vitest/config';
@@ -64,6 +64,7 @@ function gravarDados(): Plugin {
 
 export default defineConfig({
   plugins: [escudos(), gravarDados()],
+  define: { __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync('package.json', 'utf8')).version) },
   server: { host: true, port: 5173 },
   // Os dados reais das 7 ligas vão no bundle.
   build: { chunkSizeWarningLimit: 2500 },
