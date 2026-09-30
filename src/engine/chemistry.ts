@@ -61,6 +61,10 @@ const PS_SECTOR: Partial<Record<PsId, Partial<Record<Sector | 'gk', [number, num
   'passe-em-profundidade': { att: [1, 2.5], mid: [1, 2] }, cruzamento: { att: [1, 2.5] }, cabeceio: { att: [.8, 2], def: [1, 2.5] },
   desarme: { def: [1.5, 3.5] }, interceptacao: { def: [1.5, 3.5], mid: [.5, 1.5] }, bloqueio: { def: [1, 2.5] },
   'imposicao-fisica': { def: [1, 2.5], mid: [.5, 1.5] }, incansavel: { mid: [.5, 1.5] }, 'reposicao-longa': { mid: [.5, 1.5] },
+  'chute-colocado': { att: [1, 2.5] }, cavadinha: { att: [.5, 1.5] }, acrobatico: { att: [.5, 1.5] }, trivela: { att: [.5, 1.5], mid: [.5, 1] },
+  'passe-tenso': { mid: [1, 2.5] }, lancamento: { mid: [1, 2] }, 'tiki-taka': { mid: [1.5, 3] },
+  firula: { att: [1, 2.5] }, tecnico: { att: [1, 2], mid: [.5, 1.5] }, 'resistente-pressao': { mid: [1, 2.5] }, explosao: { att: [1, 2.5] },
+  antecipacao: { def: [1.5, 3] }, contencao: { def: [1, 2.5] },
   reflexos: { gk: [1.5, 3.5] }, 'saida-do-gol': { gk: [1, 2] }, 'pegador-de-penalti': { gk: [.3, .8] },
 };
 function psBonus(P: BasePlayer, k: Sector | 'gk'): number {

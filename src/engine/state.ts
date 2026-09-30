@@ -10,7 +10,8 @@ import { ROLE_SWAPS, orderFx, suggestOrder, type Order } from './orders';
 
 export const SAVE_VERSION = 4;
 
-export interface CardRef { u: number; p: string; v: Variant }
+/** Carta da coleção. tr = negociável no mercado (elenco inicial e compras no leilão; cartas de pacote não). */
+export interface CardRef { u: number; p: string; v: Variant; tr?: boolean }
 export interface GameState {
   v: number;
   t: number;
@@ -33,6 +34,8 @@ export interface GameState {
   moments: boolean;
   /** Lances em 3D (false = canvas 2D, para aparelhos mais fracos). */
   lance3d?: boolean;
+  /** Lance de goleiro: defender o chute que ia virar gol (padrão: ligado). */
+  goleiro?: boolean;
   /** Efeitos sonoros (padrão: ligados). */
   som?: boolean;
   /** Vibração no celular (padrão: ligada). */
@@ -42,6 +45,8 @@ export interface GameState {
   /** Já viu as dicas de como jogar. */
   dicasVistas?: boolean;
   titles: number;
+  /** Evolução acumulada dos jogadores (opção da carreira). */
+  evo?: Record<string, { o: number; a: number }>;
   /** Dificuldade: 0 fácil, 1 normal, 2 difícil, 3 lenda (padrão: normal). */
   dif?: 0 | 1 | 2 | 3;
   /** Mensagem para mostrar uma vez ao abrir o jogo (não é salva de volta). */
@@ -64,7 +69,7 @@ export function newCareerGame(club: string, o: CareerOpts = {}): GameState {
   const c = W.clubs.get(club);
   S.name = c?.n ?? club;
   const squad = W.byClub.get(club) ?? [];
-  for (const p of squad) addCard(S, p.id, 'base');
+  for (const p of squad) addCard(S, p.id, 'base', true);
   // Clubes com elenco incompleto nos dados (ex.: Série B) ganham reforços reais de nível parecido.
   if (squad.length < 18) {
     const lvl = c?.forca ?? 66, have = new Set(squad.map(p => p.id));
@@ -72,7 +77,7 @@ export function newCareerGame(club: string, o: CareerOpts = {}): GameState {
     for (const pos of need.slice(squad.length)) {
       let cand = W.pool.filter(p => p.pos === pos && Math.abs(p.ovr - lvl) <= 3 && !have.has(p.id));
       if (!cand.length) cand = W.pool.filter(p => p.pos === pos && !have.has(p.id));
-      const p = pick(cand); have.add(p.id); addCard(S, p.id, 'base');
+      const p = pick(cand); have.add(p.id); addCard(S, p.id, 'base', true);
     }
   }
   S.career = newCareer(club, o);
@@ -96,17 +101,18 @@ export function newGame(): GameState {
   return S;
 }
 
-export function addCard(S: GameState, p: string, v: Variant): CardRef {
-  const c = { u: S.uid++, p, v };
+export function addCard(S: GameState, p: string, v: Variant, tr = false): CardRef {
+  const c: CardRef = { u: S.uid++, p, v };
+  if (tr) c.tr = true;
   S.cards.push(c);
   return c;
 }
 
 export function cardByUid(S: GameState, u: number): OwnedCard | null {
   const c = S.cards.find(c => c.u === u);
-  return c ? { ...cardData(c.p, c.v), u } : null;
+  return c ? { ...cardData(c.p, c.v), u, tr: c.tr } : null;
 }
-export const allCards = (S: GameState): OwnedCard[] => S.cards.map(c => ({ ...cardData(c.p, c.v), u: c.u }));
+export const allCards = (S: GameState): OwnedCard[] => S.cards.map(c => ({ ...cardData(c.p, c.v), u: c.u, tr: c.tr }));
 export const xiCards = (S: GameState): (OwnedCard | null)[] => S.squad.xi.map(u => (u ? cardByUid(S, u) : null));
 
 export function removeCard(S: GameState, u: number): void {

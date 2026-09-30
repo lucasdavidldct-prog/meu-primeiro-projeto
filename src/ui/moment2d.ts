@@ -21,7 +21,7 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
     ov.className = 'moment';
     ov.innerHTML = `<div class="mo-head"><span class="mo-tag">${M.label}</span><b>${sc.title}</b><span class="acts" id="moActs"></span></div>
       <canvas id="moCv"></canvas>
-      <div class="mo-help">${HELP[kind === 'contra' ? 'ataque' : kind]}</div>
+      <div class="mo-help">${HELP[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind]}</div>
       <div class="mo-msg" id="moMsg"></div>`;
     document.body.appendChild(ov);
     const cv = ov.querySelector<HTMLCanvasElement>('#moCv')!, ctx = cv.getContext('2d')!, msgEl = ov.querySelector<HTMLElement>('#moMsg')!;

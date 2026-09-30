@@ -54,8 +54,8 @@ h3{font-family:var(--f-disp);font-weight:700;font-size:19px;text-transform:upper
 .c-rib .crest-box.badge{width:1.25em;height:1.5em}
 .c-face{position:absolute;left:30%;right:0;top:3%;height:60%}
 .c-face svg{width:100%;height:100%;display:block}
-.c-ps{position:absolute;right:5%;top:15%;z-index:3;display:flex;flex-direction:column;gap:.14em}
-.c-ps i{font-style:normal;display:grid;place-items:center;width:1.35em;height:1.35em;border-radius:50%;background:rgba(0,0,0,.4);font-size:.72em;line-height:1}
+.c-ps{position:absolute;right:5%;top:15%;z-index:3;display:flex;flex-direction:column;flex-wrap:wrap-reverse;align-content:flex-start;max-height:46%;gap:.14em}
+.c-ps i{font-style:normal;display:grid;place-items:center;width:1.35em;height:1.35em;border-radius:50%;background:rgba(0,0,0,.45);font-size:.72em;line-height:1;box-shadow:0 0 0 .1em #c9ced6}
 .c-ps i.plus{background:rgba(0,0,0,.6);box-shadow:0 0 0 .13em #f0cf6a}
 .c-name{position:absolute;left:31%;right:2%;top:64%;text-align:center;font-family:var(--f-disp);font-weight:800;font-size:1.12em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1;border-top:1px solid color-mix(in srgb,var(--ct) 30%,transparent);padding-top:.15em}
 .c-stats{position:absolute;left:33%;right:4%;top:75%;display:grid;grid-template-columns:repeat(3,1fr);gap:.1em .3em;font-family:var(--f-disp);font-size:.7em;line-height:1.05;text-align:center}
@@ -332,3 +332,28 @@ body.is-dragging{cursor:grabbing}
 .m3d-name .pc{font-style:normal;font-weight:800;margin-left:2px}
 .notas{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-top:6px}.notas span{display:flex;gap:6px;align-items:center}.notas i{font-style:normal;color:var(--muted);font-size:11px;min-width:28px}.notas b{margin-left:auto}
 .awards{background:rgba(232,195,95,.08);border:1px solid rgba(232,195,95,.3);border-radius:10px;padding:4px 12px;margin:8px 0}.awards p{margin:8px 0}
+
+/* Playstyles por categoria no detalhe da carta (prata = normal, dourado = +) */
+.ps-cat{margin:10px 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.ps-item .ic{box-shadow:0 0 0 2px #c9ced6;border-radius:50%}
+.ps-item.plus .ic{box-shadow:0 0 0 2px #f0cf6a}
+.ps-item .lvl{font-size:11px;font-weight:800;margin-left:6px;padding:0 6px;border-radius:6px;background:#c9ced6;color:#1b1b1b}
+.ps-item.plus .lvl{background:#f0cf6a}
+
+/* Mercado de leilão */
+.mk-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:8px;border-radius:10px;background:var(--panel2,rgba(255,255,255,.03));margin-top:6px}
+.mk-row.done{opacity:.6}
+.mk-row .card{--w:52px}
+.mk-info .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk-info .meta{font-size:12px;color:var(--muted)}
+.mk-acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.mk-acts .btn{padding:6px 10px;font-size:13px}
+
+/* Lance de goleiro no modo leve */
+.k2d{position:relative;width:min(92vw,440px);margin:10px auto 0;padding-bottom:70px}
+.k2d-goal{position:relative;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);aspect-ratio:3/1.1;border:5px solid #eee;border-bottom:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.12) 0 2px,transparent 2px 14px),repeating-linear-gradient(0deg,rgba(255,255,255,.12) 0 2px,transparent 2px 14px),#123326}
+.k2d-z{border:1px dashed rgba(255,255,255,.18);background:transparent}
+.k2d-z.on{background:rgba(198,244,50,.35)}
+.k2d-ball{position:absolute;left:50%;top:170%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #111;transition:left .7s ease-in,top .7s ease-in}
+.k2d-shooter{position:absolute;bottom:6px;left:calc(12% + var(--t) * 30%);font-weight:700;animation:k2run 1.3s ease-in forwards}
+@keyframes k2run{from{transform:translateY(20px);opacity:.3}to{transform:none;opacity:1}}

@@ -30,11 +30,13 @@ export interface Side {
 }
 export type EvType = 'info' | 'goal' | 'goal opp' | 'goal lance' | 'chance' | 'card-y' | 'card-r' | 'lance';
 export interface MatchEvent { l: string; side: 0 | 1; type: EvType; text: string }
-export type MomentKind = 'ataque' | 'contra' | 'penalti' | 'falta';
+export type MomentKind = 'ataque' | 'contra' | 'penalti' | 'falta' | 'goleiro';
 export interface MomentRequest {
   kind: MomentKind;
   /** Cobrador (pênalti e falta). */
   taker?: SideEntry;
+  /** Lance de goleiro: é um pênalti contra você? */
+  pen?: boolean;
   /** Lance de treino: defesa mais leve e mais ações. */
   treino?: boolean;
   /** Por onde a jogada nasce (lado do campo de quem a criou) e quem começa com a bola. */
@@ -139,12 +141,16 @@ export class Match {
   home: 0 | 1 | null;
   /** Goleiro mais difícil de bater nos lances jogáveis (dificuldade e jogo fora de casa). */
   keeperBoost: number;
+  /** Lances de goleiro restantes (você defende o chute que ia virar gol). */
+  keeperLeft: number;
+  lastKeeper = -99;
 
-  constructor(public A: Side, public B: Side, opts: { moments?: number; onMoment?: MomentHandler; home?: 0 | 1 | null; keeperBoost?: number } = {}) {
+  constructor(public A: Side, public B: Side, opts: { moments?: number; onMoment?: MomentHandler; home?: 0 | 1 | null; keeperBoost?: number; keeper?: number } = {}) {
     this.momentsLeft = opts.onMoment ? (opts.moments ?? 3) : 0;
     this.onMoment = opts.onMoment;
     this.home = opts.home ?? null;
     this.keeperBoost = opts.keeperBoost ?? 0;
+    this.keeperLeft = opts.onMoment ? (opts.keeper ?? 0) : 0;
     const s1 = 1 + Math.floor(R() * 3), s2 = 2 + Math.floor(R() * 4);
     for (let m = 1; m <= 45; m++) this.seq.push({ m, l: m + "'" });
     for (let k = 1; k <= s1; k++) this.seq.push({ m: 45, l: '45+' + k + "'" });
@@ -239,7 +245,7 @@ export class Match {
 
   /** Fração das chances que sobra depois dos desarmes e interceptações do rival. */
   private tackleKeep(def: Side): number {
-    return 1 - Math.min(.16, teamFx(def, 'desarme', FX.desarme) + teamFx(def, 'interceptacao', FX.intercept));
+    return 1 - Math.min(.18, teamFx(def, 'desarme', FX.desarme) + teamFx(def, 'interceptacao', FX.intercept) + teamFx(def, 'antecipacao', FX.antecipacao) + teamFx(def, 'contencao', FX.contencao));
   }
   /** Multiplicador de criação de chances pelos playstyles (desarmes do rival, velocistas no contra-ataque). */
   private psChance(att: Side, def: Side): number {
@@ -255,8 +261,8 @@ export class Match {
   /** Narra um desarme que matou a jogada (só às vezes, para não poluir). */
   private tackleEvent(def: Side, att: Side, si: 0 | 1): void {
     const d = weightedPlayer(def, { GOL: 0, ZAG: 1, LD: .8, LE: .8, VOL: 1.2, MC: .6, MEI: .2, MD: .4, ME: .4, PD: .1, PE: .1, ATA: .05 }, null,
-      e => 1 + 2 * ps(e, 'desarme') + 1.5 * ps(e, 'interceptacao'));
-    if (!ps(d, 'desarme') && !ps(d, 'interceptacao')) return;
+      e => 1 + 2 * ps(e, 'desarme') + 1.5 * ps(e, 'interceptacao') + 1.5 * ps(e, 'antecipacao') + ps(e, 'contencao'));
+    if (!ps(d, 'desarme') && !ps(d, 'interceptacao') && !ps(d, 'antecipacao') && !ps(d, 'contencao')) return;
     const a = weightedPlayer(att, SCORE_W);
     bump(d, 'd');
     this.addEv(si, 'info', tx('tackle', { d: d.name, p: a.name }));
@@ -268,6 +274,18 @@ export class Match {
     const creator = weightedPlayer(att, W, null, e => (e.ofx ? .5 * e.ofx.cross + .5 * e.ofx.assist : 1));
     const x = slotsOf(att.form)[att.xi.indexOf(creator)]?.x ?? 50;
     return { lado: x < 26 ? 'esq' : x > 74 ? 'dir' : 'meio', creator };
+  }
+
+  /** Lance de goleiro: o rival vai marcar e você tenta defender. */
+  private canKeeper(att: Side): boolean {
+    return !att.you && this.A.you && !!this.onMoment && this.keeperLeft > 0 && this.min - this.lastKeeper >= 5;
+  }
+  private async playKeeper(att: Side, si: 0 | 1, shooter: SideEntry, pen: boolean, goalText: string, suffix = '', assist?: SideEntry | null): Promise<void> {
+    this.keeperLeft--; this.lastKeeper = this.min;
+    const res = await this.onMoment!(this, { kind: 'goleiro', taker: shooter, pen });
+    const gk = this.A.xi.find(e => e.pos === 'GOL' && !e.red);
+    if (res.goal) this.goal(att, si, shooter, goalText, suffix, assist);
+    else { this.st.on[si]++; if (gk) (gk.sx ??= { g: 0, a: 0, d: 0, s: 0, c: 0 }).s += 2; this.addEv(0, 'lance', `Lance jogado: ${gk ? gk.name : 'o goleiro'} defendeu ${pen ? 'o pênalti' : 'o chute'} de ${shooter.name}!`); }
   }
 
   /** Lance jogável para o usuário, se ainda houver e o intervalo mínimo tiver passado. */
@@ -318,6 +336,13 @@ export class Match {
       return;
     }
     this.st.sh[si]++;
+    if (isPen && this.canKeeper(att)) {
+      const taker = penaltyTaker(att);
+      this.st.sh[si]++;
+      this.addEv(si, 'info', tx('pen', { p: weightedPlayer(att, SCORE_W).name }));
+      await this.playKeeper(att, si, taker, true, tx('penGoal', { p: taker.name }), ' (p)');
+      return;
+    }
     if (isPen) {
       const taker = penaltyTaker(att);
       this.addEv(si, 'info', tx('pen', { p: weightedPlayer(att, SCORE_W).name }));
@@ -353,15 +378,19 @@ export class Match {
     const gkv = gkE ? effNow(gkE, this.min) + .7 * ((gkE.P.st ? .35 * gkE.P.st[3] + .35 * gkE.P.st[0] + .3 * gkE.P.st[5] : gkE.P.ovr) - gkE.P.ovr) : 30;
     let gp = (CALIB.shotBase + CALIB.shotQ * q * q) * Math.pow(clamp((fin * .6 + ra.att * .4) / gkv, .6, 1.8), CALIB.finExp);
     gp *= FX.reflexos[ps(gkE, 'reflexos')];
-    if (kind === 'normal') gp *= 1.12 * FX.finalizacao[ps(shooter, 'finalizacao-precisa')];
+    if (kind === 'normal') gp *= 1.12 * FX.finalizacao[ps(shooter, 'finalizacao-precisa')] * FX.colocadoSim[ps(shooter, 'chute-colocado')] * FX.cavadinhaSim[ps(shooter, 'cavadinha')];
     else if (kind === 'longe') gp *= .56 * FX.chuteLonge[ps(shooter, 'chute-de-longe')];
     else {
       const bestDef = Math.max(0, ...def.xi.filter(e => !e.red && e.pos !== 'GOL').map(e => FX.cabeceioDef[ps(e, 'cabeceio')] + .04 * ps(e, 'imposicao-fisica')));
-      gp *= .9 * FX.cabeceio[ps(shooter, 'cabeceio')] * (1 - bestDef) * FX.saidaGol[ps(gkE, 'saida-do-gol')];
+      gp *= .9 * FX.cabeceio[ps(shooter, 'cabeceio')] * FX.acrobaticoSim[ps(shooter, 'acrobatico')] * (1 - bestDef) * FX.saidaGol[ps(gkE, 'saida-do-gol')];
     }
     const o = { p: shooter.name, gk };
     if (R() < gp) {
       const t = kind === 'longe' ? tx('goalLong', o) : kind === 'cabeca' ? tx('goalHead', o) : tx('goal', o);
+      if (this.canKeeper(att) && kind !== 'cabeca') {
+        await this.playKeeper(att, si, shooter, false, t + (assist ? ` Assistência de ${assist.name}.` : ''), '', assist);
+        return;
+      }
       this.goal(att, si, shooter, t + (assist ? ` ${kind === 'cabeca' ? 'Cruzamento' : 'Assistência'} de ${assist.name}.` : ''), '', assist);
     } else if (R() < .45) { this.st.on[si]++; bump(gkE, 's'); bump(shooter, 'c', .5); this.addEv(si, 'chance', kind === 'cabeca' ? tx('saveHead', o) : tx('save', o)); }
     else if (R() < .08) this.addEv(si, 'chance', tx('post', o));

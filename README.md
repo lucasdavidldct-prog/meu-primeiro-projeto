@@ -145,6 +145,22 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.5
+
+- **Opções ao iniciar a carreira**: ligar/desligar a *evolução dos jogadores* e o *mercado de leilão*.
+- **Evolução dos jogadores**: no fim de cada temporada as cartas mudam conforme a idade (jovens sobem, veteranos caem;
+  quem já é elite cresce menos). A tela de fim de temporada mostra a evolução do seu elenco.
+- **Mercado de leilão** (na Loja, aba Mercado): busque qualquer jogador pelo nome, dispute lances com a CPU
+  (lance nos últimos 15 s prorroga) ou use o "Compre já". Venda as suas cartas negociáveis com taxa de 5%.
+  Só cartas do elenco inicial e compradas no mercado são negociáveis; cartas de pacote são intransferíveis
+  (evita lucrar revendendo pacotes).
+- **Lance de goleiro**: quando o rival vai marcar (ou num pênalti contra), você controla o goleiro. Deslize para o canto
+  (para cima = bola alta) observando a corrida do batedor; craques disfarçam melhor. Pode desligar em Clube.
+- **32 estilos de jogo** em 6 categorias (Finalização, Passe, Controle, Defesa, Físico, Goleiro), com ícones nas cartas:
+  prata = normal, dourado = + (efeito bem maior). Cada um muda o jogo: Chute Colocado facilita o chute com curva,
+  Super Chute o chute forte de longe, Cavadinha, Cabeçada Forte, Passe Tenso, Tiki-Taka, Lançamento, Firula,
+  Resistente à Pressão, Explosão, Trivela, Antecipação, Contenção… tanto nos lances jogados quanto na simulação.
+
 ## Versão 1.4.1
 
 - **Escalar melhor time** agora maximiza a Força (posição, química e funções), testando trocas vaga a vaga:

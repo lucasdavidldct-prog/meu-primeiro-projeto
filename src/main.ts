@@ -12,6 +12,7 @@ import { flushSave, loadSave } from './save/db';
 import { loadEditedLigas } from './save/dados';
 import { applyEdits } from './engine/world';
 import { startApp } from './ui/app';
+import { applyEvolution } from './engine/evolution';
 import { devMoment } from './ui/matchView';
 import { loadMinhasFotos } from './ui/fotos';
 
@@ -23,6 +24,7 @@ async function boot(): Promise<void> {
   let S = null;
   try { S = await loadSave(); } catch (e) { console.warn('Não foi possível ler o save', e); }
   if (!S) { S = blankGame(); await flushSave(S).catch(e => console.warn('Não foi possível salvar', e)); }
+  applyEvolution(S.evo);
   startApp(S);
   if (import.meta.env.DEV) Object.assign(window, { __esquadrao: { devMoment } });
 }

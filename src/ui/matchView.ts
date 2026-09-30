@@ -13,11 +13,19 @@ import { app, render, saveNow, userClub } from './ctx';
 import { crestHTML } from './crest';
 import { closeSheet, esc, fmt, openSheet, toast } from './dom';
 import { runMoment2D } from './moment2d';
+import { runKeeper2D } from './keeper2d';
 import { webglAvailable } from '../three/support';
 import { sfx } from './sfx';
 
 /** Lance 3D (carregado sob demanda), ou 2D se desligado nas configurações, sem WebGL ou se o 3D falhar. */
 export async function runMoment(m: Match, req: Parameters<typeof runMoment2D>[1]): Promise<Awaited<ReturnType<typeof runMoment2D>>> {
+  if (req.kind === 'goleiro') {
+    if (app.S.lance3d !== false && webglAvailable()) {
+      try { const { runKeeper3D } = await import('../three/keeper3d'); return await runKeeper3D(m, req); }
+      catch (e) { console.warn('Lance de goleiro 3D indisponível, usando 2D', e); }
+    }
+    return runKeeper2D(m, req);
+  }
   if (app.S.lance3d !== false && webglAvailable()) {
     try { const { runMoment3D } = await import('../three/moment3d'); return await runMoment3D(m, req); }
     catch (e) { console.warn('Lance 3D indisponível, usando 2D', e); }
@@ -27,11 +35,11 @@ export async function runMoment(m: Match, req: Parameters<typeof runMoment2D>[1]
 
 export const DIF_NAMES = ['Fácil', 'Normal', 'Difícil', 'Lenda'];
 /** Dificuldade: força extra do adversário, goleiro dos lances e quantos lances você joga (fora de casa: um a menos). */
-export function difficulty(home: 0 | 1 | null): { boost: number; keeper: number; moments: number } {
+export function difficulty(home: 0 | 1 | null): { boost: number; keeper: number; moments: number; gk: number } {
   const d = app.S.dif ?? 1;
   const boost = [-3, 0, 2.5, 5][d], keeper = [-6, 0, 5, 9][d] + (home === 1 ? 3 : 0);
   const moments = [4, 3, 3, 2][d] - (home === 1 ? 1 : 0);
-  return { boost, keeper, moments: Math.max(1, moments) };
+  return { boost, keeper, moments: Math.max(1, moments), gk: [2, 2, 1, 1][d] };
 }
 
 interface Live { m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout; notas?: Nota[] }
@@ -76,7 +84,7 @@ export function startMatch(opp: OppTeam, fx: Fixture | null): void {
   if (!A) return;
   const home = fx ? fx.home : null, d = difficulty(home);
   const m = new Match(A, sideOpp(opp, d.boost), {
-    home, keeperBoost: d.keeper,
+    home, keeperBoost: d.keeper, keeper: S.moments && S.goleiro !== false ? d.gk : 0,
     moments: S.moments ? d.moments : 0,
     onMoment: S.moments ? async (mm, req) => {
       L!.busy = true; renderMatch();
@@ -231,12 +239,13 @@ export async function trainingMoment(kind: 'ataque' | 'penalti' | 'falta' = 'ata
 }
 
 /** Só em desenvolvimento: abre um lance direto (usado nos testes de navegador). */
-export function devMoment(kind: 'ataque' | 'contra' | 'penalti' | 'falta'): Promise<unknown> {
+export function devMoment(kind: 'ataque' | 'contra' | 'penalti' | 'falta' | 'goleiro', pen = false): Promise<unknown> {
   const S = app.S, T = teamInfo(S);
   const bench = S.squad.bench.filter(Boolean).map(u => cardByUid(S, u)!) as CardPlayer[];
   const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench });
   const opp = allClubs()[0];
   const m = new Match(A, sideOpp(oppFromClub(opp)));
+  if (kind === 'goleiro') return runMoment(m, { kind, taker: penaltyTaker(m.B), pen });
   const taker = kind === 'falta' ? freeKickTaker(A) : kind === 'penalti' ? penaltyTaker(A) : undefined;
   return runMoment(m, { kind, taker, ...(kind === 'ataque' || kind === 'contra' ? m.origin(A) : {}) });
 }

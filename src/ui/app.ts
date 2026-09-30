@@ -4,7 +4,7 @@ import { packById, type PackId } from '../engine/packs';
 import { pick } from '../engine/rng';
 import { allClubs, clubOf, leagueName, nationOf } from '../engine/world';
 import { clubStrength } from '../engine/squads';
-import { PS_BY_ID, parsePs } from '../engine/data/schema';
+import { PS_BY_ID, PS_CATS, parsePs, type PsCat } from '../engine/data/schema';
 import { oppFromClub, oppFromId } from '../engine/season';
 import { endSeason as careerEnd, nextFixture } from '../engine/career';
 import { teamStrength, setFormation, setOrder, setRole, applyPick, autoLineup, blankGame, cardByUid, duplicates, newCareerGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
@@ -16,7 +16,7 @@ import { closeSheet, esc, fmt, openSheet, toast } from './dom';
 import { matchActions, quickPlay, startMatch } from './matchView';
 import { viewStart } from './views/start';
 import { crestHTML } from './crest';
-import { W } from '../engine/world';
+import { W, getPlayer } from '../engine/world';
 import { openPack } from './packOpen';
 import { openPicker } from './picker';
 import { viewClub } from './views/club';
@@ -24,8 +24,10 @@ import { viewSeason } from './views/season';
 import { viewSquad } from './views/squad';
 import { viewStore } from './views/store';
 import { sfx, unlockAudio } from './sfx';
+import { applyEvolution, evolveSeason } from '../engine/evolution';
 import { initNative, isNative, shareFile } from './native';
 import { initSquadDrag } from './squadDrag';
+import { bindMarket, marketActions } from './market';
 import { slotMenuHTML } from './slotMenu';
 import { definirMinhaFoto, fotoDe, removerMinhaFoto, temFotoCommons } from './fotos';
 import { bindEditorInputs, editorActions, resumeEditorIfNeeded, viewEditor } from './editor';
@@ -41,6 +43,7 @@ function renderApp(): void {
   const v = document.getElementById('view')!;
   v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : app.tab === 'editor' ? viewEditor() : app.tab === 'start' ? viewStart() : viewSeason();
   if (app.tab === 'editor') bindEditorInputs(v);
+  if (app.tab === 'store') bindMarket(v);
 }
 
 /** Redesenha a tela e reabre o detalhe da carta aberta (após trocar a foto). */
@@ -48,6 +51,15 @@ function refreshCard(id: string): void {
   render();
   const u = app.S.cards.find(c => c.p === id)?.u;
   if (u && document.getElementById('sheet')) showCard(u);
+}
+
+/** Playstyles agrupados por categoria, com o nível (prata = normal, dourado = +) e o que fazem no jogo. */
+function psDetail(list: string[]): string {
+  const items = list.map(x => { const { id, plus } = parsePs(x); return { d: PS_BY_ID.get(id), plus }; }).filter(x => x.d);
+  return (Object.keys(PS_CATS) as PsCat[]).map(cat => {
+    const g = items.filter(x => x.d!.cat === cat);
+    return g.length ? `<div class="ps-cat">${PS_CATS[cat]}</div><div class="ps-list">${g.map(({ d, plus }) => `<div class="ps-item ${plus ? 'plus' : ''}"><span class="ic">${d!.icone}</span><div><b>${d!.nome}<span class="lvl">${plus ? '+ dourado' : 'prata'}</span></b><span class="muted">${plus ? d!.descPlus + ' ' + d!.desc : d!.desc}</span></div></div>`).join('')}</div>` : '';
+  }).join('');
 }
 
 function showCard(u: number): void {
@@ -61,8 +73,9 @@ function showCard(u: number): void {
    <div class="small muted">${nationOf(P.nat).n} · ${P.leg ? esc(P.hist ?? 'Ícones') + (P.epoca ? ' (' + esc(P.epoca) + ')' : '') : esc(leagueName(P)) + ' · ' + esc(clubOf(P).n)}</div>
    <dl class="kv"><dt>Pé bom</dt><dd>${{ D: 'Direito', E: 'Esquerdo', A: 'Ambidestro' }[P.foot]}</dd>${P.leg ? '' : `<dt>Idade</dt><dd>${P.age} anos</dd>`}${P.legClub === 'CAM' ? '<dt>Ídolo</dt><dd>Atlético Mineiro</dd>' : ''}</dl>
    <div class="bars" style="margin-top:12px">${P.st.map((s, i) => `<div class="bar">${L[i]}<i><b style="width:${s}%"></b></i><span>${s}</span></div>`).join('')}</div>
-   ${P.ps.length ? `<h3>Playstyles</h3><div class="ps-list">${P.ps.map(x => { const { id, plus } = parsePs(x), d = PS_BY_ID.get(id); return d ? `<div class="ps-item ${plus ? 'plus' : ''}"><span class="ic">${d.icone}</span><div><b>${d.nome}</b><span class="muted">${plus ? d.descPlus : d.desc}</span></div></div>` : ''; }).join('')}</div>` : ''}
+   ${P.ps.length ? `<h3>Playstyles</h3>${psDetail(P.ps)}` : ''}
    ${photoPanel(P.id)}
+   ${app.S.career?.mercado ? `<p class="small muted" style="margin:10px 0 0">${P.tr ? '🔓 Negociável no mercado de leilão' : '🔒 Intransferível (veio de pacote): não vai ao leilão, mas pode ser vendida rápido abaixo.'}</p>` : ''}
    <div style="margin-top:16px">${inSq ? '<p class="small muted">Está no seu elenco. Tire do time para poder vender.</p>' : `<button class="btn danger block" data-act="sell" data-u="${P.u}">Vender por ${fmt(sellValue(P))} moedas</button>`}</div>`);
 }
 
@@ -103,7 +116,7 @@ function seasonRecord(S: GameState): string {
   return row ? `<p class="small muted" style="margin-top:-4px">Campanha no ${esc(C.div === 'A' ? 'Brasileirão' : 'Série B')}: ${row.W}V ${row.D}E ${row.L}D · ${row.GF} gols marcados, ${row.GA} sofridos.</p>` : '';
 }
 
-function replaceState(S: GameState): void { app.S = S; app.sel = null; }
+function replaceState(S: GameState): void { app.S = S; app.sel = null; applyEvolution(S.evo); }
 
 const TEST_COINS = 1_000_000;
 
@@ -165,6 +178,7 @@ const ACT: Record<string, Handler> = {
   togVib() { app.S.vibrar = app.S.vibrar === false; save(); render(); },
   help() { showHelp(); },
   dif(d) { app.S.dif = +d.d! as 0 | 1 | 2 | 3; save(); render(); },
+  togGk() { app.S.goleiro = app.S.goleiro === false; save(); render(); },
   togFotos() { app.S.fotos = app.S.fotos === false; save(); render(); },
   photoPick(d) {
     const inp = document.createElement('input');
@@ -229,6 +243,17 @@ const ACT: Record<string, Handler> = {
       gar && gar[1].a ? `🎯 Garçom: <b>${esc(gar[0])}</b> (${gar[1].a} assist.)` : '',
       craque ? `⭐ Craque da temporada: <b>${esc(craque[0])}</b> (média ${(craque[1].n / craque[1].j).toFixed(1)} em ${craque[1].j} jogos)` : '',
     ].filter(Boolean);
+    // Evolução: todos envelhecem e o overall muda (antes do calendário da próxima temporada)
+    let evoHTML = '';
+    if (S.career!.evo) {
+      const mine = new Set(S.cards.map(c => c.p));
+      const ch = evolveSeason(S.evo ??= {}).filter(x => mine.has(x.id));
+      applyEvolution(S.evo);
+      const up = ch.filter(x => x.para > x.de).sort((a, b) => (b.para - b.de) - (a.para - a.de)).slice(0, 5);
+      const down = ch.filter(x => x.para < x.de).sort((a, b) => (a.para - a.de) - (b.para - b.de)).slice(0, 5);
+      const nm = (id: string) => esc(getPlayer(id)?.short ?? id);
+      if (up.length || down.length) evoHTML = `<h3>Evolução do seu elenco</h3><div class="notas">${up.map(x => `<span>${nm(x.id)} <i>${x.idade} anos</i><b class="up">${x.de}→${x.para}</b></span>`).join('')}${down.map(x => `<span>${nm(x.id)} <i>${x.idade} anos</i><b class="down">${x.de}→${x.para}</b></span>`).join('')}</div>`;
+    }
     const r = careerEnd(S.career!);
     const last = S.career!.history[S.career!.history.length - 1];
     if (last && art && art[1].g) last.art = `${art[0]} (${art[1].g})`;
@@ -237,7 +262,7 @@ const ACT: Record<string, Handler> = {
     S.titles += r.trophies.length;
     app.careerView = 'tabela';
     saveNow(); render();
-    openSheet(`<h2>Fim de temporada</h2>${rec0}${awards.length ? `<div class="awards">${awards.map(a => `<p>${a}</p>`).join('')}</div>` : ''}${r.msgs.map(m => `<p>${esc(m)}</p>`).join('')}<p class="small muted">Total: +${fmt(r.coins)} moedas.</p>${r.pack ? `<p>Prêmio extra: pacote <b>${packById(r.pack).n}</b>.</p><button class="btn pri block" data-act="freePack" data-p="${r.pack}">Abrir pacote</button>` : '<button class="btn block" data-act="closeSheet">Fechar</button>'}`);
+    openSheet(`<h2>Fim de temporada</h2>${rec0}${awards.length ? `<div class="awards">${awards.map(a => `<p>${a}</p>`).join('')}</div>` : ''}${r.msgs.map(m => `<p>${esc(m)}</p>`).join('')}${evoHTML}<p class="small muted">Total: +${fmt(r.coins)} moedas.</p>${r.pack ? `<p>Prêmio extra: pacote <b>${packById(r.pack).n}</b>.</p><button class="btn pri block" data-act="freePack" data-p="${r.pack}">Abrir pacote</button>` : '<button class="btn block" data-act="closeSheet">Fechar</button>'}`);
   },
   cv(d) { app.careerView = d.v as typeof app.careerView; render(); },
   cvLeague(d) { app.otherLeague = d.l!; render(); },
@@ -246,11 +271,14 @@ const ACT: Record<string, Handler> = {
   stShort() { app.startShort = !app.startShort; render(); },
   stLib() { app.startLib = !app.startLib; render(); },
   stRich() { app.startRich = !app.startRich; render(); },
+  stEvo() { app.startEvo = !app.startEvo; render(); },
+  stMercado() { app.startMercado = !app.startMercado; render(); },
   testCoins() { app.S.coins += TEST_COINS; saveNow(); render(); sfx.coin(); toast(`+${fmt(TEST_COINS)} moedas`); },
   stGo(_d, el) {
     if (app.S.cards.length && !el.dataset.ok) { el.dataset.ok = '1'; el.textContent = 'Toque de novo para confirmar'; return; }
     const c = W.clubs.get(app.startClub)!;
-    replaceState(newCareerGame(c.id, { short: app.startShort, libNow: app.startLib && c.lg !== 'serie-b' }));
+    applyEvolution({});
+    replaceState(newCareerGame(c.id, { short: app.startShort, libNow: app.startLib && c.lg !== 'serie-b', evo: app.startEvo, mercado: app.startMercado }));
     if (app.startRich) app.S.coins += TEST_COINS;
     app.tab = 'squad'; saveNow(); render(); window.scrollTo(0, 0);
     toast(`Bem-vindo ao ${c.n}! Temporada ${app.S.career!.year}.`);
@@ -258,6 +286,8 @@ const ACT: Record<string, Handler> = {
   },
   closeSheet() { closeSheet(); },
   ...matchActions,
+  ...(marketActions as unknown as Record<string, Handler>),
+  storeTab(d) { app.storeTab = d.t as 'pacotes' | 'mercado'; render(); },
   ...editorActions,
 };
 

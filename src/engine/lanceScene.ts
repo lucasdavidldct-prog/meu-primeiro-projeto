@@ -5,6 +5,7 @@ import { GOAL, analyzeGesture, attackMods, bezier, fkControl, fkOdds, fkResolve,
 import { effNow, pickShooter, type Match, type MomentKind, type MomentRequest, type MomentResult, type SideEntry } from './match';
 import { ROLE, slotsOf } from './positions';
 import { R, clamp, pick, rn, type Rng } from './rng';
+import { FX } from './playstyles';
 
 export interface Actor { id: number; x: number; y: number; tx: number; ty: number; e?: SideEntry; gk?: boolean; team: 0 | 1; num: number }
 export type Target =
@@ -29,7 +30,7 @@ export interface Plan {
   end?: { res: MomentResult; text: string; color: string; goal: boolean };
 }
 
-export const TITLES: Record<MomentKind, string> = { ataque: 'Chance de ataque', contra: 'Contra-ataque!', penalti: 'Pênalti!', falta: 'Falta perigosa!' };
+export const TITLES: Record<MomentKind, string> = { ataque: 'Chance de ataque', contra: 'Contra-ataque!', penalti: 'Pênalti!', falta: 'Falta perigosa!', goleiro: 'Defenda!' };
 
 const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
 export function segD(p: Pt, a: Pt, b: Pt): number {
@@ -163,12 +164,14 @@ export class LanceScene {
     const md = Math.min(...this.field().map(f => dist(f, to)), 99);
     if (md < 2.4) ok *= .55 + .45 * md / 2.4;
     ok *= clamp(1 - Math.max(0, Ln - 24) * .02 * md0.longPass, .5, 1);
+    // Tiki-Taka: toque curto quase sem erro
+    if (Ln < 15 && md0.lv.tiki) ok = Math.max(ok, FX.tikiTaka[md0.lv.tiki] * (md < 1.2 ? .8 : 1));
     return clamp(ok, .03, .97);
   }
   /** Passe alto: passa por cima de quem está no meio do caminho, mas é menos preciso e o receptor disputa no alto. */
   loftP(to: Pt): number {
     const c = this.carrier, Ln = dist(c, to), md0 = this.mods(), pas = this.stat(2);
-    let ok = clamp(1 - Math.max(0, Ln - 10) * .011 * md0.longPass * (1 - (pas - 70) * .02), .35, .97);
+    let ok = clamp(1 - Math.max(0, Ln - 10) * .011 * md0.longPass * FX.lancamento[md0.lv.lanc] * (1 - (pas - 70) * .02), .35, .97);
     // Cruzamento da ponta: quem tem o playstyle Cruzamento acerta mais
     const cr = this.carrier.e ? this.carrier.e.P.ps.find(x => x.startsWith('cruzamento')) : undefined;
     if (cr && (c.x < 16 || c.x > 52)) ok = Math.min(.97, ok * (cr.endsWith('+') ? 1.22 : 1.12));
@@ -195,7 +198,8 @@ export class LanceScene {
   dribP(to: Pt): number {
     const c = this.carrier;
     let ok = 1;
-    const d0 = clamp((.72 - (this.stat(3) - 70) * .012) * this.mods().dribbleLoss, .15, .9);
+    const m0 = this.mods(), close = this.field().some(f => dist(f, c) < 2.2);
+    const d0 = clamp((.72 - (this.stat(3) - 70) * .012) * m0.dribbleLoss * (close ? FX.resistente[m0.lv.resistente] : 1), .12, .9);
     for (const f of this.field()) { const d = segD(f, c, to); if (d < 3) ok *= 1 - d0 * (1 - d / 3); }
     return clamp(ok * clamp(1 - Math.max(0, dist(c, to) - this.mods().dribbleReach * .66) * .04, .6, 1), .03, .97);
   }
@@ -212,19 +216,26 @@ export class LanceScene {
   shotOdds(ax: number, power = .65, curve = 0): { goal: number; miss: number; save: number; block: number } {
     const c = this.carrier, md = this.mods(), gk = this.goalie(), pen = this.kind === 'penalti';
     const D = Math.hypot(c.x - 34, c.y), edge = Math.min(1, Math.abs(ax - 34) / GOAL.half), fin = this.stat(1);
-    const weak = Math.max(0, .45 - power), hard = Math.max(0, power - .88), ac = Math.abs(curve);
+    // Tipo de chute pelo gesto: curvo = colocado, forte = super chute, curto e lento perto do gol = cavadinha
+    const lv = md.lv, colocado = Math.abs(curve) >= .3, forte = power >= .72, cav = !pen && power < .34 && D < 22;
+    const weak = cav && lv.cavadinha ? 0 : Math.max(0, .45 - power), hard = Math.max(0, power - FX.superChuteLimite[lv.forte]), ac = Math.abs(curve);
     if (pen) {
       const miss = clamp((.03 + Math.pow(edge, 3) * .28 - (fin - 70) * .003 + hard * 2.5) * md.shotMiss, .02, .7);
       const save = clamp(.45 * (1 - .6 * edge) * (this.gkOvr / 80) * this.km.penSave * (1 + weak * 2), .06, .85);
       return { goal: (1 - miss) * (1 - save), miss, save, block: 0 };
     }
-    const miss = clamp((.04 + D * .016 * md.shotDist + Math.pow(edge, 3) * .3 - (fin - 70) * .005 + hard * 2 + ac * .06 * md.shotMiss + (this.firstTime ? .06 : 0)) * md.shotMiss, .03, .9);
+    let miss = clamp((.04 + D * .016 * md.shotDist + Math.pow(edge, 3) * .3 - (fin - 70) * .005 + hard * 2 + ac * .06 * md.shotMiss + (this.firstTime ? .06 * (lv.acrobatico ? .3 : 1) : 0)) * md.shotMiss, .03, .9);
+    if (colocado) miss *= FX.colocadoErro[lv.colocado];
+    if (cav) miss = clamp(miss + FX.cavadinhaErro[lv.cavadinha], .03, .9);
     const path = this.shotPath(ax, curve);
     let block = 0;
     for (const f of this.field()) if (pathD(f, path) < 1.2) block = 1 - (1 - block) * .55;
     let save = clamp(((this.gkOvr / 100) * .9 * (1 - .5 * edge) + D * .015 * md.shotDist - (fin - 70) * .004 - .07) * this.km.save, .06, .95);
     // De primeira depois do cruzamento: a defesa está fora de posição e o goleiro reage tarde, mas é mais fácil errar
-    if (this.firstTime) { save *= .8; block *= .45; }
+    if (this.firstTime) { save *= .8 * Math.min(FX.acrobaticoDefesa[lv.acrobatico], FX.cabecaDefesa[lv.cabeca]); block *= .45; }
+    if (colocado) save *= FX.colocadoDefesa[lv.colocado];
+    if (forte) save *= FX.superChuteDefesa[lv.forte];
+    if (cav) { save *= FX.cavadinhaDefesa[lv.cavadinha]; block *= .3; }
     save *= clamp(1 - Math.abs(gk.x - ax) / 11, .45, 1) * (1 - .15 * ac * md.curve) * (1 + weak * 1.6);
     save = clamp(save, .04, .97);
     return { goal: (1 - miss) * (1 - block) * (1 - save), miss, save, block };
@@ -350,7 +361,9 @@ export class LanceScene {
     const speed = .55 + t.power;
     const dur = Math.round(clamp(Math.hypot(c.x - t.ax, c.y) * 34 / speed, 320, 1100));
     const toKeys = (pts: Pt[], hEnd: number, peak: number): BallKey[] => pts.map((p, i) => { const k = i / (pts.length - 1); return { x: p.x, y: p.y, h: hEnd * k + 4 * peak * k * (1 - k) }; });
-    const hTarget = clamp(.25 + t.power * 1.9 + (r() - .5) * .5, .15, 2.2);
+    // Cavadinha: bola sobe por cima do goleiro e cai no gol
+    const chip = this.kind !== 'penalti' && t.power < .34 && Math.hypot(c.x - 34, c.y) < 22;
+    const hTarget = chip ? 1.5 : clamp(.25 + t.power * 1.9 + (r() - .5) * .5, .15, 2.2), peakS = chip ? 2.8 : .3;
     const gkDive = (x: number): -1 | 0 | 1 => (Math.abs(x - gk.x) < .8 ? 0 : x < gk.x ? -1 : 1);
     if (this.kind !== 'penalti' && r() < sp.block) {
       const f = this.field().sort((a, b) => pathD(a, path) - pathD(b, path))[0];
@@ -366,13 +379,13 @@ export class LanceScene {
         end: { res: { goal: false, shot: true, onTarget: false, text: post ? `${nm} acertou a trave!` : over ? `${nm} mandou por cima.` : `${nm} chutou pra fora.` }, text: post ? 'Na trave!' : over ? 'Por cima!' : 'Pra fora!', color: '#f2b640', goal: false } };
     }
     if (r() < sp.save) {
-      const keys = toKeys([from, ...path.slice(1)], hTarget, .3);
+      const keys = toKeys([from, ...path.slice(1)], hTarget, peakS);
       const last = keys[keys.length - 1];
       keys.push({ x: last.x + (r() - .5) * 6, y: 4 + r() * 4, h: 1.2 });
       return { kind: 'shot', ok: false, ball: keys, dur: dur + 260, gk: { x: clamp(t.ax, 30.8, 37.2), y: .6, dive: gkDive(t.ax), h: hTarget }, commit: () => {},
         end: { res: { goal: false, shot: true, onTarget: true, text: `${this.gkE ? this.gkE.name : 'o goleiro'} defendeu o chute de ${nm}.` }, text: 'Defendeu!', color: '#9ec9ec', goal: false } };
     }
-    const keys = toKeys([from, ...path.slice(1)], hTarget, .3);
+    const keys = toKeys([from, ...path.slice(1)], hTarget, peakS);
     keys.push({ x: t.ax, y: -1.6, h: Math.min(hTarget, 2) * .8 });
     return { kind: 'shot', ok: true, ball: keys, dur: dur + 180, gk: { x: 34 + (34 - t.ax) * .3, y: .6, dive: t.ax > 34 ? -1 : 1, h: .5 }, commit: () => {},
       end: { res: { goal: true, shot: true, onTarget: true, scorer: nm, assist: as }, text: 'GOOOL!', color: '#e8c35f', goal: true } };

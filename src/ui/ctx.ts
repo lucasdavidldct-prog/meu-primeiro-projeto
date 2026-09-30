@@ -19,6 +19,11 @@ export const app = {
   startLib: true,
   /** Começar a carreira com muitas moedas (para testar). */
   startRich: true,
+  /** Opções da carreira: evolução dos jogadores e mercado de leilão. */
+  startEvo: true,
+  /** Aba da loja: pacotes ou mercado de leilão. */
+  storeTab: 'pacotes' as 'pacotes' | 'mercado',
+  startMercado: true,
 };
 
 let renderFn: () => void = () => {};

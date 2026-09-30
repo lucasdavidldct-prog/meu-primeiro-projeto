@@ -35,7 +35,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
         <canvas class="m3d-trail" id="m3dTrail"></canvas>
         <div class="m3d-top"><span class="mo-tag">${M.label}</span><b>${req.treino ? 'Treino de lances' : sc.title}</b><span class="acts" id="moActs"></span><button class="m3d-q" id="m3dQ" aria-label="Ajuda">?</button></div>
         <div class="m3d-label" id="m3dLabel"></div>
-        <div class="m3d-help show" id="m3dHelp">${HELP3D[kind === 'contra' ? 'ataque' : kind]}</div>
+        <div class="m3d-help show" id="m3dHelp">${HELP3D[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind]}</div>
         <div class="m3d-replay" id="m3dReplay">REPLAY</div>
       </div>
       <div class="mo-msg" id="moMsg"></div>`;

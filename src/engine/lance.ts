@@ -9,18 +9,25 @@ export const GOAL = { left: 30.34, right: 37.66, center: 34, half: 3.66 };
 export interface AttackMods {
   passRadius: number; longPass: number; dribbleLoss: number; dribbleReach: number;
   shotMiss: number; shotDist: number; curve: number; fkSpread: number; fkSkill: number;
+  /** Níveis (0, 1, 2) dos playstyles que mudam o tipo de chute e de passe no lance. */
+  lv: { colocado: 0 | 1 | 2; forte: 0 | 1 | 2; cavadinha: 0 | 1 | 2; acrobatico: 0 | 1 | 2; cabeca: 0 | 1 | 2; tiki: 0 | 1 | 2; lanc: 0 | 1 | 2; resistente: 0 | 1 | 2 };
 }
 export function attackMods(P: BasePlayer): AttackMods {
   return {
-    passRadius: FX.passeRaio[psLevel(P, 'passe-preciso')],
+    passRadius: FX.passeRaio[psLevel(P, 'passe-preciso')] * FX.passeTenso[psLevel(P, 'passe-tenso')],
     longPass: FX.passeLongo[psLevel(P, 'passe-em-profundidade')],
-    dribbleLoss: FX.dribleMarcador[psLevel(P, 'drible-rapido')] * (psLevel(P, 'primeiro-toque') ? .93 : 1),
-    dribbleReach: FX.dribleAlcance[psLevel(P, 'velocista')],
+    dribbleLoss: FX.dribleMarcador[psLevel(P, 'drible-rapido')] * (psLevel(P, 'primeiro-toque') ? .93 : 1) * FX.firula[psLevel(P, 'firula')] * FX.tecnico[psLevel(P, 'tecnico')],
+    dribbleReach: FX.dribleAlcance[psLevel(P, 'velocista')] + FX.explosaoAlcance[psLevel(P, 'explosao')] + (psLevel(P, 'tecnico') ? .6 : 0),
     shotMiss: FX.chuteErro[psLevel(P, 'finalizacao-precisa')],
     shotDist: FX.chuteDistancia[psLevel(P, 'chute-de-longe')],
-    curve: FX.curva[psLevel(P, 'cobranca-de-falta')],
+    curve: FX.curva[psLevel(P, 'cobranca-de-falta')] * FX.trivelaCurva[psLevel(P, 'trivela')],
     fkSpread: FX.faltaDispersao[psLevel(P, 'cobranca-de-falta')],
     fkSkill: psLevel(P, 'cobranca-de-falta'),
+    lv: {
+      colocado: psLevel(P, 'chute-colocado'), forte: psLevel(P, 'chute-de-longe'), cavadinha: psLevel(P, 'cavadinha'),
+      acrobatico: psLevel(P, 'acrobatico'), cabeca: psLevel(P, 'cabeceio'), tiki: psLevel(P, 'tiki-taka'), lanc: psLevel(P, 'lancamento'),
+      resistente: psLevel(P, 'resistente-pressao'),
+    },
   };
 }
 export interface KeeperMods { save: number; penSave: number; claim: number }

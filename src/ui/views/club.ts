@@ -26,6 +26,7 @@ export function viewClub(): string {
       <div class="stat"><small>Pacotes</small><b>${rec.packs}</b></div>
     </div>
     <div class="row" style="margin-top:12px;justify-content:space-between"><span class="small muted">Lances jogáveis nas partidas</span><button class="chip" data-act="togMom" aria-pressed="${S.moments}">${S.moments ? 'Ligados' : 'Desligados'}</button></div>
+    <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Lance de goleiro (defender o chute que ia virar gol)</span><button class="chip" data-act="togGk" aria-pressed="${S.goleiro !== false}">${S.goleiro !== false ? 'Ligado' : 'Desligado'}</button></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Visual dos lances${webglAvailable() ? '' : ' (sem 3D neste aparelho)'}</span><div class="chips"><button class="chip" data-act="lance3d" data-v="1" aria-pressed="${S.lance3d !== false && webglAvailable()}" ${webglAvailable() ? '' : 'disabled'}>3D</button><button class="chip" data-act="lance3d" data-v="0" aria-pressed="${S.lance3d === false || !webglAvailable()}">2D (leve)</button></div></div>
     <div style="margin-top:10px"><span class="small muted">Dificuldade</span>
       <div class="chips" style="margin-top:4px">${DIF_NAMES.map((n, k) => `<button class="chip" data-act="dif" data-d="${k}" aria-pressed="${(S.dif ?? 1) === k}">${n}</button>`).join('')}</div>

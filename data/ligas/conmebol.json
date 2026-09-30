@@ -15,10 +15,10 @@
       "elenco": [
         {"id":"boc-marchesin","nome":"Agustín Marchesín","nomeCurto":"Marchesín","nacionalidade":"ARG","idade":38,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"MER":79,"MAN":79,"CHU":72,"REF":87,"VEL":60,"POS":77},"playstyles":[]},
         {"id":"boc-advincula","nome":"Luis Advíncula","nomeCurto":"Advíncula","nacionalidade":"PER","idade":36,"posicao":"LD","posicoesAlt":[],"pe":"D","overall":73,"atributos":{"RIT":82,"FIN":47,"PAS":70,"DRI":77,"DEF":72,"FIS":67},"playstyles":[]},
-        {"id":"boc-paredes","nome":"Leandro Paredes","nomeCurto":"Paredes","nacionalidade":"ARG","idade":32,"posicao":"VOL","posicoesAlt":["MC"],"pe":"D","overall":80,"atributos":{"RIT":70,"FIN":63,"PAS":85,"DRI":81,"DEF":87,"FIS":82},"playstyles":["passe-preciso","cobranca-de-falta","passe-em-profundidade"]},
-        {"id":"boc-zeballos","nome":"Exequiel Zeballos","nomeCurto":"Zeballos","nacionalidade":"ARG","idade":24,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":89,"FIN":73,"PAS":69,"DRI":86,"DEF":40,"FIS":62},"playstyles":["drible-rapido"]},
-        {"id":"boc-merentiel","nome":"Miguel Merentiel","nomeCurto":"Merentiel","nacionalidade":"URU","idade":30,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":73,"FIN":89,"PAS":64,"DRI":78,"DEF":37,"FIS":80},"playstyles":["finalizacao-precisa"]},
-        {"id":"boc-cavani","nome":"Edinson Cavani","nomeCurto":"Cavani","nacionalidade":"URU","idade":39,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":69,"FIN":85,"PAS":67,"DRI":77,"DEF":35,"FIS":74},"playstyles":["cabeceio","finalizacao-precisa"]}
+        {"id":"boc-paredes","nome":"Leandro Paredes","nomeCurto":"Paredes","nacionalidade":"ARG","idade":32,"posicao":"VOL","posicoesAlt":["MC"],"pe":"D","overall":80,"atributos":{"RIT":70,"FIN":63,"PAS":85,"DRI":81,"DEF":87,"FIS":82},"playstyles":["passe-preciso","cobranca-de-falta","passe-em-profundidade","contencao","passe-tenso"]},
+        {"id":"boc-zeballos","nome":"Exequiel Zeballos","nomeCurto":"Zeballos","nacionalidade":"ARG","idade":24,"posicao":"PE","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":89,"FIN":73,"PAS":69,"DRI":86,"DEF":40,"FIS":62},"playstyles":["drible-rapido","firula"]},
+        {"id":"boc-merentiel","nome":"Miguel Merentiel","nomeCurto":"Merentiel","nacionalidade":"URU","idade":30,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":73,"FIN":89,"PAS":64,"DRI":78,"DEF":37,"FIS":80},"playstyles":["finalizacao-precisa","chute-colocado"]},
+        {"id":"boc-cavani","nome":"Edinson Cavani","nomeCurto":"Cavani","nacionalidade":"URU","idade":39,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":69,"FIN":85,"PAS":67,"DRI":77,"DEF":35,"FIS":74},"playstyles":["cabeceio","finalizacao-precisa","acrobatico"]}
       ]
     },
     {
@@ -34,8 +34,8 @@
         {"id":"riv-martinez-quarta","nome":"Lucas Martínez Quarta","nomeCurto":"Martínez Quarta","nacionalidade":"ARG","idade":30,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":77,"atributos":{"RIT":62,"FIN":42,"PAS":70,"DRI":62,"DEF":90,"FIS":87},"playstyles":["cabeceio"]},
         {"id":"riv-paulo-diaz","nome":"Paulo Díaz","nomeCurto":"Paulo Díaz","nacionalidade":"CHI","idade":31,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":60,"FIN":37,"PAS":68,"DRI":64,"DEF":89,"FIS":82},"playstyles":[]},
         {"id":"riv-enzo-perez","nome":"Enzo Pérez","nomeCurto":"Enzo Pérez","nacionalidade":"ARG","idade":40,"posicao":"VOL","posicoesAlt":[],"pe":"D","overall":72,"atributos":{"RIT":62,"FIN":55,"PAS":77,"DRI":73,"DEF":78,"FIS":72},"playstyles":[]},
-        {"id":"riv-juanfer-quintero","nome":"Juan Fernando Quintero","nomeCurto":"Juanfer Quintero","nacionalidade":"COL","idade":33,"posicao":"MEI","posicoesAlt":[],"pe":"E","overall":78,"atributos":{"RIT":74,"FIN":77,"PAS":89,"DRI":85,"DEF":45,"FIS":67},"playstyles":["cobranca-de-falta","chute-de-longe","passe-em-profundidade"]},
-        {"id":"riv-colidio","nome":"Facundo Colidio","nomeCurto":"Colidio","nacionalidade":"ARG","idade":26,"posicao":"PE","posicoesAlt":["ATA"],"pe":"D","overall":75,"atributos":{"RIT":88,"FIN":71,"PAS":74,"DRI":85,"DEF":40,"FIS":62},"playstyles":[]},
+        {"id":"riv-juanfer-quintero","nome":"Juan Fernando Quintero","nomeCurto":"Juanfer Quintero","nacionalidade":"COL","idade":33,"posicao":"MEI","posicoesAlt":[],"pe":"E","overall":78,"atributos":{"RIT":74,"FIN":77,"PAS":89,"DRI":85,"DEF":45,"FIS":67},"playstyles":["cobranca-de-falta","chute-de-longe","passe-em-profundidade","resistente-pressao","firula"]},
+        {"id":"riv-colidio","nome":"Facundo Colidio","nomeCurto":"Colidio","nacionalidade":"ARG","idade":26,"posicao":"PE","posicoesAlt":["ATA"],"pe":"D","overall":75,"atributos":{"RIT":88,"FIN":71,"PAS":74,"DRI":85,"DEF":40,"FIS":62},"playstyles":["explosao","firula","tecnico"]},
         {"id":"riv-borja","nome":"Miguel Borja","nomeCurto":"Borja","nacionalidade":"COL","idade":33,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":75,"atributos":{"RIT":71,"FIN":88,"PAS":68,"DRI":75,"DEF":37,"FIS":80},"playstyles":["finalizacao-precisa"]},
         {"id":"riv-driussi","nome":"Sebastián Driussi","nomeCurto":"Driussi","nacionalidade":"ARG","idade":30,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":75,"FIN":88,"PAS":66,"DRI":76,"DEF":34,"FIS":80},"playstyles":[]}
       ]
@@ -50,7 +50,7 @@
       "elenco": [
         {"id":"rca-arias","nome":"Gabriel Arias","nomeCurto":"Arias","nacionalidade":"CHI","idade":38,"posicao":"GOL","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"MER":78,"MAN":75,"CHU":71,"REF":86,"VEL":58,"POS":75},"playstyles":[]},
         {"id":"rca-santiago-sosa","nome":"Santiago Sosa","nomeCurto":"Santiago Sosa","nacionalidade":"ARG","idade":27,"posicao":"VOL","posicoesAlt":[],"pe":"D","overall":74,"atributos":{"RIT":67,"FIN":53,"PAS":75,"DRI":70,"DEF":83,"FIS":81},"playstyles":[]},
-        {"id":"rca-maravilla-martinez","nome":"Adrián Martínez","nomeCurto":"Maravilla Martínez","nacionalidade":"ARG","idade":34,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":71,"FIN":86,"PAS":68,"DRI":78,"DEF":35,"FIS":81},"playstyles":["finalizacao-precisa"]}
+        {"id":"rca-maravilla-martinez","nome":"Adrián Martínez","nomeCurto":"Maravilla Martínez","nacionalidade":"ARG","idade":34,"posicao":"ATA","posicoesAlt":[],"pe":"D","overall":76,"atributos":{"RIT":71,"FIN":86,"PAS":68,"DRI":78,"DEF":35,"FIS":81},"playstyles":["finalizacao-precisa","chute-colocado"]}
       ]
     },
     {
@@ -150,7 +150,7 @@
       "cores": ["#ffffff","#000000"],
       "forca": 71,
       "elenco": [
-        {"id":"cco-vidal","nome":"Arturo Vidal","nomeCurto":"Vidal","nacionalidade":"CHI","idade":39,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":72,"atributos":{"RIT":65,"FIN":66,"PAS":81,"DRI":71,"DEF":67,"FIS":75},"playstyles":["incansavel"]},
+        {"id":"cco-vidal","nome":"Arturo Vidal","nomeCurto":"Vidal","nacionalidade":"CHI","idade":39,"posicao":"MC","posicoesAlt":[],"pe":"D","overall":72,"atributos":{"RIT":65,"FIN":66,"PAS":81,"DRI":71,"DEF":67,"FIS":75},"playstyles":["incansavel","passe-tenso","lancamento"]},
         {"id":"cco-ivan-roman","nome":"Iván Román","nomeCurto":"Iván Román","nacionalidade":"CHI","idade":20,"posicao":"ZAG","posicoesAlt":[],"pe":"D","overall":70,"atributos":{"RIT":55,"FIN":32,"PAS":63,"DRI":59,"DEF":87,"FIS":77},"playstyles":[]}
       ]
     },

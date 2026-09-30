@@ -4,7 +4,9 @@ import type { BasePlayer } from './types';
 export type PsId =
   | 'chute-de-longe' | 'finalizacao-precisa' | 'cobranca-de-falta' | 'cabeceio' | 'passe-preciso' | 'passe-em-profundidade'
   | 'cruzamento' | 'drible-rapido' | 'velocista' | 'primeiro-toque' | 'desarme' | 'interceptacao' | 'bloqueio'
-  | 'imposicao-fisica' | 'incansavel' | 'reflexos' | 'saida-do-gol' | 'pegador-de-penalti' | 'reposicao-longa';
+  | 'imposicao-fisica' | 'incansavel' | 'reflexos' | 'saida-do-gol' | 'pegador-de-penalti' | 'reposicao-longa'
+  | 'chute-colocado' | 'cavadinha' | 'passe-tenso' | 'lancamento' | 'tiki-taka' | 'firula' | 'tecnico' | 'resistente-pressao'
+  | 'antecipacao' | 'contencao' | 'acrobatico' | 'trivela' | 'explosao';
 
 export function psLevel(P: BasePlayer | null | undefined, id: PsId): 0 | 1 | 2 {
   if (!P) return 0;
@@ -49,6 +51,29 @@ export const FX = {
   faltaDispersao: [1.2, .85, .6],    // dispersão (m) da falta
   defesaGoleiro: [1, 1.12, 1.28],    // multiplica a chance de defesa do goleiro no lance
   defesaPenalti: [1, 1.2, 1.45],
+  // Playstyles novos — lance jogável (o tipo de chute sai do gesto: traço curvo = colocado, rápido = forte, curto e lento = cavadinha)
+  colocadoErro: [1, .75, .55],       // chute curvo: chance de errar o alvo
+  colocadoDefesa: [1, .85, .7],      // chute curvo: chance do goleiro defender
+  superChuteDefesa: [1, .86, .74],   // chute forte: chance do goleiro defender
+  superChuteLimite: [.88, .93, .97], // força a partir da qual a bola sobe demais
+  cavadinhaDefesa: [.9, .45, .3],    // cavadinha por cima do goleiro (sem o playstyle quase sempre é defendida)
+  cavadinhaErro: [.35, .14, .08],
+  acrobaticoDefesa: [1, .85, .72],   // finalização de primeira (voleio)
+  cabecaDefesa: [1, .85, .72],       // cabeçada depois do cruzamento
+  trivelaCurva: [1, 1.3, 1.6],       // alcance da curva em chutes e faltas
+  passeTenso: [1, .8, .65],          // raio de interceptação do passe rasteiro
+  tikiTaka: [0, .9, .95],            // chance mínima do passe curto (até 15 m)
+  lancamento: [1, .6, .35],          // penalidade de distância no passe alto
+  firula: [1, .85, .72],             // chance de perder a bola no drible
+  tecnico: [1, .9, .8],
+  resistente: [1, .8, .65],          // com marcador colado
+  explosaoAlcance: [0, 1.2, 2.4],    // metros a mais por condução
+  // Playstyles novos — simulação
+  colocadoSim: [1, 1.12, 1.25],      // gols em finalizações normais
+  cavadinhaSim: [1, 1.04, 1.08],
+  acrobaticoSim: [1, 1.1, 1.2],      // gols de cabeça/voleio
+  antecipacao: [0, .018, .032],      // tira chances do rival (como interceptação)
+  contencao: [0, .012, .024],
 } as const;
 
 export type SideLike = { xi: { P: BasePlayer; red: boolean }[] };

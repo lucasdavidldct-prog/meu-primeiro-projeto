@@ -46,6 +46,7 @@ export interface CardPlayer extends BasePlayer {
 }
 
 /** Carta que o jogador possui (u = identificador único da carta). */
-export interface OwnedCard extends CardPlayer { u: number }
+/** Carta da sua coleção (tr = negociável no mercado de leilão). */
+export interface OwnedCard extends CardPlayer { u: number; tr?: boolean }
 
 export interface SlotDef { p: Pos; x: number; y: number }

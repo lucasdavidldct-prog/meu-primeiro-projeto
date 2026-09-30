@@ -35,6 +35,9 @@ export interface Career {
   libNext: string[];
   trophies: Trophy[];
   history: SeasonRecord[];
+  /** Opções escolhidas ao começar: evolução dos jogadores e mercado de leilão. */
+  evo?: boolean;
+  mercado?: boolean;
   /** Números dos seus jogadores na temporada atual (gols, assistências, jogos, soma das notas). */
   stats?: Record<string, { g: number; a: number; j: number; n: number }>;
   /** Fase alcançada na Libertadores desta temporada (para o histórico e os prêmios). */
@@ -221,7 +224,7 @@ function newSeasonComps(c: Pick<Career, 'club' | 'year' | 'short' | 'div' | 'brT
   return { league, lib, others, cal: buildCalendar(league.rounds.length, withLib), idx: 0, libReached: withLib ? 'Fase de grupos' : null };
 }
 
-export interface CareerOpts { short?: boolean; libNow?: boolean; year?: number }
+export interface CareerOpts { short?: boolean; libNow?: boolean; year?: number; evo?: boolean; mercado?: boolean }
 export function newCareer(club: string, o: CareerOpts = {}): Career {
   const brTeams = leagueClubs('brasileirao').map(c => c.id), sbTeams = leagueClubs('serie-b').map(c => c.id);
   const div: 'A' | 'B' = sbTeams.includes(club) ? 'B' : 'A';
@@ -230,7 +233,7 @@ export function newCareer(club: string, o: CareerOpts = {}): Career {
   let libNext = byStr.filter(id => id !== club).slice(0, LIB_BR);
   if (o.libNow !== false && div === 'A') libNext = [...libNext.slice(0, LIB_BR - 1), club];
   const base = { club, year: o.year ?? 2026, short: !!o.short, div, brTeams, sbTeams, libNext };
-  return { ...base, ...newSeasonComps(base), trophies: [], history: [] };
+  return { ...base, ...newSeasonComps(base), trophies: [], history: [], evo: o.evo ?? false, mercado: o.mercado ?? false };
 }
 
 const MULT = { A: 2.2, B: 1.3, lib: 3 };
