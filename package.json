@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "validar-dados": "tsx scripts/validar-dados.ts"
+    "validar-dados": "tsx scripts/validar-dados.ts",
+    "calibrar": "tsx scripts/calibrar.ts"
   },
   "dependencies": {
     "@fontsource/saira": "^5.3.0",

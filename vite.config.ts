@@ -49,9 +49,9 @@ function gravarDados(): Plugin {
         const id = m[1];
         try {
           // Carrega pelo próprio Vite para reaproveitar o código do jogo (TypeScript).
-          const { LIGA_IDS } = await server.ssrLoadModule('/src/engine/data/schema.ts') as typeof import('./src/engine/data/schema');
+          const { ALL_LIGA_IDS } = await server.ssrLoadModule('/src/engine/data/schema.ts') as typeof import('./src/engine/data/schema');
           const { formatLiga } = await server.ssrLoadModule('/src/engine/data/format.ts') as typeof import('./src/engine/data/format');
-          if (!(LIGA_IDS as readonly string[]).includes(id)) return send(400, { erro: `liga desconhecida: ${id}` });
+          if (!ALL_LIGA_IDS.includes(id)) return send(400, { erro: `liga desconhecida: ${id}` });
           const liga = JSON.parse(await readBody(req)) as import('./src/engine/data/schema').LigaData;
           if (liga.id !== id || !Array.isArray(liga.clubes)) return send(400, { erro: 'conteúdo inválido' });
           writeFileSync(join(ROOT, 'data', 'ligas', id + '.json'), formatLiga(liga));

@@ -5,12 +5,21 @@ import lendasJson from '../../data/lendas.json';
 import { ATR_GOL, ATR_LINHA, type JogadorData, type LendasData, type LigaData, type NacoesData } from './data/schema';
 import type { BasePlayer, Club, Nation, Pos } from './types';
 
-const ligaModules = import.meta.glob('../../data/ligas/*.json', { eager: true, import: 'default' }) as Record<string, LigaData>;
-export const BUNDLED_LIGAS: LigaData[] = Object.values(ligaModules);
+// Imports estáticos (funcionam no Vite, nos testes e nos scripts com tsx).
+import brasileirao from '../../data/ligas/brasileirao.json';
+import premierLeague from '../../data/ligas/premier-league.json';
+import laliga from '../../data/ligas/laliga.json';
+import serieA from '../../data/ligas/serie-a.json';
+import bundesliga from '../../data/ligas/bundesliga.json';
+import saudi from '../../data/ligas/saudi-pro-league.json';
+import mls from '../../data/ligas/mls.json';
+import serieB from '../../data/ligas/serie-b.json';
+import conmebol from '../../data/ligas/conmebol.json';
+export const BUNDLED_LIGAS = [brasileirao, premierLeague, laliga, serieA, bundesliga, saudi, mls, serieB, conmebol] as unknown as LigaData[];
 export const BUNDLED_LENDAS = lendasJson as unknown as LendasData;
 export const NACOES = nacoesJson as unknown as NacoesData;
 
-const LIGA_ORDEM = ['brasileirao', 'premier-league', 'laliga', 'serie-a', 'bundesliga', 'saudi-pro-league', 'mls'];
+const LIGA_ORDEM = ['brasileirao', 'serie-b', 'premier-league', 'laliga', 'serie-a', 'bundesliga', 'saudi-pro-league', 'mls', 'conmebol'];
 
 export const NATIONS: Record<string, Nation> = Object.fromEntries(
   Object.entries(NACOES).map(([k, v]) => [k, { n: v.nome, f: v.cores, h: !!v.horizontal }]),
@@ -18,7 +27,7 @@ export const NATIONS: Record<string, Nation> = Object.fromEntries(
 const UNKNOWN_NATION: Nation = { n: '—', f: ['#666666', '#999999', '#666666'] };
 export const nationOf = (code: string): Nation => NATIONS[code] ?? UNKNOWN_NATION;
 
-export interface ClubInfo extends Club { id: string; lg: string; city: string }
+export interface ClubInfo extends Club { id: string; lg: string; city: string; forca?: number }
 export interface LeagueInfo { id: string; n: string; pais: string; temporada: string; clubs: ClubInfo[] }
 
 export const LEGEND_CLUB: ClubInfo = { id: 'ICO', n: 'Ícones', s: 'ICO', c1: '#d9c28a', c2: '#3a2a08', lg: 'ICO', city: '' };
@@ -56,7 +65,7 @@ export function loadWorld(ligas: LigaData[], lendas: LendasData = BUNDLED_LENDAS
   for (const l of sorted) {
     const info: LeagueInfo = { id: l.id, n: l.nome, pais: l.pais, temporada: l.temporada, clubs: [] };
     for (const c of l.clubes) {
-      const ci: ClubInfo = { id: c.id, n: c.nome, s: c.sigla, c1: c.cores[0], c2: c.cores[1], lg: l.id, city: c.cidade };
+      const ci: ClubInfo = { id: c.id, n: c.nome, s: c.sigla, c1: c.cores[0], c2: c.cores[1], lg: l.id, city: c.cidade, forca: c.forca };
       info.clubs.push(ci);
       W.clubs.set(c.id, ci);
       const squad = c.elenco.map(j => toPlayer(j, l.id, c.id));
@@ -70,7 +79,10 @@ export function loadWorld(ligas: LigaData[], lendas: LendasData = BUNDLED_LENDAS
 }
 loadWorld(BUNDLED_LIGAS);
 
-export const allClubs = (): ClubInfo[] => W.leagues.flatMap(l => l.clubs);
+/** Clubes das 7 ligas principais (sem Série B e sul-americanos). */
+export const allClubs = (): ClubInfo[] => W.leagues.filter(l => !EXTRA.has(l.id)).flatMap(l => l.clubs);
+const EXTRA = new Set(['serie-b', 'conmebol']);
+export const leagueClubs = (id: string): ClubInfo[] => W.leagues.find(l => l.id === id)?.clubs ?? [];
 export const leagueById = (id: string): LeagueInfo | undefined => W.leagues.find(l => l.id === id);
 
 export function clubOf(P: BasePlayer): ClubInfo {

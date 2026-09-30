@@ -1,28 +1,53 @@
 import { inPos } from '../engine/cards';
-import { Match, effNow, fatigue, freeKickTaker, matchReward, penaltyTaker, sideFromTeam, sideOpp } from '../engine/match';
+import { Match, effNow, fatigue, freeKickTaker, matchReward, penaltyShootout, penaltyTaker, sideFromTeam, sideOpp, simulate, type Shootout, type Side } from '../engine/match';
 import { allClubs } from '../engine/world';
 import { clamp } from '../engine/rng';
-import { DIVS, finishRound, oppFromClub, type OppTeam } from '../engine/season';
+import { oppFromClub, type OppTeam } from '../engine/season';
+import { needsPens, recordResult, type Fixture } from '../engine/career';
 import { cardByUid, teamInfo } from '../engine/state';
 import { MENT, STYLES, STYLE_IDS } from '../engine/tactics';
 import type { CardPlayer, StyleId } from '../engine/types';
 import { cardHTML } from './card';
-import { app, render, save, userClub } from './ctx';
+import { app, render, saveNow, userClub } from './ctx';
 import { crestHTML } from './crest';
 import { closeSheet, esc, fmt, openSheet, toast } from './dom';
 import { runMoment2D } from './moment2d';
 
-interface Live { m: Match; league: boolean; speed: number; paused: boolean; busy: boolean; timer?: ReturnType<typeof setTimeout>; reward?: number }
+interface Live { m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout }
 let L: Live | null = null;
 const DELAYS = [0, 650, 300, 110];
 
-export function startMatch(opp: OppTeam, league: boolean): void {
+/** Seu time pronto para jogar (ou null se faltam titulares). */
+function userSide(): Side | null {
   const S = app.S, T = teamInfo(S);
-  if (!T.full) { toast('Complete os 11 titulares antes de jogar'); app.tab = 'squad'; render(); return; }
+  if (!T.full) { toast('Complete os 11 titulares antes de jogar'); app.tab = 'squad'; render(); return null; }
   const bench = S.squad.bench.filter(Boolean).map(u => cardByUid(S, u)!) as CardPlayer[];
   const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench });
-  Object.assign(A, { s: userClub().s });
+  const uc = userClub();
+  Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2 });
+  return A;
+}
+
+/** Aplica o resultado: moedas, retrospecto, pênaltis no mata-mata e registro na carreira. */
+function finalize(m: Match, fx: Fixture | null): { coins: number; pens?: Shootout } {
+  const S = app.S, g = m.A.goals, o = m.B.goals;
+  const coins = matchReward(g, o, m.momGoals, fx ? fx.mult : 1, !!fx);
+  const res = g > o ? 'w' : g === o ? 'd' : 'l';
+  S.coins += coins; S.rec[res]++; S.rec.gf += g; S.rec.ga += o;
+  let pens: Shootout | undefined;
+  if (fx && S.career) {
+    if (needsPens(fx, g, o)) pens = penaltyShootout(m.A, m.B);
+    recordResult(S.career, g, o, pens ? [pens.a, pens.b] : undefined);
+  }
+  saveNow();
+  return { coins, pens };
+}
+
+export function startMatch(opp: OppTeam, fx: Fixture | null): void {
+  const S = app.S, A = userSide();
+  if (!A) return;
   const m = new Match(A, sideOpp(opp), {
+    home: fx ? fx.home : null,
     moments: S.moments ? 4 : 0,
     onMoment: S.moments ? async (mm, req) => {
       L!.busy = true; renderMatch();
@@ -31,7 +56,8 @@ export function startMatch(opp: OppTeam, league: boolean): void {
       return res;
     } : undefined,
   });
-  L = { m, league, speed: 1, paused: false, busy: false };
+  if (fx) m.addEv(0, 'info', `${fx.label}${fx.home === 0 ? ' · em casa' : fx.home === 1 ? ' · fora de casa' : ' · campo neutro'}.`);
+  L = { m, fx, speed: 1, paused: false, busy: false };
   const ov = document.createElement('div');
   ov.className = 'match'; ov.id = 'match';
   document.body.appendChild(ov);
@@ -52,13 +78,24 @@ function loop(): void {
 
 function endMatch(): void {
   if (!L) return;
-  const S = app.S, m = L.m, g = m.A.goals, o = m.B.goals;
-  const coins = matchReward(g, o, m.momGoals, DIVS[S.season.div].m, L.league);
-  const res = g > o ? 'w' : g === o ? 'd' : 'l';
-  S.coins += coins; S.rec[res]++; S.rec.gf += g; S.rec.ga += o;
-  if (L.league) finishRound(S.season, g, o);
-  L.reward = coins;
-  save();
+  const r = finalize(L.m, L.fx);
+  L.reward = r.coins; L.pens = r.pens;
+  if (r.pens) L.m.addEv(r.pens.winner ? 1 : 0, 'info', `Pênaltis: ${L.m.A.name} ${r.pens.a} × ${r.pens.b} ${L.m.B.name}.`);
+}
+
+/** Simula o jogo do usuário sem assistir (sem lances jogáveis). */
+export async function quickPlay(opp: OppTeam, fx: Fixture): Promise<void> {
+  const A = userSide();
+  if (!A) return;
+  const m = await simulate(A, sideOpp(opp), fx.home);
+  const r = finalize(m, fx);
+  const res = m.A.goals > m.B.goals ? 'Vitória' : m.A.goals === m.B.goals ? 'Empate' : 'Derrota';
+  render();
+  openSheet(`<h2>${res} · ${m.A.goals} × ${m.B.goals}</h2>
+    <p class="small muted" style="margin-top:-4px">${esc(fx.label)} · ${esc(m.B.name)}</p>
+    ${r.pens ? `<p><b>Pênaltis: ${r.pens.a} × ${r.pens.b}</b> — ${r.pens.winner === 0 ? 'classificado!' : 'eliminado.'}</p>` : ''}
+    <div class="scorers" style="font-size:13px"><div>${m.A.scorers.map(esc).join('<br>') || '—'}</div><div>${m.B.scorers.map(esc).join('<br>') || '—'}</div></div>
+    <p>+${fmt(r.coins)} moedas.</p><button class="btn pri block" data-act="closeSheet">Continuar</button>`);
 }
 
 export function renderMatch(): void {
@@ -75,7 +112,9 @@ export function renderMatch(): void {
      <div>${crestHTML({ n: B.name, s: B.s, c1: B.c1, c2: B.c2 }, 'team')}<div class="tn">${esc(B.name)}</div></div>
    </div>
    <div class="scorers"><div>${A.scorers.map(esc).join('<br>')}</div><div>${B.scorers.map(esc).join('<br>')}</div></div>
-   ${M.over ? `<div class="ht"><h2 style="margin:0 0 4px">${res}</h2><p style="margin:0 0 10px">+${fmt(L.reward ?? 0)} moedas${L.league ? ' · resultado lançado na tabela' : ' · amistoso'}.</p><button class="btn pri block" data-act="closeMatch">Continuar</button></div>` : ''}
+   ${M.over ? `<div class="ht"><h2 style="margin:0 0 4px">${res}${L.pens ? ` · pênaltis ${L.pens.a} × ${L.pens.b}` : ''}</h2>
+     ${L.pens ? `<p class="small" style="margin:0 0 6px">${L.pens.winner === 0 ? '<b class="up">Classificado nos pênaltis!</b>' : '<b class="down">Eliminado nos pênaltis.</b>'}</p><details class="small muted" style="margin-bottom:8px"><summary>Cobranças</summary>${L.pens.log.map(esc).join('<br>')}</details>` : ''}
+     <p style="margin:0 0 10px">+${fmt(L.reward ?? 0)} moedas${L.fx ? ' · ' + esc(L.fx.label) : ' · amistoso'}.</p><button class="btn pri block" data-act="closeMatch">Continuar</button></div>` : ''}
    ${M.ht && !M.over ? `<div class="ht"><b>Intervalo.</b> <span class="muted small">Ajuste o time e volte para o segundo tempo.</span><div class="row" style="margin-top:10px"><button class="btn pri" style="flex:1" data-act="secondHalf">Começar 2º tempo</button><button class="btn" data-act="subs">Substituições (${A.subs})</button></div></div>` : ''}
    ${!M.over ? `<div class="mctl">
      <button class="chip" data-act="mPause" aria-pressed="${L.paused}">${L.paused ? 'Continuar' : 'Pausar'}</button>

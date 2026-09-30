@@ -70,6 +70,7 @@ function validarClube(c: ClubeData, liga: string, nacoes: NacoesData, r: Relator
   if (c.id !== c.sigla) E(`id do clube (${c.id}) deve ser igual à sigla (${c.sigla})`);
   if (!c.cidade?.trim()) E('clube sem cidade');
   if (!Array.isArray(c.cores) || c.cores.length !== 2 || !c.cores.every(x => HEX.test(x))) E('cores devem ser duas cores #rrggbb');
+  if (c.forca != null && (!Number.isInteger(c.forca) || c.forca < 40 || c.forca > 95)) E(`forca inválida (${c.forca})`);
   const el = c.elenco || [];
   if (el.length < 11) A(`elenco incompleto: ${el.length} jogadores — o jogo completa com reservas genéricos`);
   else if (el.length < 22) A(`elenco curto: ${el.length} jogadores (o ideal é ~25)`);

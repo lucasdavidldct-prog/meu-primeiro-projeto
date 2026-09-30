@@ -58,6 +58,12 @@ export function migrate(S: GameState): GameState {
     N.aviso = 'Seu save era da versão com jogadores fictícios. Mantivemos nome, moedas e campanha, e o elenco agora tem jogadores reais.';
     return N;
   }
+  if (S.v < 4 || !('career' in S)) {
+    // Saves antes do modo carreira: mantém a coleção, mas pede para escolher o clube.
+    delete (S as { season?: unknown }).season;
+    S.career = null; S.v = SAVE_VERSION;
+    S.aviso = 'Novo modo carreira! Escolha o seu clube para começar.';
+  }
   const n = sanitizeState(S);
   if (n) S.aviso = `${n} carta(s) de jogadores removidos no editor saíram da coleção.`;
   return S;
@@ -75,15 +81,23 @@ export function importJson(text: string): GameState {
   return migrate(cand);
 }
 
-/** Grava com atraso para não escrever a cada clique. */
+/** Grava com atraso para não escrever a cada clique, mas nunca adia mais que MAX_WAIT (cliques seguidos). */
+const MAX_WAIT = 1500;
 let timer: ReturnType<typeof setTimeout> | undefined;
+let firstPending = 0;
 let chain: Promise<void> = Promise.resolve();
 export function scheduleSave(S: GameState, delay = 400): void {
+  const now = Date.now();
+  if (!firstPending) firstPending = now;
   clearTimeout(timer);
-  timer = setTimeout(() => { chain = chain.catch(() => {}).then(() => writeSave(S)).catch(e => console.warn('Falha ao salvar', e)); }, delay);
+  const wait = Math.max(0, Math.min(delay, firstPending + MAX_WAIT - now));
+  timer = setTimeout(() => {
+    firstPending = 0;
+    chain = chain.catch(() => {}).then(() => writeSave(S)).catch(e => console.warn('Falha ao salvar', e));
+  }, wait);
 }
 export async function flushSave(S: GameState): Promise<void> {
-  clearTimeout(timer);
+  clearTimeout(timer); firstPending = 0;
   chain = chain.catch(() => {}).then(() => writeSave(S));
   await chain;
 }

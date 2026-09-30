@@ -4,6 +4,8 @@ import { calcChem, effOvr } from './chemistry';
 import { FORM_IDS, slotsOf } from './positions';
 import type { BasePlayer, FormationId, Pos } from './types';
 import { W, clubOf } from './world';
+import { psLevel, type PsId } from './playstyles';
+import type { StyleId } from './types';
 
 const STAT_BASE: Record<Pos, number[]> = {
   GOL: [1, 1, .8, 1, .6, 1], ZAG: [.7, .4, .7, .6, 1.1, 1], LD: [1, .5, .8, .8, .95, .85], LE: [1, .5, .8, .8, .95, .85],
@@ -41,15 +43,16 @@ export function bestXI(players: BasePlayer[], form: FormationId, clubId = 'XXX',
     if (best) { xi[i] = best; used.add(best.id); }
   }
   const real = players.filter(p => !used.has(p.id)).sort((a, b) => b.ovr - a.ovr);
-  const avg = players.length ? players.reduce((s, p) => s + p.ovr, 0) / players.length : 65;
+  const forca = W.clubs.get(clubId)?.forca;
+  const avg = forca ?? (players.length ? players.reduce((s, p) => s + p.ovr, 0) / players.length - 5 : 60);
   let n = 1;
-  const full = xi.map((P, i) => P ?? filler(clubId, slots[i].p, Math.round(avg - 5), n++));
+  const full = xi.map((P, i) => P ?? filler(clubId, slots[i].p, Math.round(avg), n++));
   const bench: BasePlayer[] = [];
   const gk = real.find(p => p.pos === 'GOL');
   if (gk) bench.push(gk);
   for (const p of real) { if (bench.length >= benchSize) break; if (!bench.includes(p)) bench.push(p); }
   const benchPos: Pos[] = ['GOL', 'ZAG', 'MC', 'PD', 'ATA', 'LD', 'MEI'];
-  while (bench.length < benchSize) bench.push(filler(clubId, benchPos[bench.length % 7], Math.round(avg - 7), n++));
+  while (bench.length < benchSize) bench.push(filler(clubId, benchPos[bench.length % 7], Math.round(avg - 2), n++));
   const chem = calcChem(full, form);
   const rating = full.reduce((s, P, i) => s + effOvr(P, slots[i].p, chem.per[i]), 0) / 11;
   return { xi: full, bench, rating };
@@ -82,3 +85,23 @@ export function clubStrength(clubId: string): number {
 
 export const squadOf = (clubId: string): BasePlayer[] => W.byClub.get(clubId) ?? [];
 export const clubName = (P: BasePlayer): string => clubOf(P).n;
+
+/**
+ * Tática da IA coerente com o elenco e com o adversário: formação que rende o melhor XI;
+ * estilo pela diferença de força e pelo perfil (velocistas → contra-ataque, passadores → toque de bola,
+ * marcadores → pressão alta).
+ */
+export function aiTactics(clubId: string, oppStrength: number): { form: FormationId; style: StyleId } {
+  const players = squadOf(clubId);
+  const form = bestFormation(players, clubId);
+  const { xi } = bestXI(players, form, clubId, 0);
+  const cnt = (id: PsId) => xi.reduce((s, p) => s + psLevel(p, id), 0);
+  const d = clubStrength(clubId) - oppStrength;
+  const ve = cnt('velocista') + cnt('drible-rapido') * .5, pp = cnt('passe-preciso') + cnt('passe-em-profundidade'), ds = cnt('desarme') + cnt('interceptacao') + cnt('incansavel');
+  let style: StyleId;
+  if (d <= -6) style = ve >= 2 ? 'contra' : 'retranca';
+  else if (d <= -3) style = ve >= 2 ? 'contra' : 'equilibrado';
+  else if (d >= 5) style = pp >= 3 ? 'posse' : ds >= 3 ? 'pressao' : 'posse';
+  else style = pp >= 4 ? 'posse' : ds >= 4 ? 'pressao' : ve >= 3 ? 'contra' : 'equilibrado';
+  return { form, style };
+}

@@ -5,14 +5,18 @@ import { pick } from '../engine/rng';
 import { allClubs, clubOf, leagueName, nationOf } from '../engine/world';
 import { clubStrength } from '../engine/squads';
 import { PS_BY_ID, parsePs } from '../engine/data/schema';
-import { newSeason, nextOpponent, oppFromClub, seasonEnd } from '../engine/season';
-import { applyPick, autoLineup, cardByUid, duplicates, newGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
+import { oppFromClub, oppFromId } from '../engine/season';
+import { endSeason as careerEnd, nextFixture } from '../engine/career';
+import { applyPick, autoLineup, blankGame, cardByUid, duplicates, newCareerGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
 import type { FormationId, StyleId } from '../engine/types';
 import { exportJson, flushSave, importJson } from '../save/db';
 import { cardHTML } from './card';
-import { app, render, save, setRender, type Tab } from './ctx';
+import { app, render, save, saveNow, setRender, userClub, type Tab } from './ctx';
 import { closeSheet, esc, fmt, openSheet, toast } from './dom';
-import { matchActions, startMatch } from './matchView';
+import { matchActions, quickPlay, startMatch } from './matchView';
+import { viewStart } from './views/start';
+import { crestHTML } from './crest';
+import { W } from '../engine/world';
 import { openPack } from './packOpen';
 import { openPicker } from './picker';
 import { viewClub } from './views/club';
@@ -25,11 +29,12 @@ function renderApp(): void {
   const S = app.S;
   document.getElementById('coins')!.textContent = fmt(S.coins);
   document.getElementById('clubName')!.textContent = S.name;
-  document.getElementById('crest')!.textContent = (S.name.trim()[0] || 'E').toUpperCase();
+  if (!S.career && app.tab !== 'editor') app.tab = 'start';
+  document.getElementById('crest')!.outerHTML = `<span id="crest" class="crest-head">${crestHTML(userClub())}</span>`;
   const tabNow = app.tab === 'editor' ? 'club' : app.tab;
   document.querySelectorAll<HTMLElement>('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.t === tabNow ? 'true' : 'false'));
   const v = document.getElementById('view')!;
-  v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : app.tab === 'editor' ? viewEditor() : viewSeason();
+  v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : app.tab === 'editor' ? viewEditor() : app.tab === 'start' ? viewStart() : viewSeason();
   if (app.tab === 'editor') bindEditorInputs(v);
 }
 
@@ -101,7 +106,7 @@ const ACT: Record<string, Handler> = {
   togMom() { app.S.moments = !app.S.moments; save(); render(); },
   reset(_d, el) {
     if (!el.dataset.ok) { el.dataset.ok = '1'; el.textContent = 'Tem certeza? Toque de novo para apagar tudo'; return; }
-    replaceState(newGame()); save(); app.tab = 'squad'; render(); toast('Novo clube criado');
+    replaceState(blankGame()); save(); app.tab = 'start'; render(); window.scrollTo(0, 0);
   },
   exportSave() {
     const blob = new Blob([exportJson(app.S)], { type: 'application/json' });
@@ -124,20 +129,40 @@ const ACT: Record<string, Handler> = {
     };
     inp.click();
   },
-  play() { startMatch(nextOpponent(app.S.season), true); },
+  play() {
+    const C = app.S.career!, f = nextFixture(C);
+    if (f) startMatch(oppFromId(f.opp, teamInfo(app.S).ovr), f);
+  },
+  simPlay() {
+    const C = app.S.career!, f = nextFixture(C);
+    if (f) void quickPlay(oppFromId(f.opp, teamInfo(app.S).ovr), f);
+  },
   friendly() {
     const T = teamInfo(app.S);
     // Um clube real de nível parecido com o seu time
-    const near = allClubs().map(c => ({ c, d: Math.abs(clubStrength(c.id) - T.ovr) })).sort((a, b) => a.d - b.d).slice(0, 12);
-    startMatch(oppFromClub(pick(near).c), false);
+    const near = allClubs().filter(c => c.id !== app.S.career?.club).map(c => ({ c, d: Math.abs(clubStrength(c.id) - T.ovr) })).sort((a, b) => a.d - b.d).slice(0, 12);
+    startMatch(oppFromClub(pick(near).c, T.ovr), null);
   },
   endSeason() {
-    const S = app.S, r = seasonEnd(S.season, S.name);
+    const S = app.S, r = careerEnd(S.career!);
     S.coins += r.coins;
-    if (r.title) S.titles++;
-    S.season = newSeason(r.newDiv, S.season.num + 1);
-    save(); render();
-    openSheet(`<h2>Fim de temporada</h2><p>${r.msg}</p>${r.pack ? `<p>Prêmio extra: pacote <b>${packById(r.pack).n}</b>.</p><button class="btn pri block" data-act="freePack" data-p="${r.pack}">Abrir pacote</button>` : '<button class="btn block" data-act="closeSheet">Fechar</button>'}`);
+    S.titles += r.trophies.length;
+    app.careerView = 'tabela';
+    saveNow(); render();
+    openSheet(`<h2>Fim de temporada</h2>${r.msgs.map(m => `<p>${esc(m)}</p>`).join('')}<p class="small muted">Total: +${fmt(r.coins)} moedas.</p>${r.pack ? `<p>Prêmio extra: pacote <b>${packById(r.pack).n}</b>.</p><button class="btn pri block" data-act="freePack" data-p="${r.pack}">Abrir pacote</button>` : '<button class="btn block" data-act="closeSheet">Fechar</button>'}`);
+  },
+  cv(d) { app.careerView = d.v as typeof app.careerView; render(); },
+  cvLeague(d) { app.otherLeague = d.l!; render(); },
+  stLiga(d) { app.startLiga = d.l!; render(); },
+  stClub(d) { app.startClub = d.c!; render(); },
+  stShort() { app.startShort = !app.startShort; render(); },
+  stLib() { app.startLib = !app.startLib; render(); },
+  stGo(_d, el) {
+    if (app.S.cards.length && !el.dataset.ok) { el.dataset.ok = '1'; el.textContent = 'Toque de novo para confirmar'; return; }
+    const c = W.clubs.get(app.startClub)!;
+    replaceState(newCareerGame(c.id, { short: app.startShort, libNow: app.startLib && c.lg !== 'serie-b' }));
+    app.tab = 'squad'; saveNow(); render(); window.scrollTo(0, 0);
+    toast(`Bem-vindo ao ${c.n}! Temporada ${app.S.career!.year}.`);
   },
   closeSheet() { closeSheet(); },
   ...matchActions,
@@ -155,6 +180,7 @@ export function startApp(S: GameState): void {
   });
   // Garante que o último estado vá para o disco ao fechar/ocultar a aba
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') void flushSave(app.S); });
+  window.addEventListener('pagehide', () => { void flushSave(app.S); });
   render();
   if (S.aviso) { setTimeout(() => toast(S.aviso!), 400); delete S.aviso; save(); }
   resumeEditorIfNeeded();

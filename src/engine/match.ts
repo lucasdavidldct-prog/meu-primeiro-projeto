@@ -33,6 +33,20 @@ type Tick = { m: number; l: string } | { ht: true };
 export const SCORE_W: Record<Pos, number> = { GOL: 0, ZAG: .5, LD: .35, LE: .35, VOL: .6, MC: 1.2, MEI: 2.4, MD: 1.5, ME: 1.5, PD: 3.4, PE: 3.4, ATA: 5 };
 const ASSIST_W: Record<Pos, number> = { GOL: .05, ZAG: .3, LD: .9, LE: .9, VOL: .8, MC: 1.5, MEI: 2.6, MD: 1.8, ME: 1.8, PD: 2, PE: 2, ATA: 1.3 };
 const FOUL_W: Record<Pos, number> = { GOL: .1, ZAG: 1.4, LD: 1.1, LE: 1.1, VOL: 1.5, MC: 1, MEI: .6, MD: .8, ME: .8, PD: .5, PE: .5, ATA: .5 };
+/** Constantes calibradas com npm run calibrar (média ~2,6 gols entre times do mesmo nível). */
+export const CALIB = {
+  chanceBase: .118,   // chance base de criar uma finalização por minuto
+  penChance: .013,    // fração das finalizações que viram pênalti
+  penConv: .78,       // conversão base do pênalti
+  shotBase: .05,      // chance mínima de gol numa finalização
+  shotQ: .16,         // parte que depende da qualidade da chance
+  attExp: 1.5,          // peso da relação ataque/defesa na criação de chances
+  possExp: 2.5,         // peso do meio-campo na posse
+  finExp: 1,          // peso da qualidade do finalizador contra o goleiro
+  home: 1.16,         // multiplicador de chances do mandante
+  away: .9,           // multiplicador de chances do visitante
+};
+
 const POSS_MOD: Record<StyleId, number> = { posse: .07, retranca: -.08, contra: -.06, pressao: .03, equilibrado: 0 };
 
 /** Lado do usuário a partir do time escalado. */
@@ -100,10 +114,13 @@ export class Match {
   momGoals = 0;
   private aiDone: Record<string, boolean> = {};
   onMoment?: MomentHandler;
+  /** Mandante: 0 = A, 1 = B, null = campo neutro. */
+  home: 0 | 1 | null;
 
-  constructor(public A: Side, public B: Side, opts: { moments?: number; onMoment?: MomentHandler } = {}) {
+  constructor(public A: Side, public B: Side, opts: { moments?: number; onMoment?: MomentHandler; home?: 0 | 1 | null } = {}) {
     this.momentsLeft = opts.onMoment ? (opts.moments ?? 4) : 0;
     this.onMoment = opts.onMoment;
+    this.home = opts.home ?? null;
     const s1 = 1 + Math.floor(R() * 3), s2 = 2 + Math.floor(R() * 4);
     for (let m = 1; m <= 45; m++) this.seq.push({ m, l: m + "'" });
     for (let k = 1; k <= s1; k++) this.seq.push({ m: 45, l: '45+' + k + "'" });
@@ -128,17 +145,19 @@ export class Match {
     // Passe Preciso / em Profundidade fortalecem o meio (posse)
     rA.mid *= 1 + Math.min(.04, teamFx(A, 'passe-preciso', FX.passe) + teamFx(A, 'passe-em-profundidade', FX.passe));
     rB.mid *= 1 + Math.min(.04, teamFx(B, 'passe-preciso', FX.passe) + teamFx(B, 'passe-em-profundidade', FX.passe));
-    let pA = Math.pow(rA.mid, 5) / (Math.pow(rA.mid, 5) + Math.pow(rB.mid, 5)) + POSS_MOD[A.style] - POSS_MOD[B.style] + .015 * (A.ment - B.ment);
+    let pA = Math.pow(rA.mid, CALIB.possExp) / (Math.pow(rA.mid, CALIB.possExp) + Math.pow(rB.mid, CALIB.possExp)) + POSS_MOD[A.style] - POSS_MOD[B.style] + .015 * (A.ment - B.ment);
     pA = clamp(pA, .25, .75);
     this.st.poss[0] += pA; this.st.poss[1] += 1 - pA;
     const chance = (att: number, def: number, poss: number, sa: StyleId, sb: StyleId, ma: number, mb: number) => {
-      let p = .095 * Math.pow(poss / .5, .8) * Math.pow(att / def, 4) * sv(sa, sb) * (1 + .13 * ma) * (1 + .09 * mb);
+      let p = CALIB.chanceBase * Math.pow(poss / .5, .8) * Math.pow(att / def, CALIB.attExp) * sv(sa, sb) * (1 + .13 * ma) * (1 + .09 * mb);
       if (sa === 'retranca') p *= .75;
       if (sb === 'retranca') p *= .82;
       return p;
     };
-    const cA = chance(rA.att, rB.def, pA, A.style, B.style, A.ment, B.ment) * this.psChance(A, B);
-    const cB = chance(rB.att, rA.def, 1 - pA, B.style, A.style, B.ment, A.ment) * this.psChance(B, A);
+    const hA = this.home === 0 ? CALIB.home : this.home === 1 ? CALIB.away : 1;
+    const hB = this.home === 1 ? CALIB.home : this.home === 0 ? CALIB.away : 1;
+    const cA = chance(rA.att, rB.def, pA, A.style, B.style, A.ment, B.ment) * this.psChance(A, B) * hA;
+    const cB = chance(rB.att, rA.def, 1 - pA, B.style, A.style, B.ment, A.ment) * this.psChance(B, A) * hB;
     const rollA = R(), rollB = R();
     if (rollA < cA) await this.shot(A, B, rA, 0);
     else if (rollA < cA / this.tackleKeep(B)) this.tackleEvent(B, A, 1);
@@ -223,7 +242,7 @@ export class Match {
 
   private async shot(att: Side, def: Side, ra: Ratings, si: 0 | 1): Promise<void> {
     const gkE = def.xi.find(e => e.pos === 'GOL' && !e.red), gk = gkE ? gkE.name : 'o goleiro';
-    const isPen = R() < .035;
+    const isPen = R() < CALIB.penChance;
     if (this.canMoment(att) && (isPen || R() < .34)) {
       await this.playMoment(att, si, isPen ? { kind: 'penalti', taker: penaltyTaker(att) } : { kind: att.style === 'contra' || R() < .25 ? 'contra' : 'ataque' });
       return;
@@ -232,7 +251,7 @@ export class Match {
     if (isPen) {
       const taker = penaltyTaker(att);
       this.addEv(si, 'info', tx('pen', { p: weightedPlayer(att, SCORE_W).name }));
-      const conv = .78 + Math.max(FX.penaltiBatedor[ps(taker, 'finalizacao-precisa')], FX.penaltiBatedor[ps(taker, 'cobranca-de-falta')]) - FX.penaltiGol[ps(gkE, 'pegador-de-penalti')];
+      const conv = CALIB.penConv + Math.max(FX.penaltiBatedor[ps(taker, 'finalizacao-precisa')], FX.penaltiBatedor[ps(taker, 'cobranca-de-falta')]) - FX.penaltiGol[ps(gkE, 'pegador-de-penalti')];
       if (R() < conv) this.goal(att, si, taker, tx('penGoal', { p: taker.name }), ' (p)');
       else this.addEv(si, 'info', ps(gkE, 'pegador-de-penalti') ? tx('penSaved', { p: taker.name, gk }) : tx('penMiss', { p: taker.name, gk }));
       return;
@@ -256,7 +275,7 @@ export class Match {
     }
     const q = R();
     const fin = effNow(shooter, this.min), gkv = gkE ? effNow(gkE, this.min) : 30;
-    let gp = (.05 + .16 * q * q) * Math.pow(clamp((fin * .6 + ra.att * .4) / gkv, .6, 1.8), 2);
+    let gp = (CALIB.shotBase + CALIB.shotQ * q * q) * Math.pow(clamp((fin * .6 + ra.att * .4) / gkv, .6, 1.8), CALIB.finExp);
     gp *= FX.reflexos[ps(gkE, 'reflexos')];
     if (kind === 'normal') gp *= 1.12 * FX.finalizacao[ps(shooter, 'finalizacao-precisa')];
     else if (kind === 'longe') gp *= .56 * FX.chuteLonge[ps(shooter, 'chute-de-longe')];
@@ -276,6 +295,12 @@ export class Match {
   /** IA do time B: muda a mentalidade conforme o placar e faz substituições. */
   private aiManage(): void {
     const B = this.B, diff = B.goals - this.A.goals, m = this.min;
+    if (m >= 46 && !this.aiDone.ht) {
+      this.aiDone.ht = true;
+      // No intervalo: perdendo e fechado, abre o time; ganhando com folga, fecha.
+      if (diff < 0 && (B.style === 'retranca' || B.style === 'contra')) { B.style = diff <= -2 ? 'pressao' : 'equilibrado'; this.addEv(1, 'info', `${B.name} volta do intervalo em ${STYLES[B.style].n.toLowerCase()}.`); }
+      else if (diff >= 2 && B.style === 'pressao') { B.style = 'equilibrado'; this.addEv(1, 'info', `${B.name} diminui o ritmo com a vantagem.`); }
+    }
     if (m >= 60 && !this.aiDone.m60) {
       this.aiDone.m60 = true;
       if (diff < 0) { B.ment = Math.min(2, B.ment + 1); this.addEv(1, 'info', `${B.name} adianta as linhas em busca do gol.`); }
@@ -326,9 +351,34 @@ export class Match {
   }
 }
 
+export interface Shootout { a: number; b: number; log: string[]; winner: 0 | 1 }
+/** Disputa de pênaltis: 5 cobranças para cada lado e depois alternadas. Batedores pelo mesmo critério do pênalti. */
+export function penaltyShootout(A: Side, B: Side): Shootout {
+  const order = (s: Side) => s.xi.filter(e => !e.red && e.pos !== 'GOL')
+    .sort((x, y) => ((ps(y, 'finalizacao-precisa') + ps(y, 'cobranca-de-falta')) * 20 + y.P.st[1]) - ((ps(x, 'finalizacao-precisa') + ps(x, 'cobranca-de-falta')) * 20 + x.P.st[1]));
+  const oa = order(A), ob = order(B), gA = B.xi.find(e => e.pos === 'GOL' && !e.red), gB = A.xi.find(e => e.pos === 'GOL' && !e.red);
+  const conv = (t: SideEntry, gk?: SideEntry) => clamp(.74 + (t.P.st[1] - 75) * .004 + Math.max(FX.penaltiBatedor[ps(t, 'finalizacao-precisa')], FX.penaltiBatedor[ps(t, 'cobranca-de-falta')]) - FX.penaltiGol[ps(gk, 'pegador-de-penalti')], .5, .92);
+  let a = 0, b = 0, i = 0;
+  const log: string[] = [];
+  for (;;) {
+    const ta = oa[i % oa.length], tb = ob[i % ob.length];
+    const ga = R() < conv(ta, gA), gb = R() < conv(tb, gB);
+    if (ga) a++;
+    log.push(`${A.name}: ${ta.name} ${ga ? 'marca' : 'perde'} (${a}–${b})`);
+    if (i < 5 && (a > b + (5 - i) || b > a + (5 - i - 1))) break; // definido antes da 5ª do rival
+    if (gb) b++;
+    log.push(`${B.name}: ${tb.name} ${gb ? 'marca' : 'perde'} (${a}–${b})`);
+    i++;
+    if (i < 5) { if (a > b + (5 - i) || b > a + (5 - i)) break; }
+    else if (a !== b) break;
+    if (i > 30) { a++; break; }
+  }
+  return { a, b, log, winner: a > b ? 0 : 1 };
+}
+
 /** Joga a partida inteira sem interação (intervalo incluso). */
-export async function simulate(A: Side, B: Side): Promise<Match> {
-  const m = new Match(A, B);
+export async function simulate(A: Side, B: Side, home: 0 | 1 | null = null): Promise<Match> {
+  const m = new Match(A, B, { home });
   for (;;) {
     const r = await m.step();
     if (r === 'ht') m.secondHalf();

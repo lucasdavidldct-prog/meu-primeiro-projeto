@@ -3,11 +3,11 @@ import { cardData, inPos } from './cards';
 import { calcChem, effOvr, rate, type Chem, type Ratings } from './chemistry';
 import { slotsOf } from './positions';
 import { pick } from './rng';
-import { newSeason, type Season } from './season';
+import { newCareer, type Career, type CareerOpts } from './career';
 import type { FormationId, OwnedCard, Pos, SlotDef, StyleId, Variant } from './types';
 import { W, getPlayer } from './world';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export interface CardRef { u: number; p: string; v: Variant }
 export interface GameState {
@@ -19,7 +19,8 @@ export interface GameState {
   cards: CardRef[];
   squad: { form: FormationId; xi: number[]; bench: number[] };
   tac: { style: StyleId; ment: number };
-  season: Season;
+  /** Modo carreira (null = ainda não escolheu o clube). */
+  career: Career | null;
   rec: { w: number; d: number; l: number; gf: number; ga: number; packs: number };
   lastFree: string;
   moments: boolean;
@@ -28,13 +29,41 @@ export interface GameState {
   aviso?: string;
 }
 
-export function newGame(): GameState {
-  const S: GameState = {
+/** Jogo novo sem clube (a interface pede para escolher o clube da carreira). */
+export function blankGame(): GameState {
+  return {
     v: SAVE_VERSION, t: Date.now(), name: 'Esquadrão FC', coins: 5000, uid: 1, cards: [],
     squad: { form: '4-3-3', xi: Array(11).fill(0), bench: Array(7).fill(0) },
-    tac: { style: 'equilibrado', ment: 2 }, season: newSeason(0),
+    tac: { style: 'equilibrado', ment: 2 }, career: null,
     rec: { w: 0, d: 0, l: 0, gf: 0, ga: 0, packs: 0 }, lastFree: '', moments: true, titles: 0,
   };
+}
+
+/** Carreira com um clube real: o elenco do clube vira as cartas iniciais. */
+export function newCareerGame(club: string, o: CareerOpts = {}): GameState {
+  const S = blankGame();
+  const c = W.clubs.get(club);
+  S.name = c?.n ?? club;
+  const squad = W.byClub.get(club) ?? [];
+  for (const p of squad) addCard(S, p.id, 'base');
+  // Clubes com elenco incompleto nos dados (ex.: Série B) ganham reforços reais de nível parecido.
+  if (squad.length < 18) {
+    const lvl = c?.forca ?? 66, have = new Set(squad.map(p => p.id));
+    const need: Pos[] = ['GOL', 'GOL', 'ZAG', 'ZAG', 'ZAG', 'LD', 'LE', 'VOL', 'MC', 'MC', 'MEI', 'PE', 'PD', 'ATA', 'ATA', 'ME', 'MD', 'LD'];
+    for (const pos of need.slice(squad.length)) {
+      let cand = W.pool.filter(p => p.pos === pos && Math.abs(p.ovr - lvl) <= 3 && !have.has(p.id));
+      if (!cand.length) cand = W.pool.filter(p => p.pos === pos && !have.has(p.id));
+      const p = pick(cand); have.add(p.id); addCard(S, p.id, 'base');
+    }
+  }
+  S.career = newCareer(club, o);
+  autoLineup(S);
+  return S;
+}
+
+/** Jogo avulso com cartas sorteadas (usado nos testes). */
+export function newGame(): GameState {
+  const S = blankGame();
   const need: Pos[] = ['GOL', 'GOL', 'ZAG', 'ZAG', 'ZAG', 'LD', 'LE', 'VOL', 'MC', 'MC', 'MEI', 'PE', 'PD', 'ATA', 'ATA', 'ME', 'MD', 'LD'];
   const got = new Set<string>();
   for (const pos of need) {

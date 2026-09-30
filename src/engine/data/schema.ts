@@ -28,6 +28,8 @@ export interface ClubeData {
   sigla: string;
   cidade: string;
   cores: [string, string];
+  /** Força estimada (40–95) para completar elencos incompletos com reservas genéricos. */
+  forca?: number;
   elenco: JogadorData[];
 }
 
@@ -53,8 +55,11 @@ export interface NacaoData { nome: string; cores: [string, string, string]; hori
 export type NacoesData = Record<string, NacaoData>;
 
 export const LIGA_IDS = ['brasileirao', 'premier-league', 'serie-a', 'laliga', 'bundesliga', 'saudi-pro-league', 'mls'] as const;
+/** Arquivos extras: Série B (acesso/rebaixamento) e clubes sul-americanos (Libertadores). */
+export const EXTRA_IDS = ['serie-b', 'conmebol'] as const;
+export const ALL_LIGA_IDS: readonly string[] = [...LIGA_IDS, ...EXTRA_IDS];
 export const CLUBES_ESPERADOS: Record<string, number> = {
-  brasileirao: 20, 'premier-league': 20, 'serie-a': 20, laliga: 20, bundesliga: 18, 'saudi-pro-league': 18, mls: 30,
+  brasileirao: 20, 'premier-league': 20, 'serie-a': 20, laliga: 20, bundesliga: 18, 'saudi-pro-league': 18, mls: 30, 'serie-b': 20,
 };
 
 export interface PlaystyleDef { id: string; nome: string; gol: boolean; desc: string; descPlus: string; icone: string }

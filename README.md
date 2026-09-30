@@ -15,6 +15,7 @@ Outros comandos:
 | Comando | O que faz |
 | --- | --- |
 | `npm test` | testes do motor de partida, da química e dos dados (Vitest) |
+| `npm run calibrar` | 500 partidas simuladas: média de gols (~2,6), pênaltis, mando e resultados por diferença de força |
 | `npm run validar-dados` | confere se os JSON de `data/` estão consistentes (`-- --avisos` mostra todos os avisos) |
 | `npm run typecheck` | checagem de tipos |
 | `npm run build` | build de produção em `dist/` |
@@ -64,6 +65,21 @@ na carta e com nome e descrição no detalhe do jogador, e mudam o jogo:
 
 Os números de cada efeito ficam em `src/engine/playstyles.ts` (tabela `FX`).
 
+## Modo carreira
+
+Ao começar, escolha um clube real da Série A ou da Série B (o padrão é o Atlético Mineiro). O elenco real
+vira as suas cartas; os pacotes trazem jogadores de qualquer liga.
+
+- **Brasileirão** com 20 clubes em turno e returno (ou temporada curta, só turno). 5 primeiros vão para a
+  Libertadores, 4 últimos caem. A Série B é simulada de forma simples (4 sobem, 4 caem; clubes reais com
+  força estimada e elencos completados por reservas).
+- **Libertadores** com 16 clubes: 5 brasileiros + sul-americanos reais (`data/ligas/conmebol.json`),
+  4 grupos, quartas e semis em ida e volta, final em jogo único, pênaltis no empate.
+- **Outras ligas** (Premier League, LaLiga, Serie A, Bundesliga, Saudi Pro League, MLS) simuladas em
+  segundo plano, com tabela visível.
+- Moedas por jogo e por colocação/título, **sala de troféus** e histórico de temporadas.
+- A IA escolhe formação e estilo pelo elenco e pelo adversário, e muda no intervalo e no fim do jogo conforme o placar.
+
 ## Save
 
 O progresso fica no IndexedDB do navegador. Em **Clube → Save** dá para exportar o save em JSON e importar de volta,
@@ -74,6 +90,6 @@ inclusive em outro aparelho.
 1. ✅ Estrutura do projeto e migração do jogo atual
 2. ✅ Base de dados real e editor de elencos
 3. ✅ Playstyles
-4. Carreira e competições
+4. ✅ Carreira e competições
 5. Lances 3D
 6. Polimento

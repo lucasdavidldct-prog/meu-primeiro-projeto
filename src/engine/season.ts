@@ -1,94 +1,57 @@
-import { pick, poisson, shuffle } from './rng';
-import { bestFormation, clubStrength, squadOf } from './squads';
-import { STYLE_IDS } from './tactics';
+// Utilidades de competição: tabelas, tabelas de jogos, simulação rápida entre clubes da IA.
+import { pick, poisson } from './rng';
+import { aiTactics, clubStrength } from './squads';
 import type { FormationId, StyleId } from './types';
-import { allClubs, type ClubInfo } from './world';
-
-export const DIVS = [{ n: 'Série D', s: 65, m: 1 }, { n: 'Série C', s: 69, m: 1.3 }, { n: 'Série B', s: 73, m: 1.7 }, { n: 'Série A', s: 77, m: 2.2 }, { n: 'Elite Mundial', s: 81, m: 3 }];
+import { W, type ClubInfo } from './world';
 
 export interface Row { P: number; W: number; D: number; L: number; GF: number; GA: number; Pts: number }
 export interface OppTeam { club: string; n: string; s: string; c1: string; c2: string; lg?: string; str: number; form: FormationId; style: StyleId }
-export type SeasonTeam = Row & ({ you: true; n: string; s: string; c1: string; c2: string } | (OppTeam & { you?: false }));
-export interface Season { div: number; num: number; round: number; teams: SeasonTeam[]; fx: [number, number][][]; last: [number, number, number, number][] }
 
+export const emptyRow = (): Row => ({ P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, Pts: 0 });
+
+/** Tabela de turno (método do círculo); n par. Alterna mando para não repetir casa/fora demais. */
 export function roundRobin(n: number): [number, number][][] {
   const a = [...Array(n).keys()], rounds: [number, number][][] = [];
   for (let r = 0; r < n - 1; r++) {
     const pr: [number, number][] = [];
-    for (let i = 0; i < n / 2; i++) pr.push([a[i], a[n - 1 - i]]);
+    for (let i = 0; i < n / 2; i++) {
+      const x = a[i], y = a[n - 1 - i];
+      pr.push(i === 0 && r % 2 ? [y, x] : (i % 2 ? [y, x] : [x, y]));
+    }
     rounds.push(pr);
     a.splice(1, 0, a.pop()!);
   }
   return rounds;
 }
-
-const emptyRow = (): Row => ({ P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, Pts: 0 });
-
-/** Adversário real: força e formação vêm do elenco. */
-export function oppFromClub(c: ClubInfo): OppTeam {
-  return { club: c.id, n: c.n, s: c.s, c1: c.c1, c2: c.c2, lg: c.lg, str: clubStrength(c.id), form: bestFormation(squadOf(c.id), c.id), style: pick(STYLE_IDS) };
-}
-
-export function newSeason(div: number, num = 1): Season {
-  const D = DIVS[div];
-  // Os 16 clubes reais com força mais próxima da divisão; sorteia 9 deles.
-  // Prefere clubes com elenco real suficiente (sem depender de reservas genéricos).
-  const cands = allClubs().filter(c => squadOf(c.id).length >= 14);
-  const near = (cands.length >= 16 ? cands : allClubs()).map(c => ({ c, d: Math.abs(clubStrength(c.id) - D.s) })).sort((a, b) => a.d - b.d).slice(0, 16).map(x => x.c);
-  const clubs = shuffle(near).slice(0, 9);
-  const teams: SeasonTeam[] = [
-    { you: true, n: '', s: '', c1: '', c2: '', ...emptyRow() },
-    ...clubs.map(c => ({ ...oppFromClub(c), ...emptyRow() })),
-  ];
-  return { div, num, round: 0, teams, fx: shuffle(roundRobin(10)), last: [] };
-}
-
-export const ROUNDS = 9;
-
-export interface Standing extends Row { i: number; n: string; you: boolean }
-export function standings(se: Season, yourName: string): Standing[] {
-  return se.teams
-    .map((t, i) => ({ ...t, i, you: !!t.you, n: t.you ? yourName : t.n }))
-    .sort((a, b) => b.Pts - a.Pts || (b.GF - b.GA) - (a.GF - a.GA) || b.GF - a.GF);
-}
+/** Turno e returno (o returno inverte o mando). */
+export const doubleRoundRobin = (n: number): [number, number][][] => {
+  const t = roundRobin(n);
+  return [...t, ...t.map(r => r.map(([h, a]) => [a, h] as [number, number]))];
+};
 
 export function applyResult(t: Row, gf: number, ga: number): void {
   t.P++; t.GF += gf; t.GA += ga;
   if (gf > ga) { t.W++; t.Pts += 3; } else if (gf === ga) { t.D++; t.Pts++; } else t.L++;
 }
 
-export function quickSim(a: number, b: number): [number, number] {
-  const d = (a - b) * .07;
-  return [poisson(1.35 * Math.exp(d)), poisson(1.35 * Math.exp(-d))];
+/** Placar rápido entre dois clubes da IA (calibrado para se parecer com o motor completo). */
+export function quickSim(a: string, b: string, home: 0 | 1 | null = 0, r?: () => number): [number, number] {
+  const d = (clubStrength(a) - clubStrength(b)) * .06;
+  const ha = home === 0 ? 1.13 : home === 1 ? .9 : 1, hb = home === 1 ? 1.13 : home === 0 ? .9 : 1;
+  return [poisson(1.3 * Math.exp(d) * ha, r), poisson(1.3 * Math.exp(-d) * hb, r)];
 }
 
-export function nextOpponent(se: Season): OppTeam {
-  const oppI = se.fx[se.round].find(p => p.includes(0))!.find(i => i !== 0)!;
-  return se.teams[oppI] as OppTeam;
+/** Adversário real com tática da IA coerente com o elenco e com o seu time. */
+export function oppFromClub(c: ClubInfo, yourStrength?: number): OppTeam {
+  const t = aiTactics(c.id, yourStrength ?? clubStrength(c.id));
+  return { club: c.id, n: c.n, s: c.s, c1: c.c1, c2: c.c2, lg: c.lg, str: clubStrength(c.id), form: t.form, style: t.style };
 }
+export const oppFromId = (id: string, yourStrength?: number): OppTeam => oppFromClub(W.clubs.get(id)!, yourStrength);
 
-/** Lança o resultado do usuário e simula o resto da rodada. */
-export function finishRound(se: Season, gYou: number, gOpp: number): void {
-  const pairs = se.fx[se.round];
-  se.last = [];
-  for (const [x, y] of pairs) {
-    let gx: number, gy: number;
-    if (x === 0 || y === 0) { const you = x === 0; gx = you ? gYou : gOpp; gy = you ? gOpp : gYou; }
-    else [gx, gy] = quickSim((se.teams[x] as OppTeam).str, (se.teams[y] as OppTeam).str);
-    applyResult(se.teams[x], gx, gy); applyResult(se.teams[y], gy, gx);
-    se.last.push([x, y, gx, gy]);
-  }
-  se.round++;
+export interface Standing extends Row { id: string; n: string; pos: number }
+export function sortTable(ids: string[], rows: Row[]): Standing[] {
+  return ids.map((id, i) => ({ ...rows[i], id, n: W.clubs.get(id)?.n ?? id, pos: 0 }))
+    .sort((x, y) => y.Pts - x.Pts || y.W - x.W || (y.GF - y.GA) - (x.GF - x.GA) || y.GF - x.GF || x.n.localeCompare(y.n))
+    .map((s, i) => ({ ...s, pos: i + 1 }));
 }
-
-export interface SeasonEnd { pos: number; coins: number; newDiv: number; msg: string; title: boolean; pack: 'premium' | 'ouro' | null }
-/** Calcula prêmios, acesso e rebaixamento. Não altera o estado. */
-export function seasonEnd(se: Season, yourName: string): SeasonEnd {
-  const table = standings(se, yourName), pos = table.findIndex(t => t.you) + 1, D = DIVS[se.div];
-  const coins = Math.round([15000, 10000, 7500, 5000, 4000, 3000, 2500, 2000, 1500, 1000][pos - 1] * D.m);
-  let nd = se.div, msg = `${pos}º lugar: +${coins.toLocaleString('pt-BR')} moedas.`, title = false;
-  if (pos <= 3 && se.div < 4) { nd++; msg += ` Acesso para a ${DIVS[nd].n}!`; }
-  else if (pos === 1 && se.div === 4) { title = true; msg += ' Campeão da Elite Mundial!'; }
-  else if (pos >= 9 && se.div > 0) { nd--; msg += ` Rebaixado para a ${DIVS[nd].n}.`; }
-  return { pos, coins, newDiv: nd, msg, title, pack: pos === 1 ? 'premium' : pos <= 3 ? 'ouro' : null };
-}
+export { pick };

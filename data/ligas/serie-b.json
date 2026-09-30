@@ -1,0 +1,229 @@
+{
+  "id": "serie-b",
+  "nome": "Brasileirão Série B",
+  "pais": "BRA",
+  "temporada": "2026",
+  "atualizadoEm": "2026-09-30",
+  "clubes": [
+    {
+      "id": "CEA",
+      "nome": "Ceará",
+      "sigla": "CEA",
+      "cidade": "Fortaleza",
+      "cores": ["#000000","#ffffff"],
+      "forca": 69,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "FOR",
+      "nome": "Fortaleza",
+      "sigla": "FOR",
+      "cidade": "Fortaleza",
+      "cores": ["#0d3a8c","#e30613"],
+      "forca": 70,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "JTU",
+      "nome": "Juventude",
+      "sigla": "JTU",
+      "cidade": "Caxias do Sul",
+      "cores": ["#009a44","#ffffff"],
+      "forca": 67,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "SPT",
+      "nome": "Sport",
+      "sigla": "SPT",
+      "cidade": "Recife",
+      "cores": ["#e30613","#000000"],
+      "forca": 68,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "PON",
+      "nome": "Ponte Preta",
+      "sigla": "PON",
+      "cidade": "Campinas",
+      "cores": ["#000000","#ffffff"],
+      "forca": 64,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "LON",
+      "nome": "Londrina",
+      "sigla": "LON",
+      "cidade": "Londrina",
+      "cores": ["#74c7f0","#ffffff"],
+      "forca": 63,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "NAU",
+      "nome": "Náutico",
+      "sigla": "NAU",
+      "cidade": "Recife",
+      "cores": ["#e30613","#ffffff"],
+      "forca": 64,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "SBE",
+      "nome": "São Bernardo",
+      "sigla": "SBE",
+      "cidade": "São Bernardo do Campo",
+      "cores": ["#fcd116","#000000"],
+      "forca": 63,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "CRI",
+      "nome": "Criciúma",
+      "sigla": "CRI",
+      "cidade": "Criciúma",
+      "cores": ["#fcd116","#000000"],
+      "forca": 66,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "GOI",
+      "nome": "Goiás",
+      "sigla": "GOI",
+      "cidade": "Goiânia",
+      "cores": ["#006437","#ffffff"],
+      "forca": 67,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "NOV",
+      "nome": "Novorizontino",
+      "sigla": "NOV",
+      "cidade": "Novo Horizonte",
+      "cores": ["#fcd116","#000000"],
+      "forca": 67,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "CRB",
+      "nome": "CRB",
+      "sigla": "CRB",
+      "cidade": "Maceió",
+      "cores": ["#e30613","#ffffff"],
+      "forca": 65,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "AVA",
+      "nome": "Avaí",
+      "sigla": "AVA",
+      "cidade": "Florianópolis",
+      "cores": ["#0055a5","#ffffff"],
+      "forca": 65,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "CUI",
+      "nome": "Cuiabá",
+      "sigla": "CUI",
+      "cidade": "Cuiabá",
+      "cores": ["#fcd116","#006437"],
+      "forca": 66,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "ACG",
+      "nome": "Atlético Goianiense",
+      "sigla": "ACG",
+      "cidade": "Goiânia",
+      "cores": ["#e30613","#000000"],
+      "forca": 66,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "OPE",
+      "nome": "Operário",
+      "sigla": "OPE",
+      "cidade": "Ponta Grossa",
+      "cores": ["#000000","#ffffff"],
+      "forca": 64,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "VNO",
+      "nome": "Vila Nova",
+      "sigla": "VNO",
+      "cidade": "Goiânia",
+      "cores": ["#e30613","#ffffff"],
+      "forca": 64,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "AMG",
+      "nome": "América Mineiro",
+      "sigla": "AMG",
+      "cidade": "Belo Horizonte",
+      "cores": ["#009a44","#000000"],
+      "forca": 67,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "ATC",
+      "nome": "Athletic Club (MG)",
+      "sigla": "ATC",
+      "cidade": "São João del-Rei",
+      "cores": ["#000000","#ffffff"],
+      "forca": 63,
+      "elenco": [
+
+      ]
+    },
+    {
+      "id": "BFS",
+      "nome": "Botafogo-SP",
+      "sigla": "BFS",
+      "cidade": "Ribeirão Preto",
+      "cores": ["#e30613","#ffffff"],
+      "forca": 63,
+      "elenco": [
+
+      ]
+    }
+  ]
+}

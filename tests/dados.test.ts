@@ -15,7 +15,7 @@ describe('base de dados real', () => {
   });
   it('tem as 7 ligas com o número certo de clubes', () => {
     const n = Object.fromEntries(W.leagues.map(l => [l.id, l.clubs.length]));
-    expect(n).toEqual({ brasileirao: 20, 'premier-league': 20, laliga: 20, 'serie-a': 20, bundesliga: 18, 'saudi-pro-league': 18, mls: 30 });
+    expect(n).toEqual({ brasileirao: 20, 'serie-b': 20, 'premier-league': 20, laliga: 20, 'serie-a': 20, bundesliga: 18, 'saudi-pro-league': 18, mls: 30, conmebol: 18 });
   });
   it('Cristiano Ronaldo no Al-Nassr e Messi no Inter Miami', () => {
     expect(W.pool.find(p => p.name.startsWith('Cristiano Ronaldo'))!.club).toBe('NAS');

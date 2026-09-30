@@ -2,7 +2,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import type { LendasData, LigaData, NacoesData } from '../src/engine/data/schema';
-import { LIGA_IDS } from '../src/engine/data/schema';
+import { ALL_LIGA_IDS } from '../src/engine/data/schema';
 import { validarDados } from '../src/engine/data/validate';
 
 const DATA = join(import.meta.dirname, '..', 'data');
@@ -21,7 +21,7 @@ const nacoes = ler<NacoesData>(join(DATA, 'nacoes.json'));
 const lendas = ler<LendasData>(join(DATA, 'lendas.json'));
 
 const r = validarDados({ ligas, lendas, nacoes }, { arquivos });
-for (const id of LIGA_IDS) if (!ligas.some(l => l.id === id)) r.erros.push(`faltando data/ligas/${id}.json`);
+for (const id of ALL_LIGA_IDS) if (!ligas.some(l => l.id === id)) r.erros.push(`faltando data/ligas/${id}.json`);
 
 const verbose = process.argv.includes('--avisos');
 const total = ligas.reduce((s, l) => s + l.clubes.reduce((t, c) => t + c.elenco.length, 0), 0);

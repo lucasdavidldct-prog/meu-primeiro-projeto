@@ -5,7 +5,7 @@ import type { OwnedCard } from '../engine/types';
 import { clubOf, nationOf } from '../engine/world';
 import { cardHTML, flagHTML } from './card';
 import { crestHTML } from './crest';
-import { app, render, save } from './ctx';
+import { app, render, saveNow } from './ctx';
 import { esc, fmt } from './dom';
 
 export interface Got { u: number; P: OwnedCard; dup: boolean }
@@ -20,7 +20,7 @@ export function openPack(id: PackId): void {
     return { u: c.u, P: { ...cardData(x.p, x.v), u: c.u }, dup };
   });
   S.rec.packs++;
-  save(); render();
+  saveNow(); render();
   got.sort((a, b) => b.P.ovr - a.P.ovr);
   const best = got[0].P;
   const show = () => showReveal(got);
