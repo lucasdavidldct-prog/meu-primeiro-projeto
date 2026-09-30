@@ -357,3 +357,12 @@ body.is-dragging{cursor:grabbing}
 .k2d-ball{position:absolute;left:50%;top:170%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #111;transition:left .7s ease-in,top .7s ease-in}
 .k2d-shooter{position:absolute;bottom:6px;left:calc(12% + var(--t) * 30%);font-weight:700;animation:k2run 1.3s ease-in forwards}
 @keyframes k2run{from{transform:translateY(20px);opacity:.3}to{transform:none;opacity:1}}
+/* Ícones próprios dos estilos de jogo (SVG): prata = normal, dourado = + */
+.psi{display:block;width:72%;height:72%}
+.c-ps i{color:#e4e8ee}
+.c-ps i.plus{color:#f6d77a;background:radial-gradient(circle at 50% 35%,#3a2c08,#120d02)}
+.ps-item .ic{display:grid;place-items:center;width:28px;height:28px;color:#e4e8ee;background:#1a1f27}
+.ps-item .ic .psi{width:19px;height:19px}
+.ps-item.plus .ic{color:#f6d77a;background:#231a05}
+.ps-chip .psi,.ps-mini .psi{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em}
+.ps-mini{display:inline-block;margin-left:2px}

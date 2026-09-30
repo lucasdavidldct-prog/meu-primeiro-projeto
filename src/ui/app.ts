@@ -1,4 +1,5 @@
 import { STAT_G, STAT_L } from '../engine/positions';
+import { psIcon } from './psIcons';
 import { VAR, TIER_N, sellValue } from '../engine/cards';
 import { packById, type PackId } from '../engine/packs';
 import { pick } from '../engine/rng';
@@ -58,7 +59,7 @@ function psDetail(list: string[]): string {
   const items = list.map(x => { const { id, plus } = parsePs(x); return { d: PS_BY_ID.get(id), plus }; }).filter(x => x.d);
   return (Object.keys(PS_CATS) as PsCat[]).map(cat => {
     const g = items.filter(x => x.d!.cat === cat);
-    return g.length ? `<div class="ps-cat">${PS_CATS[cat]}</div><div class="ps-list">${g.map(({ d, plus }) => `<div class="ps-item ${plus ? 'plus' : ''}"><span class="ic">${d!.icone}</span><div><b>${d!.nome}<span class="lvl">${plus ? '+ dourado' : 'prata'}</span></b><span class="muted">${plus ? d!.descPlus + ' ' + d!.desc : d!.desc}</span></div></div>`).join('')}</div>` : '';
+    return g.length ? `<div class="ps-cat">${PS_CATS[cat]}</div><div class="ps-list">${g.map(({ d, plus }) => `<div class="ps-item ${plus ? 'plus' : ''}"><span class="ic">${psIcon(d!.id)}</span><div><b>${d!.nome}<span class="lvl">${plus ? '+ dourado' : 'prata'}</span></b><span class="muted">${plus ? d!.descPlus + ' ' + d!.desc : d!.desc}</span></div></div>`).join('')}</div>` : '';
   }).join('');
 }
 

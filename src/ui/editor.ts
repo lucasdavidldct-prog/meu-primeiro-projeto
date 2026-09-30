@@ -1,6 +1,7 @@
 // Editor de elencos: corrige jogador, clube, rating e playstyles.
 // Com npm run dev, grava direto em data/ligas/<liga>.json; sem servidor, guarda as edições no IndexedDB.
 import { clearCardCache } from '../engine/cards';
+import { psIcon } from './psIcons';
 import { blankPlayer, findClub, findPlayer, newPlayerId, transferPlayer } from '../engine/data/edit';
 import { formatLiga } from '../engine/data/format';
 import { ATR_GOL, ATR_LINHA, PLAYSTYLES, PLUS_MIN_OVR, PS_BY_ID, parsePs, type JogadorData, type LigaData } from '../engine/data/schema';
@@ -78,7 +79,7 @@ export function viewEditor(): string {
 }
 
 function rowHTML(j: JogadorData, meta: string): string {
-  return `<button class="prow" data-act="edPlayer" data-id="${esc(j.id)}"><span class="pos-pill">${j.posicao}</span><div style="min-width:0"><div class="nm">${esc(j.nome)}</div><div class="meta">${esc(j.nomeCurto)} · ${esc(NACOES[j.nacionalidade]?.nome ?? j.nacionalidade)} · ${j.idade} anos · ${meta}</div></div><div class="right"><b>${j.overall}</b><div>${j.playstyles.length ? j.playstyles.map(p => PS_BY_ID.get(parsePs(p).id)?.icone ?? '').join('') : ''}</div></div></button>`;
+  return `<button class="prow" data-act="edPlayer" data-id="${esc(j.id)}"><span class="pos-pill">${j.posicao}</span><div style="min-width:0"><div class="nm">${esc(j.nome)}</div><div class="meta">${esc(j.nomeCurto)} · ${esc(NACOES[j.nacionalidade]?.nome ?? j.nacionalidade)} · ${j.idade} anos · ${meta}</div></div><div class="right"><b>${j.overall}</b><div>${j.playstyles.length ? j.playstyles.map(p => `<span class="ps-mini">${psIcon(parsePs(p).id)}</span>`).join('') : ''}</div></div></button>`;
 }
 
 function viewClub(): string {
@@ -137,7 +138,7 @@ function drawSheet(errs: string[] = []): void {
    <div class="row" style="justify-content:space-between;margin-top:12px"><span class="small muted">Atributos</span><button class="chip" data-act="edAuto">Estimar pelo overall</button></div>
    <div class="attr-grid">${keys.map(k => `<label>${k}<input id="fA${k}" type="number" min="1" max="99" value="${d.atributos[k] ?? 50}"></label>`).join('')}</div>
    <div class="small muted" style="margin-top:12px">Playstyles (até 4). Toque para alternar: desligado → normal → <b>+</b> (só overall ${PLUS_MIN_OVR}+).</div>
-   <div class="chips" style="flex-wrap:wrap">${psList.map(p => { const s = psState(p.id); return `<button class="chip ps-chip s${s}" data-act="edPs" data-id="${p.id}" aria-pressed="${s > 0}" title="${esc(p.desc)}">${p.icone} ${esc(p.nome)}${s === 2 ? ' +' : ''}</button>`; }).join('')}</div>
+   <div class="chips" style="flex-wrap:wrap">${psList.map(p => { const s = psState(p.id); return `<button class="chip ps-chip s${s}" data-act="edPs" data-id="${p.id}" aria-pressed="${s > 0}" title="${esc(p.desc)}">${psIcon(p.id)} ${esc(p.nome)}${s === 2 ? ' +' : ''}</button>`; }).join('')}</div>
    <div class="row" style="margin-top:16px"><button class="btn pri" style="flex:1" data-act="edSave">Salvar</button></div>
    ${d._new ? '' : `<h3>Transferência</h3><div class="row"><select id="fDest" style="flex:1;min-width:0">${clubs}</select><button class="btn" data-act="edTransfer">Transferir</button></div>
    <div class="row" style="margin-top:14px"><button class="btn danger" data-act="edRemove">Remover jogador</button></div>`}`);

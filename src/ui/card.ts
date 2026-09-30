@@ -1,4 +1,5 @@
 import { TIER_N, isSpecial } from '../engine/cards';
+import { psIcon } from './psIcons';
 import { PS_BY_ID, parsePs } from '../engine/data/schema';
 import { STAT_G, STAT_L } from '../engine/positions';
 import type { CardPlayer, Club } from '../engine/types';
@@ -31,7 +32,7 @@ export function cardHTML(P: CardPlayer, size = 'sm', extra = ''): string {
 
 /** Ícones dos playstyles (os "+" ganham anel dourado). */
 export function psIcons(list: string[]): string {
-  return list.map(x => { const { id, plus } = parsePs(x), d = PS_BY_ID.get(id); return d ? `<i class="${plus ? 'plus' : ''}" title="${esc(d.nome)}${plus ? '+' : ''}">${d.icone}</i>` : ''; }).join('');
+  return list.map(x => { const { id, plus } = parsePs(x), d = PS_BY_ID.get(id); return d ? `<i class="${plus ? 'plus' : ''}" title="${esc(d.nome)}${plus ? '+' : ''}">${psIcon(id)}</i>` : ''; }).join('');
 }
 
 export const pips = (n: number): string =>
