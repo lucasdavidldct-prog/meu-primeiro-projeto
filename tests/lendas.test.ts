@@ -13,8 +13,11 @@ describe('lendas: Ídolos, Heróis e Hall da Fama', () => {
     expect(byShort('Akinfenwa').legCat).toBe('hall');
     expect(byShort('Maradona').legCat).toBe('idolo');
     // Saíram da lista de ídolos (e não são do Galo)
-    for (const s of ['Platini', 'Puskás', 'Di Stéfano', 'Sinclair', 'Formiga']) expect(W.legends.find(p => p.short === s)).toBeUndefined();
+    for (const s of ['Platini', 'Puskás', 'Di Stéfano', 'Sinclair', 'Formiga', 'Necib', 'Jill Scott']) expect(W.legends.find(p => p.short === s)).toBeUndefined();
     expect(W.legends.filter(p => p.legCat === 'idolo').length).toBeGreaterThan(130);
+    expect(W.legends.filter(p => p.legCat === 'heroi').length).toBe(53);
+    // Yaya Touré, Nakata e Lúcio têm carta de Ídolo e de Herói
+    for (const s of ['Yaya Touré', 'Nakata', 'Lúcio']) expect(W.legends.filter(p => p.short === s).map(p => p.legCat).sort()).toEqual(['heroi', 'idolo']);
   });
   it('cada categoria tem a sua carta e o seu preço', () => {
     const ico = cardData(byShort('Kroos').id, 'lenda'), her = cardData(byShort('Hazard').id, 'lenda'), hof = cardData(byShort('Hulk').id, 'lenda');

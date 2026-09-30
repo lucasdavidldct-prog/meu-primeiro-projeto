@@ -149,7 +149,7 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 
 - **Lendas em 3 categorias**, cada uma com carta própria: **Ídolo** (clara), **Herói** (laranja) e **Hall da Fama** (roxa).
   Ídolos: a lista masculina de ícones por país (Brasil, Argentina, França, Alemanha, Holanda, Itália, Espanha, Inglaterra…)
-  mais todos os ídolos do Galo. Heróis e Hall da Fama conforme a lista enviada.
+  mais todos os ídolos do Galo. Heróis: a lista por liga (Premier League, LaLiga, Serie A, Bundesliga, Ligue 1 e outras); Yaya Touré, Nakata e Lúcio têm carta de Ídolo e de Herói. Hall da Fama conforme a lista enviada.
 - Pacote Lenda: Ídolo 30%, Herói 35%, Hall da Fama 35%. Preço no mercado: Ídolo > Herói > Hall da Fama.
 - Lendas que saíram da lista somem da coleção e devolvem 60.000 moedas cada.
 - A versão especial "Herói" das cartas atuais passou a se chamar "Craque do Mês" (para não confundir com as lendas).
