@@ -1,6 +1,7 @@
 // Cena de um lance jogável, sem interface: posiciona os jogadores, calcula as chances de cada ação
 // (com playstyles), resolve o resultado e devolve um "plano" de animação que o renderizador (2D ou 3D) executa.
 // Coordenadas: x de 0 a 68 (largura), y = distância da linha de fundo (gol em y = 0), h = altura da bola.
+import { climaFx } from './clima';
 import { GOAL, analyzeGesture, attackMods, defenseMods, type DefenseMods, bezier, fkControl, fkOdds, fkResolve, fkSetup, fkShotFromGesture, keeperMods, type FkSetup, type FkShot, type Gesture, type KeeperMods, type Pt } from './lance';
 import { effNow, pickShooter, type Match, type MomentKind, type MomentRequest, type MomentResult, type SideEntry } from './match';
 import { ROLE, slotsOf } from './positions';
@@ -202,6 +203,8 @@ export class LanceScene {
       end: { res: { goal: false, shot: false, text: `${m.e?.name ?? 'o atacante'} estava impedido.` }, text: 'Impedimento!', color: '#f2b640', goal: false } };
   }
   goalie(): Actor { return this.foes.find(f => f.gk)!; }
+  /** Efeito do clima da partida. */
+  private get cf() { return climaFx(this.M.clima); }
   private mods(m = this.carrier) { return attackMods(m.e!.P); }
   private stat(k: number, m = this.carrier) { return m.e!.P.st ? m.e!.P.st[k] : m.e!.base; }
   /** Subatributo do portador (chute de longe, voleio, passe curto…); sem dados, usa o atributo principal. */
@@ -221,7 +224,7 @@ export class LanceScene {
     ok *= clamp(1 - Math.max(0, Ln - 24) * .02 * md0.longPass, .5, 1);
     // Tiki-Taka: toque curto quase sem erro
     if (Ln < 15 && md0.lv.tiki) ok = Math.max(ok, FX.tikiTaka[md0.lv.tiki] * (md < 1.2 ? .8 : 1));
-    return clamp(ok, .03, .97);
+    return clamp(ok * this.cf.passe, .03, .97);
   }
   /** Passe alto: passa por cima de quem está no meio do caminho, mas é menos preciso e o receptor disputa no alto. */
   loftP(to: Pt): number {
@@ -237,7 +240,7 @@ export class LanceScene {
     const rc = this.mates.find(m => m.x === to.x && m.y === to.y), md = Math.min(...this.field().map(f => dist(f, to)), 99);
     const air = rc?.e ? (rc.e.P.st?.[5] ?? 70) / 75 + .15 * (rc.e.P.ps.some(x => x.startsWith('cabeceio')) ? 1 : 0) : 1;
     if (md < 3) ok *= clamp((.45 + .55 * md / 3) * air * this.dm.air, .2, 1);
-    return clamp(ok, .05, .95);
+    return clamp(ok * this.cf.passe, .05, .95);
   }
   /** Lançamento: corrida do companheiro até o ponto contra o defensor mais próximo. */
   lancP(m: Actor, spot: Pt): number {
@@ -250,7 +253,7 @@ export class LanceScene {
     const tRun = dist(m, spot) / pace(m), tDef = Math.min(...this.field().map(f => dist(f, spot)), 99) / (7.2 * this.dm.antecipa);
     ok *= clamp(.55 + (tDef - tRun) * .35, .08, 1);
     ok *= clamp(1 - Math.max(0, dist(c, spot) - 22) * .02 * md0.longPass, .5, 1);
-    return clamp(ok, .03, .95);
+    return clamp(ok * this.cf.passe, .03, .95);
   }
   dribP(to: Pt): number {
     const c = this.carrier;
@@ -309,10 +312,11 @@ export class LanceScene {
     const weak = cav && lv.cavadinha ? 0 : Math.max(0, .45 - power), hard = Math.max(0, power - FX.superChuteLimite[lv.forte]), ac = Math.abs(curve);
     if (pen) {
       const miss = clamp((.03 + Math.pow(edge, 3) * .28 - (fin - 70) * .003 + hard * 2.5) * md.shotMiss, .02, .7);
-      const save = clamp(.45 * (1 - .6 * edge) * (this.gkOvr / 80) * this.km.penSave * (1 + weak * 2), .06, .85);
+      const save = clamp(.45 * (1 - .6 * edge) * (this.gkOvr / 80) * this.km.penSave * (1 + weak * 2) * this.cf.goleiro, .06, .85);
       return { goal: (1 - miss) * (1 - save), miss, save, block: 0 };
     }
     let miss = clamp((.04 + D * .016 * md.shotDist + Math.pow(edge, 3) * .3 - (fin - 70) * .005 + hard * 2 + ac * .06 * md.shotMiss + (this.firstTime ? .06 * (lv.acrobatico ? .3 : 1) : 0)) * md.shotMiss, .03, .9);
+    miss = 1 - (1 - miss) * this.cf.chute; // chuva e neve atrapalham a batida
     if (colocado) miss *= FX.colocadoErro[lv.colocado];
     if (cav) miss = clamp(miss + FX.cavadinhaErro[lv.cavadinha] + (D >= 22 ? .3 : 0), .03, .9);
     // Rasteiro de longe perde precisão
@@ -331,7 +335,7 @@ export class LanceScene {
     if (rasteiro) save *= FX.rasteiroDefesa[lv.rasteiro] * (D < 20 ? .92 : 1);
     if (c.e?.P.fs) save *= .88; // Fora de Série: o goleiro sofre
     save *= clamp(1 - Math.abs(gk.x - ax) / 11, .45, 1) * (1 - .15 * ac * md.curve) * (1 + weak * 1.6);
-    save = clamp(save, .04, .97);
+    save = clamp(save * this.cf.goleiro, .04, .97);
     return { goal: (1 - miss) * (1 - block) * (1 - save), miss, save, block };
   }
 

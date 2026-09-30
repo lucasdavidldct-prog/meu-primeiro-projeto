@@ -45,3 +45,21 @@ describe('uniformes', () => {
     expect(pior).toBeGreaterThan(150);
   });
 });
+
+import { ambienteDaPartida, climaFx, sortearClima } from '../src/engine/clima';
+describe('clima e estádio', () => {
+  it('no Brasil nunca neva no sorteio; na Bundesliga às vezes', () => {
+    for (let i = 0; i < 1000; i++) expect(sortearClima(i / 1000, 'brasileirao')).not.toBe('neve');
+    expect(sortearClima(.01, 'bundesliga')).toBe('neve');
+  });
+  it('chuva e neve dificultam passe; tempo bom não muda nada', () => {
+    expect(climaFx('chuva').passe).toBeLessThan(1); expect(climaFx('neve').passe).toBeLessThan(climaFx('chuva').passe);
+    expect(climaFx('noite')).toMatchObject({ passe: 1, chute: 1, goleiro: 1 });
+  });
+  it('Galo em casa joga na Arena MRV; fora, no estádio do rival', () => {
+    const cam = { club: 'CAM', c1: '#000000', c2: '#ffffff' }, fla = { club: 'FLA', c1: '#c8102e', c2: '#000000' };
+    expect(ambienteDaPartida({ home: 0, A: cam, B: fla }).mrv).toBe(true);
+    const fora = ambienteDaPartida({ home: 1, A: cam, B: fla, clima: 'chuva' });
+    expect(fora.mrv).toBe(false); expect(fora.casa?.c1).toBe('#c8102e'); expect(fora.clima).toBe('chuva');
+  });
+});

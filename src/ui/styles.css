@@ -541,3 +541,7 @@ table tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
 .kit-op small { font-size: 10.5px; opacity: .6; }
 .kit-op[aria-pressed="true"] { border-color: var(--gold, #e8c35f); box-shadow: 0 0 0 1px var(--gold, #e8c35f) inset; }
 .kit-svg { display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+/* Câmera do lance 3D: trocar e girar 360° */
+.m3d-cam{position:absolute;right:8px;top:40%;z-index:5;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.m3d-cam button{pointer-events:auto;height:34px;min-width:34px;padding:0 10px;border-radius:17px;border:1px solid rgba(255,255,255,.28);background:rgba(7,11,18,.62);color:#fff;font:700 13px var(--f-body,inherit);touch-action:none;-webkit-user-select:none;user-select:none;backdrop-filter:blur(4px)}
+.m3d-cam button:active{background:rgba(232,195,95,.35)}

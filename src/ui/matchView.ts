@@ -1,6 +1,7 @@
 import { inPos } from '../engine/cards';
 import { type MomentKind, type Nota, Match, effNow, fatigue, freeKickTaker, matchReward, penaltyShootout, penaltyTaker, sideFromTeam, sideOpp, simulate, type Shootout, type Side } from '../engine/match';
 import { classico, classicoBoost, classicoPremio } from '../engine/rivals';
+import { CLIMA_I, CLIMA_N, climaFx, sortearClima } from '../engine/clima';
 import { allClubs, getPlayer } from '../engine/world';
 import { clubStrength } from '../engine/squads';
 import { clamp } from '../engine/rng';
@@ -111,6 +112,7 @@ export function startMatch(opp: OppTeam, fx: Fixture | null): void {
       return res;
     } : undefined,
   });
+  aplicarClima(m, opp.lg);
   if (cl) m.addEv(0, 'info', `🔥 ${cl.n}! Jogo de rivalidade: o ${opp.n} vem mais forte e mais pegado.`);
   if (fx) m.addEv(0, 'info', `${fx.label}${fx.home === 0 ? ' · em casa' : fx.home === 1 ? ' · fora de casa' : ' · campo neutro'}.`);
   L = { m, fx, speed: 1, paused: false, busy: false, naoTrocar: new Set() };
@@ -152,6 +154,14 @@ function notasHTML(ns: Nota[], opp: string): string {
    <details class="small" style="margin-bottom:10px"><summary>Notas do seu time</summary><div class="notas">${ns.filter(n => n.side === 0).sort((a, b) => b.nota - a.nota).map(n => `<span><i>${n.pos}</i> ${esc(n.name)} <b class="${cls(n.nota)}">${n.nota.toFixed(1)}</b></span>`).join('')}</div></details>`;
 }
 
+/** Clima do jogo: o escolhido no Clube ou sorteado (no Brasil nunca neva). Avisa no lance a lance se mudar algo. */
+function aplicarClima(m: Match, liga?: string): void {
+  const S = app.S;
+  m.clima = S.clima && S.clima !== 'auto' ? S.clima : sortearClima(Math.random(), liga ?? (S.career ? allClubs().find(c => c.id === S.career!.club)?.lg : undefined));
+  const fx = climaFx(m.clima).texto;
+  m.addEv(0, 'info', `${CLIMA_I[m.clima]} ${CLIMA_N[m.clima]}.${fx ? ' ' + fx : ''}`);
+}
+
 /** Simula o jogo do usuário sem assistir (sem lances jogáveis). */
 export async function quickPlay(opp: OppTeam, fx: Fixture): Promise<void> {
   const S = app.S, A = userSide();
@@ -159,6 +169,7 @@ export async function quickPlay(opp: OppTeam, fx: Fixture): Promise<void> {
   const cl = S.career ? classico(S.career.club, opp.club) : undefined;
   lastOpp = opp;
   const m = new Match(A, sideOpp(opp, difficulty(fx.home).boost + classicoBoost(cl)), { home: fx.home, classico: cl });
+  aplicarClima(m, opp.lg);
   for (;;) { const r = await m.step(); if (r === 'ht') m.secondHalf(); else if (r === 'end') break; }
   const r = finalize(m, fx);
   const res = m.A.goals > m.B.goals ? 'Vitória' : m.A.goals === m.B.goals ? 'Empate' : 'Derrota';
@@ -263,6 +274,7 @@ export async function trainingMoment(kind: 'ataque' | 'penalti' | 'falta' = 'ata
   Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2, club: S.career?.club, kitEscolha: S.uniforme });
   const opp = allClubs().filter(c => c.id !== S.career?.club).sort((a, b) => Math.abs(clubStrength(a.id) - 70) - Math.abs(clubStrength(b.id) - 70))[0];
   const m = new Match(A, sideOpp(oppFromClub(opp)), { keeperBoost: -8 });
+  aplicarClima(m, opp.lg);
   m.label = 'Treino';
   const taker = kind === 'falta' ? freeKickTaker(A) : kind === 'penalti' ? penaltyTaker(A) : undefined;
   const res = await runMoment(m, { kind, taker, treino: true });
@@ -284,6 +296,7 @@ export function devMoment(kind: MomentKind, pen = false, oppId?: string, home: 0
   Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2, club: S.career?.club, kitEscolha: S.uniforme });
   const opp = allClubs().find(c => c.id === oppId) ?? allClubs()[0];
   const m = new Match(A, sideOpp(oppFromClub(opp)), { home });
+  aplicarClima(m, opp.lg);
   if (kind === 'goleiro') return runMoment(m, { kind, taker: penaltyTaker(m.B), pen });
   const taker = kind === 'falta' ? freeKickTaker(A) : kind === 'penalti' ? penaltyTaker(A) : undefined;
   return runMoment(m, { kind, taker, ...(kind === 'ataque' || kind === 'contra' ? m.origin(A) : {}) });

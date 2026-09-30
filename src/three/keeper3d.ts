@@ -9,7 +9,9 @@ import { esc } from '../ui/dom';
 import { haptic, sfx } from '../ui/sfx';
 import { makeBall, makePlayer } from './players';
 import { createView } from './quality';
-import { addLights, buildGoal, buildPitch, buildStadium, tickNet, tickStadium } from './stadium';
+import { addLights, ambientScene, buildGoal, buildPitch, buildStadium, buildWeather, tickNet, tickStadium } from './stadium';
+import { ambienteDaPartida } from '../engine/clima';
+import { app } from '../ui/ctx';
 
 const V = (x: number, y: number, h = 0) => new THREE.Vector3(x - 34, h, y);
 /** Centro de cada zona na linha do gol: coluna 0 = esquerda da tela (lado +x do mundo, visto de trás do gol). */
@@ -33,12 +35,15 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
     const view = createView(W, H), renderer = view.renderer;
     wrap.prepend(renderer.domElement);
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x070b12);
-    addLights(scene);
+    const amb = ambienteDaPartida(M, app.S.gramado);
+    ambientScene(scene, amb.clima);
+    addLights(scene, amb.clima);
+    const weather = buildWeather(amb.clima);
+    if (weather) scene.add(weather.obj);
     const goal = buildGoal();
     // Câmera atrás do gol: a rede fica bem na frente, então ela fica mais transparente aqui
     goal.traverse(o => { const l = o as THREE.LineSegments; if (l.isLineSegments) (l.material as THREE.LineBasicMaterial).opacity = .16; });
-    scene.add(buildPitch(), goal, buildStadium());
+    scene.add(buildPitch(amb), goal, buildStadium(amb));
     const portrait = W / H < 1;
     const camera = new THREE.PerspectiveCamera(portrait ? 62 : 50, W / H, .1, 400);
     camera.position.copy(V(34, -6.5, 2.6)); camera.lookAt(V(34, 12, .8));
@@ -116,6 +121,7 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
       }
       tickStadium(performance.now(), saved === false);
       tickNet(ball.position);
+      weather?.tick(1 / 60, ball.position);
       view.render(scene, camera);
       if (done && t > RUN + FLY + 1600) return;
     }

@@ -9,6 +9,7 @@ import { esc, fmt } from '../dom';
 import { isNative } from '../native';
 import { DIF_NAMES } from '../matchView';
 import { kitsDoClube } from '../../engine/kits';
+import { CLIMAS, CLIMA_I, CLIMA_N, GRAMADOS, GRAMADO_N } from '../../engine/clima';
 import { userClub } from '../ctx';
 import { kitSVG } from '../kitSvg';
 
@@ -34,7 +35,8 @@ export function viewClub(): string {
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Lance de goleiro (defender o chute que ia virar gol)</span><button class="chip" data-act="togGk" aria-pressed="${S.goleiro !== false}">${S.goleiro !== false ? 'Ligado' : 'Desligado'}</button></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Visual dos lances${webglAvailable() ? '' : ' (sem 3D neste aparelho)'}</span><div class="chips"><button class="chip" data-act="lance3d" data-v="1" aria-pressed="${S.lance3d !== false && webglAvailable()}" ${webglAvailable() ? '' : 'disabled'}>3D</button><button class="chip" data-act="lance3d" data-v="0" aria-pressed="${S.lance3d === false || !webglAvailable()}">2D (leve)</button></div></div>
     ${S.lance3d !== false && webglAvailable() ? `<div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Gráficos 3D</span><div class="chips">${(['alta', 'media', 'leve'] as const).map(q => `<button class="chip" data-act="graficos" data-q="${q}" aria-pressed="${quality() === q}">${QUALITY_N[q]}</button>`).join('')}</div></div>
-    <p class="small muted" style="margin:4px 0 0">Alta: sombras, brilho dos refletores e torcida cheia (celulares topo de linha). Leve: mais rápido.</p>` : ''}
+    <p class="small muted" style="margin:4px 0 0">Alta: sombras, brilho dos refletores e torcida cheia (celulares topo de linha). Leve: mais rápido.</p>
+    ${ambienteOpts()}` : ''}
     <div style="margin-top:10px"><span class="small muted">Dificuldade</span>
       <div class="chips" style="margin-top:4px">${DIF_NAMES.map((n, k) => `<button class="chip" data-act="dif" data-d="${k}" aria-pressed="${(S.dif ?? 1) === k}">${n}</button>`).join('')}</div>
       <p class="small muted" style="margin:4px 0 0">${['Adversários mais fracos e goleiros mais fáceis nos lances.', 'Equilibrado. Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.', 'Adversários mais fortes e goleiros melhores nos lances.', 'Para quem quer sofrer: rivais bem mais fortes e só 2 lances por jogo.'][S.dif ?? 1]}</p></div>
@@ -76,4 +78,16 @@ function uniformes(): string {
       <button class="kit-op" data-act="uniforme" data-k="-1" aria-pressed="${sel === undefined}">${kitSVG(ks[0], 52)}<b>Automático</b><small>Troca se confundir</small></button>
       ${ks.map((k, i) => `<button class="kit-op" data-act="uniforme" data-k="${i}" aria-pressed="${sel === i}">${kitSVG(k, 52)}<b>${k.n}</b><small>Sempre este</small></button>`).join('')}
     </div></div>`;
+}
+
+/** Câmera, clima e gramado dos lances 3D. */
+function ambienteOpts(): string {
+  const S = app.S, chips = (act: string, sel: string, ops: [string, string][]) => ops.map(([k, n]) => `<button class="chip" data-act="${act}" data-v="${k}" aria-pressed="${sel === k}">${n}</button>`).join('');
+  return `<div style="margin-top:10px"><span class="small muted">Câmera dos lances (dá para trocar e girar 360° durante o lance)</span>
+      <div class="chips" style="margin-top:4px">${chips('setCamera', S.camera ?? 'padrao', [['padrao', 'Padrão'], ['tv', 'TV'], ['aerea', 'Aérea'], ['atras', 'Atrás do jogador']])}</div></div>
+    <div style="margin-top:10px"><span class="small muted">Clima das partidas</span>
+      <div class="chips" style="margin-top:4px">${chips('setClima', S.clima ?? 'auto', [['auto', '🎲 Variado'], ...CLIMAS.map(c => [c, `${CLIMA_I[c]} ${CLIMA_N[c]}`] as [string, string])])}</div>
+      <p class="small muted" style="margin:4px 0 0">Variado: cada jogo tem o seu (no Brasil não neva). Chuva e neve deixam passes e chutes um pouco mais difíceis.</p></div>
+    <div style="margin-top:10px"><span class="small muted">Gramado</span>
+      <div class="chips" style="margin-top:4px">${chips('setGramado', S.gramado ?? 'faixas', GRAMADOS.map(g => [g, GRAMADO_N[g]]))}</div></div>`;
 }

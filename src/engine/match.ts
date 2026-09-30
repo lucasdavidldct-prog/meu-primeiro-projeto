@@ -1,6 +1,7 @@
 // Motor de partida minuto a minuto (sem interface). A interface injeta onMoment
 // para transformar chances do usuário em lances jogáveis.
 import { kitsDaPartida, type Kit } from './kits';
+import type { Clima } from './clima';
 import { classicoCartoes, type Classico } from './rivals';
 import { calcChem, effOvr, rate, type Ratings } from './chemistry';
 import { ROLE, slotsOf } from './positions';
@@ -136,6 +137,8 @@ export class Match {
   seq: Tick[] = [];
   k = 0;
   label = "0'";
+  /** Clima (visual dos lances e efeito pequeno neles). */
+  clima?: Clima;
   min = 0;
   ev: MatchEvent[] = [];
   st = { poss: [0, 0], sh: [0, 0], on: [0, 0], yc: [0, 0], ck: [0, 0] };

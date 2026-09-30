@@ -13,7 +13,9 @@ import { goleiroKit, kitDe } from '../engine/kits';
 import { esc } from '../ui/dom';
 import { probColor } from '../ui/moment2d';
 import { carrierRing, makeBall, makePlayer, type PlayerMesh } from './players';
-import { addLights, buildGoal, buildPitch, buildStadium, resetNet, tickNet, tickStadium } from './stadium';
+import { addLights, ambientScene, buildGoal, buildPitch, buildStadium, buildWeather, resetNet, tickNet, tickStadium } from './stadium';
+import { ambienteDaPartida } from '../engine/clima';
+import { app, saveNow } from '../ui/ctx';
 import { endSound, planSound } from '../ui/sfx';
 
 const HELP3D = {
@@ -42,6 +44,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
         <div class="m3d-help show" id="m3dHelp">${HELP3D[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind as keyof typeof HELP3D]}</div>
         <div class="m3d-replay" id="m3dReplay">REPLAY</div>
         ${!fk && !pen ? shotBarHTML() : ''}
+        <div class="m3d-cam"><button id="camL" aria-label="Girar a câmera para a esquerda">⟲</button><button id="camM" aria-label="Trocar câmera">🎥 <span id="camN"></span></button><button id="camR" aria-label="Girar a câmera para a direita">⟳</button></div>
       </div>
       <div class="mo-msg" id="moMsg"></div>`;
     document.body.appendChild(ov);
@@ -75,10 +78,13 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     const view = createView(W, H), renderer = view.renderer;
     wrap.prepend(renderer.domElement);
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x070b12);
-    scene.fog = new THREE.Fog(0x0b1424, 110, 260);
-    addLights(scene);
-    scene.add(buildPitch(), buildGoal(), buildStadium());
+    // Cenário: clima do jogo, gramado escolhido e o estádio do mandante (Galo em casa = Arena MRV)
+    const amb = ambienteDaPartida(M, app.S.gramado);
+    ambientScene(scene, amb.clima);
+    addLights(scene, amb.clima);
+    scene.add(buildPitch(amb), buildGoal(), buildStadium(amb));
+    const weather = buildWeather(amb.clima);
+    if (weather) scene.add(weather.obj);
     // Tela em pé: lente mais fechada na falta e no pênalti (enquadra gol e barreira sem mostrar céu)
     const camera = new THREE.PerspectiveCamera(portrait ? (pen ? 50 : fk ? 52 : 64) : 48, W / H, .1, 500);
     // Na tela em pé os jogadores ficam um pouco maiores para serem fáceis de tocar
@@ -293,8 +299,26 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     }
 
     // ---------- Câmera ----------
-    const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
+    const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+    // Câmeras: Padrão, TV (de lado, como na transmissão), Aérea (de cima) e Atrás do jogador; ⟲ ⟳ giram 360° em volta da jogada
+    const CAMS = ['padrao', 'tv', 'aerea', 'atras'] as const, CAM_N = { padrao: 'Padrão', tv: 'TV', aerea: 'Aérea', atras: 'Atrás' };
+    let camMode: typeof CAMS[number] = app.S.camera ?? 'padrao', yaw = 0, yawVel = 0;
+    const camN = $('camN'); camN.textContent = CAM_N[camMode];
+    $('camM').addEventListener('click', () => {
+      camMode = CAMS[(CAMS.indexOf(camMode) + 1) % CAMS.length]; yaw = 0; camN.textContent = CAM_N[camMode];
+      app.S.camera = camMode; saveNow();
+    });
+    for (const [id, dir] of [['camL', 1], ['camR', -1]] as const) {
+      const b = $(id);
+      b.addEventListener('pointerdown', e => { e.preventDefault(); yawVel = dir * 1.7; b.setPointerCapture(e.pointerId); });
+      for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) b.addEventListener(ev, () => { yawVel = 0; });
+    }
     function camTarget(): [THREE.Vector3, THREE.Vector3] {
+      const [p, l] = camBase();
+      if (!yaw) return [p, l];
+      return [l.clone().add(p.clone().sub(l).applyAxisAngle(UP, yaw)), l];
+    }
+    function camBase(): [THREE.Vector3, THREE.Vector3] {
       const c = sc.carrier;
       if (pen) return portrait ? [V(34, 12 + 8, 8), V(34, 1.5, 0)] : [V(34, 12 + 8.5, 2.6), V(34, 0, 1.1)];
       if (fk && sc.setup) {
@@ -310,17 +334,22 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       }
       // Enquadra o portador, o gol e o meio do caminho; mais alto na tela em pé para ver os lados
       const cx = c.x * .8 + 34 * .2, depth = Math.max(c.y, 15); // perto do gol a câmera não avança mais (sem céu)
+      if (camMode === 'tv') return [V(-7, c.y - 1, portrait ? 24 : 15), V(c.x * .7 + 34 * .3, c.y - 6, 0)];
+      if (camMode === 'aerea') return [V(cx, depth + 4, portrait ? 46 : 34), V(cx, depth - 8, 0)];
+      if (camMode === 'atras') return [V(c.x + (c.x - 34) * .1, c.y + 8.5, 4.4), V(34 + (c.x - 34) * .3, Math.max(0, c.y - 14), 1)];
       // Tela em pé: câmera alta e inclinada (~56°) para o gramado ocupar a tela toda, sem céu
       if (portrait) return [V(cx, depth + 6, 28), V(cx * .85 + 34 * .15, depth - 13, 0)];
       return [V(c.x + (c.x - 34) * .25, c.y + 13, 8.5), V(34 + (c.x - 34) * .45, Math.max(0, c.y - 14), 0)];
     }
-    { const [p, l] = camTarget(); camPos.copy(p); camLook.copy(l); }
+    // Abertura: a câmera começa no alto, mostrando o estádio e a torcida, e desce até a jogada
+    const introAte = performance.now() + (pen || fk ? 1100 : 1700);
+    camPos.copy(V(34 + 46, -12, 30)); camLook.copy(V(34, 26, 2));
 
     // ---------- Laço de animação ----------
     let lastT = performance.now(), pcTick = 11;
     function frame() {
       raf = requestAnimationFrame(frame);
-      const now = performance.now(), dt = Math.min(.05, (now - lastT) / 1000);
+      const now = performance.now(), dt = Math.min(.05, (now - lastT) / 1000), cdt = Math.min(.25, (now - lastT) / 1000);
       lastT = now;
       if (replay) { playReplay(); return; }
       for (const a of [...sc.mates, ...sc.foes]) {
@@ -353,9 +382,12 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       ballSh.scale.setScalar((portrait ? 1.3 : 1) / (1 + ball.h * .5));
       ring.position.set(sc.carrier.x - 34, .02, sc.carrier.y);
       ring.visible = !finished;
-      const [tp, tl] = camTarget();
-      camPos.lerp(tp, .08); camLook.lerp(tl, .09);
+      yaw += yawVel * cdt;
+      const [tp, tl] = camTarget(), intro = now < introAte;
+      // Suavização por tempo (igual em qualquer FPS)
+      camPos.lerp(tp, 1 - Math.exp(-cdt * (intro ? 2.2 : 5))); camLook.lerp(tl, 1 - Math.exp(-cdt * (intro ? 2.5 : 5.6)));
       camera.position.copy(camPos); camera.lookAt(camLook);
+      weather?.tick(dt, camLook);
       // Nomes: presos na borda quando fora da tela, e empurrados para não ficarem um em cima do outro
       const tags: { el: HTMLElement; x: number; y: number }[] = [];
       for (const [id, elN] of names) {
