@@ -59,13 +59,17 @@ export class LanceScene {
   readonly gkOvr: number;
   readonly km: KeeperMods;
   readonly label: string;
+  /** Título do lance (por onde a jogada nasceu). */
+  title: string;
+  /** O portador recebeu um cruzamento/passe alto na área: finaliza de primeira. */
+  firstTime = false;
   private r: Rng;
   private nid = 1;
 
   constructor(readonly M: Match, readonly req: MomentRequest, r: Rng = R) {
     this.r = r;
     const A = M.A, B = M.B, kind = req.kind;
-    this.kind = kind; this.label = M.label;
+    this.kind = kind; this.label = M.label; this.title = TITLES[kind];
     this.gkE = B.xi.find(e => e.pos === 'GOL' && !e.red);
     // Goleiro do lance: força + atributos de goleiro + dificuldade (e mando)
     const gP = this.gkE?.P;
@@ -110,10 +114,31 @@ export class LanceScene {
       const nOut = req.treino ? 3 : counter ? 3 : 4, nMid = req.treino ? 0 : counter ? 1 : 2;
       const ball0 = this.mates.filter(m => m.y >= 22);
       this.carrier = ball0.length ? pick(ball0, r) : this.mates.reduce((a, b) => (a.y > b.y ? a : b));
+      // Jogada pelas pontas: quem criou a jogada começa aberto, com um marcador em cima e gente na área para o cruzamento
+      const lado = req.lado;
+      if (lado === 'esq' || lado === 'dir') {
+        const e = req.creator && !req.creator.red && req.creator.pos !== 'GOL' ? req.creator : null;
+        let c = e ? this.mates.find(m => m.e === e) : undefined;
+        if (!c && e) { c = mk(0, 0, 0, e); this.mates.push(c); }
+        if (!c) c = this.mates.reduce((a, b) => ((lado === 'esq' ? a.x < b.x : a.x > b.x) ? a : b));
+        c.x = c.tx = lado === 'esq' ? rn(5, 11, r) : rn(57, 63, r);
+        c.y = c.ty = counter ? rn(26, 34, r) : rn(17, 26, r);
+        this.carrier = c;
+        // Dois companheiros atacando a área
+        const box = this.mates.filter(m => m !== c).sort((a, b) => a.y - b.y).slice(0, 2);
+        box.forEach((m, k) => { m.x = m.tx = 34 + (k ? -1 : 1) * rn(2, 6, r) + (lado === 'esq' ? 3 : -3); m.y = m.ty = rn(9, 14, r); });
+        this.title = lado === 'esq' ? 'Jogada pela esquerda!' : 'Jogada pela direita!';
+      } else this.title = counter ? TITLES.contra : 'Chance pelo meio';
       const nums = [2, 3, 4, 6, 5, 8];
       for (let k = 0; k < nOut; k++) this.foes.push(mk(clamp(16 + k * (36 / (nOut - 1)) + (this.carrier.x - 34) * .2 + rn(-2, 2, r), 4, 64), rn(11, 16, r), 1, undefined, false, nums[k]));
       for (let k = 0; k < nMid; k++) this.foes.push(mk(clamp(this.carrier.x + rn(-9, 9, r), 4, 64), clamp(this.carrier.y - rn(5, 8, r), 8, 40), 1, undefined, false, nums[4 + k]));
       this.foes.push(mk(34, .8, 1, undefined, true, 1));
+      if (lado === 'esq' || lado === 'dir') {
+        // Lateral rival em cima do portador; zagueiros de olho nos atacantes da área
+        const c = this.carrier, outs = this.field().slice(0, nOut);
+        const fb = outs.reduce((a, b) => (Math.abs(a.x - c.x) < Math.abs(b.x - c.x) ? a : b));
+        fb.x = fb.tx = c.x + (lado === 'esq' ? 2.2 : -2.2); fb.y = fb.ty = c.y - 3;
+      }
       this.react();
       for (const a of [...this.mates, ...this.foes]) { a.x = a.tx; a.y = a.ty; }
     }
@@ -144,6 +169,9 @@ export class LanceScene {
   loftP(to: Pt): number {
     const c = this.carrier, Ln = dist(c, to), md0 = this.mods(), pas = this.stat(2);
     let ok = clamp(1 - Math.max(0, Ln - 10) * .011 * md0.longPass * (1 - (pas - 70) * .02), .35, .97);
+    // Cruzamento da ponta: quem tem o playstyle Cruzamento acerta mais
+    const cr = this.carrier.e ? this.carrier.e.P.ps.find(x => x.startsWith('cruzamento')) : undefined;
+    if (cr && (c.x < 16 || c.x > 52)) ok = Math.min(.97, ok * (cr.endsWith('+') ? 1.22 : 1.12));
     // Só quem está colado no passador consegue travar a bola na saída
     for (const f of this.field()) { const d = dist(f, c); if (d < 1.6) ok *= .6 + .4 * d / 1.6; }
     // Disputa com o marcador mais próximo do receptor (cabeceio/força ajudam quem recebe)
@@ -190,11 +218,13 @@ export class LanceScene {
       const save = clamp(.45 * (1 - .6 * edge) * (this.gkOvr / 80) * this.km.penSave * (1 + weak * 2), .06, .85);
       return { goal: (1 - miss) * (1 - save), miss, save, block: 0 };
     }
-    const miss = clamp((.04 + D * .016 * md.shotDist + Math.pow(edge, 3) * .3 - (fin - 70) * .005 + hard * 2 + ac * .06 * md.shotMiss) * md.shotMiss, .03, .9);
+    const miss = clamp((.04 + D * .016 * md.shotDist + Math.pow(edge, 3) * .3 - (fin - 70) * .005 + hard * 2 + ac * .06 * md.shotMiss + (this.firstTime ? .06 : 0)) * md.shotMiss, .03, .9);
     const path = this.shotPath(ax, curve);
     let block = 0;
     for (const f of this.field()) if (pathD(f, path) < 1.2) block = 1 - (1 - block) * .55;
     let save = clamp(((this.gkOvr / 100) * .9 * (1 - .5 * edge) + D * .015 * md.shotDist - (fin - 70) * .004 - .07) * this.km.save, .06, .95);
+    // De primeira depois do cruzamento: a defesa está fora de posição e o goleiro reage tarde, mas é mais fácil errar
+    if (this.firstTime) { save *= .8; block *= .45; }
     save *= clamp(1 - Math.abs(gk.x - ax) / 11, .45, 1) * (1 - .15 * ac * md.curve) * (1 + weak * 1.6);
     save = clamp(save, .04, .97);
     return { goal: (1 - miss) * (1 - block) * (1 - save), miss, save, block };
@@ -271,7 +301,7 @@ export class LanceScene {
       m.tx = t.x; m.ty = t.y + .8;
       if (r() < p) {
         return { kind: 'lanc', ok: true, ball: arc(from, { x: t.x, y: t.y }, L > 18 ? 1.4 : .25, 12), dur,
-          commit: () => { this.lastPasser = c; m.x = t.x; m.y = t.y + .8; this.carrier = m; this.react(); if (this.actions <= 0) this.done = true; },
+          commit: () => { this.lastPasser = c; m.x = t.x; m.y = t.y + .8; this.carrier = m; this.firstTime = false; this.react(); if (this.actions <= 0) this.done = true; },
           end: this.actions <= 0 ? this.died() : undefined };
       }
       const f = this.field().sort((a, b) => dist(a, t) - dist(b, t))[0];
@@ -285,7 +315,7 @@ export class LanceScene {
       const p = this.passP(t.m, t.alto), L = dist(c, t.m), dur = t.alto ? Math.min(1300, 520 + L * 26) : Math.min(900, 280 + L * 20);
       if (r() < p) {
         return { kind: 'pass', ok: true, ball: arc(from, { x: t.m.x, y: t.m.y - .8 }, t.alto ? 2.6 + L * .09 : L > 20 ? 1.2 : .25, 14), dur,
-          commit: () => { this.lastPasser = c; this.carrier = t.m; this.react(); if (this.actions <= 0) this.done = true; },
+          commit: () => { this.lastPasser = c; this.carrier = t.m; this.firstTime = !!t.alto && t.m.y < 17; this.react(); if (this.actions <= 0) this.done = true; },
           end: this.actions <= 0 ? this.died() : undefined };
       }
       let f = this.field().sort((a, b) => segD(a, c, t.m) - segD(b, c, t.m))[0];
@@ -302,7 +332,7 @@ export class LanceScene {
       if (r() < this.dribP(t)) {
         c.tx = t.x; c.ty = t.y;
         return { kind: 'drib', ok: true, ball: arc(from, { x: t.x + .5, y: t.y - .8 }, 0, 8), dur: 620,
-          commit: () => { c.x = t.x; c.y = t.y; this.react(); if (this.actions <= 0) this.done = true; },
+          commit: () => { c.x = t.x; c.y = t.y; this.firstTime = false; this.react(); if (this.actions <= 0) this.done = true; },
           end: this.actions <= 0 ? this.died() : undefined };
       }
       const f = this.field().sort((a, b) => segD(a, c, t) - segD(b, c, t))[0];

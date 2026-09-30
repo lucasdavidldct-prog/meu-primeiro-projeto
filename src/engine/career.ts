@@ -35,6 +35,8 @@ export interface Career {
   libNext: string[];
   trophies: Trophy[];
   history: SeasonRecord[];
+  /** Números dos seus jogadores na temporada atual (gols, assistências, jogos, soma das notas). */
+  stats?: Record<string, { g: number; a: number; j: number; n: number }>;
   /** Fase alcançada na Libertadores desta temporada (para o histórico e os prêmios). */
   libReached: string | null;
 }

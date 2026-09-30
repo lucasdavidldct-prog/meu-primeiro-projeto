@@ -33,7 +33,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     ov.className = 'moment m3d m3d-full';
     ov.innerHTML = `<div class="m3d-wrap" id="m3dWrap">
         <canvas class="m3d-trail" id="m3dTrail"></canvas>
-        <div class="m3d-top"><span class="mo-tag">${M.label}</span><b>${req.treino ? 'Treino de lances' : TITLES[kind]}</b><span class="acts" id="moActs"></span><button class="m3d-q" id="m3dQ" aria-label="Ajuda">?</button></div>
+        <div class="m3d-top"><span class="mo-tag">${M.label}</span><b>${req.treino ? 'Treino de lances' : sc.title}</b><span class="acts" id="moActs"></span><button class="m3d-q" id="m3dQ" aria-label="Ajuda">?</button></div>
         <div class="m3d-label" id="m3dLabel"></div>
         <div class="m3d-help show" id="m3dHelp">${HELP3D[kind === 'contra' ? 'ataque' : kind]}</div>
         <div class="m3d-replay" id="m3dReplay">REPLAY</div>
@@ -130,6 +130,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     function endAnim(plan: Plan) {
       anim = null;
       plan.commit();
+      if (sc.firstTime && !plan.end) { labelEl.style.display = 'block'; labelEl.style.left = `${W / 2}px`; labelEl.style.top = `${H * .42}px`; labelEl.style.color = '#e8c35f'; labelEl.textContent = 'Cruzamento na área! Chute de primeira: desenhe o traço'; }
       if (plan.end && !finished) {
         finished = true;
         flash(plan.end.text, plan.end.color); endSound(plan.end);
@@ -293,7 +294,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
           : [V(b.x + dx / L * back, b.y + dy / L * back, 4.4), V(34 + dx * .15, 0, .8)];
       }
       // Enquadra o portador, o gol e o meio do caminho; mais alto na tela em pé para ver os lados
-      const cx = c.x * .8 + 34 * .2, depth = c.y;
+      const cx = c.x * .8 + 34 * .2, depth = Math.max(c.y, 15); // perto do gol a câmera não avança mais (sem céu)
       // Tela em pé: câmera alta e inclinada (~56°) para o gramado ocupar a tela toda, sem céu
       if (portrait) return [V(cx, depth + 6, 28), V(cx * .85 + 34 * .15, depth - 13, 0)];
       return [V(c.x + (c.x - 34) * .25, c.y + 13, 8.5), V(34 + (c.x - 34) * .45, Math.max(0, c.y - 14), 0)];
@@ -338,7 +339,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       ring.position.set(sc.carrier.x - 34, .02, sc.carrier.y);
       ring.visible = !finished;
       const [tp, tl] = camTarget();
-      camPos.lerp(tp, .05); camLook.lerp(tl, .06);
+      camPos.lerp(tp, .08); camLook.lerp(tl, .09);
       camera.position.copy(camPos); camera.lookAt(camLook);
       // Nomes: presos na borda quando fora da tela, e empurrados para não ficarem um em cima do outro
       const tags: { el: HTMLElement; x: number; y: number }[] = [];
@@ -356,8 +357,9 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       if (!anim && !finished && !fk && !pen && (++pcTick % 12 === 0)) for (const [id, elN] of names) {
         const a = sc.mates.find(m => m.id === id)!, pc = elN.querySelector<HTMLElement>('.pc')!;
         if (a === sc.carrier) { pc.textContent = ''; continue; }
-        const p = sc.passP(a);
-        pc.textContent = ` ${Math.round(p * 100)}%`; pc.style.color = probColor(p);
+        // Mostra a melhor opção: rasteiro ou alto (↑ = com 2 toques, por cima)
+        const p = sc.passP(a), pa = sc.passP(a, true), alto = pa > p + .08, v = alto ? pa : p;
+        pc.textContent = ` ${Math.round(v * 100)}%${alto ? '↑' : ''}`; pc.style.color = probColor(v);
       }
       tags.sort((p, q) => p.y - q.y);
       for (let i = 1; i < tags.length; i++) for (let j = 0; j < i; j++)

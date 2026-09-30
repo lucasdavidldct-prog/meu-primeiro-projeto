@@ -73,7 +73,7 @@ function showHelp(): void {
    <h3>Carreira</h3><p>Na aba <b>Temporada</b> você joga a próxima partida do Brasileirão ou da Libertadores. <b>Jogar</b> abre a partida com narração e lances; <b>Simular</b> resolve na hora. Terminar entre os 5 primeiros leva à Libertadores; os 4 últimos caem.</p>
    <h3>Time e química</h3><p>Em <b>Time</b>, toque numa carta para abrir o menu: <b>Substituir</b>, <b>Detalhes</b>, <b>Função no campo</b> (ex.: VOL jogando de MC) e <b>Orientação</b> (pivô, falso 9, armador, box-to-box, ala… e se ele fica no ataque ou volta para defender). Tudo isso muda a partida. Segure e arraste uma carta para trocar dois jogadores de lugar. Jogadores do mesmo clube, liga ou país ligados na formação somam química; fora de posição, o rendimento cai. <b>Melhor time</b> escala automaticamente.</p>
    <h3>Pacotes</h3><p>Ganhe moedas nos jogos e compre pacotes em <b>Pacotes</b>. Todo dia há um pacote grátis. Repetidas podem ser vendidas.</p>
-   <h3>Lances jogáveis</h3><p><b>1 toque</b> num companheiro: passe rasteiro. <b>2 toques</b>: passe alto, por cima da marcação. Toque no <b>campo</b>: conduzir a bola.</p><p><b>Desenhe um traço</b> da bola em direção ao gol para chutar: a direção mira, a <b>curva do traço</b> dá o efeito e a <b>velocidade</b> do gesto dá a força (rápido demais vai por cima). Traço para o espaço vazio: <b>lançamento</b> para quem estiver mais perto. Falta e pênalti: também com o traço.</p>
+   <h3>Lances jogáveis</h3><p><b>1 toque</b> num companheiro: passe rasteiro. <b>2 toques</b>: passe alto, por cima da marcação. Toque no <b>campo</b>: conduzir a bola. O número ao lado de cada nome é a chance do passe (com ↑ quando o passe alto é melhor, como no cruzamento para a área).</p><p><b>Desenhe um traço</b> da bola em direção ao gol para chutar: a direção mira, a <b>curva do traço</b> dá o efeito e a <b>velocidade</b> do gesto dá a força (rápido demais vai por cima). Traço para o espaço vazio: <b>lançamento</b> para quem estiver mais perto. Falta e pênalti: também com o traço.</p>
    <h3>Mando e dificuldade</h3><p>Jogar em casa ajuda (torcida, mais chances); fora é mais difícil e você tem um lance a menos. A dificuldade fica em <b>Clube</b>.</p>
    <h3>Playstyles</h3><p>Os ícones na carta são habilidades (Chute de Longe, Velocista…). As versões <b>+</b> são mais fortes. Elas pesam na simulação e nos lances.</p>
   </div>
@@ -95,6 +95,12 @@ function openSlotMenu(i: number): void {
   const old = document.querySelector<HTMLElement>('#sheet .sheet'), reopen = !!old?.querySelector('.slot-menu'), prev = old?.scrollTop ?? 0;
   const bg = openSheet(h), sh = bg.querySelector<HTMLElement>('.sheet')!;
   if (reopen) { bg.style.animation = 'none'; sh.style.animation = 'none'; sh.scrollTop = prev; }
+}
+
+/** Campanha na liga (V-E-D, gols) antes de virar a temporada. */
+function seasonRecord(S: GameState): string {
+  const C = S.career!, row = C.league.table[C.league.teams.indexOf(C.club)];
+  return row ? `<p class="small muted" style="margin-top:-4px">Campanha no ${esc(C.div === 'A' ? 'Brasileirão' : 'Série B')}: ${row.W}V ${row.D}E ${row.L}D · ${row.GF} gols marcados, ${row.GA} sofridos.</p>` : '';
 }
 
 function replaceState(S: GameState): void { app.S = S; app.sel = null; }
@@ -215,12 +221,21 @@ const ACT: Record<string, Handler> = {
     startMatch(oppFromClub(pick(near).c, my), null);
   },
   endSeason() {
-    const S = app.S, r = careerEnd(S.career!);
+    const S = app.S, st = Object.entries(S.career!.stats ?? {}), rec0 = seasonRecord(S);
+    const top = (f: (x: typeof st[number][1]) => number, min = 0) => st.filter(([, x]) => x.j >= min).sort((a, b) => f(b[1]) - f(a[1]))[0];
+    const art = top(x => x.g), gar = top(x => x.a), craque = top(x => x.n / x.j, 8);
+    const awards = [
+      art && art[1].g ? `⚽ Artilheiro: <b>${esc(art[0])}</b> (${art[1].g} gol${art[1].g > 1 ? 's' : ''})` : '',
+      gar && gar[1].a ? `🎯 Garçom: <b>${esc(gar[0])}</b> (${gar[1].a} assist.)` : '',
+      craque ? `⭐ Craque da temporada: <b>${esc(craque[0])}</b> (média ${(craque[1].n / craque[1].j).toFixed(1)} em ${craque[1].j} jogos)` : '',
+    ].filter(Boolean);
+    const r = careerEnd(S.career!);
+    S.career!.stats = {};
     S.coins += r.coins;
     S.titles += r.trophies.length;
     app.careerView = 'tabela';
     saveNow(); render();
-    openSheet(`<h2>Fim de temporada</h2>${r.msgs.map(m => `<p>${esc(m)}</p>`).join('')}<p class="small muted">Total: +${fmt(r.coins)} moedas.</p>${r.pack ? `<p>Prêmio extra: pacote <b>${packById(r.pack).n}</b>.</p><button class="btn pri block" data-act="freePack" data-p="${r.pack}">Abrir pacote</button>` : '<button class="btn block" data-act="closeSheet">Fechar</button>'}`);
+    openSheet(`<h2>Fim de temporada</h2>${rec0}${awards.length ? `<div class="awards">${awards.map(a => `<p>${a}</p>`).join('')}</div>` : ''}${r.msgs.map(m => `<p>${esc(m)}</p>`).join('')}<p class="small muted">Total: +${fmt(r.coins)} moedas.</p>${r.pack ? `<p>Prêmio extra: pacote <b>${packById(r.pack).n}</b>.</p><button class="btn pri block" data-act="freePack" data-p="${r.pack}">Abrir pacote</button>` : '<button class="btn block" data-act="closeSheet">Fechar</button>'}`);
   },
   cv(d) { app.careerView = d.v as typeof app.careerView; render(); },
   cvLeague(d) { app.otherLeague = d.l!; render(); },

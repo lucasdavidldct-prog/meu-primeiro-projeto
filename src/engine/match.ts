@@ -37,13 +37,16 @@ export interface MomentRequest {
   taker?: SideEntry;
   /** Lance de treino: defesa mais leve e mais ações. */
   treino?: boolean;
+  /** Por onde a jogada nasce (lado do campo de quem a criou) e quem começa com a bola. */
+  lado?: 'esq' | 'dir' | 'meio';
+  creator?: SideEntry;
 }
 export interface MomentResult { goal: boolean; shot: boolean; onTarget?: boolean; scorer?: string; assist?: string | null; text?: string }
 export type MomentHandler = (m: Match, req: MomentRequest) => Promise<MomentResult>;
 
 type Tick = { m: number; l: string } | { ht: true };
 
-export const SCORE_W: Record<Pos, number> = { GOL: 0, ZAG: .5, LD: .35, LE: .35, VOL: .6, MC: 1.2, MEI: 2.4, MD: 1.5, ME: 1.5, PD: 3.4, PE: 3.4, ATA: 5 };
+export const SCORE_W: Record<Pos, number> = { GOL: 0, ZAG: .4, LD: .35, LE: .35, VOL: .6, MC: 1.3, MEI: 2.4, MD: 1.6, ME: 1.6, PD: 3.1, PE: 3.1, ATA: 3.6 };
 const ASSIST_W: Record<Pos, number> = { GOL: .05, ZAG: .3, LD: .9, LE: .9, VOL: .8, MC: 1.5, MEI: 2.6, MD: 1.8, ME: 1.8, PD: 2, PE: 2, ATA: 1.3 };
 const FOUL_W: Record<Pos, number> = { GOL: .1, ZAG: 1.4, LD: 1.1, LE: 1.1, VOL: 1.5, MC: 1, MEI: .6, MD: .8, ME: .8, PD: .5, PE: .5, ATA: .5 };
 /** Constantes calibradas com npm run calibrar (média ~2,6 gols entre times do mesmo nível). */
@@ -96,7 +99,7 @@ function weightedPlayer(side: Side, W: Record<Pos, number>, excl?: SideEntry | n
   return c.length ? wpick(c) : side.xi[0];
 }
 const LONG_W: Record<Pos, number> = { GOL: 0, ZAG: .3, LD: .4, LE: .4, VOL: 1.2, MC: 2, MEI: 2.6, MD: 1.4, ME: 1.4, PD: 2.2, PE: 2.2, ATA: 1.6 };
-const HEAD_W: Record<Pos, number> = { GOL: 0, ZAG: 2.4, LD: .4, LE: .4, VOL: .9, MC: .7, MEI: .6, MD: .5, ME: .5, PD: .9, PE: .9, ATA: 4 };
+const HEAD_W: Record<Pos, number> = { GOL: 0, ZAG: 1.4, LD: .4, LE: .4, VOL: .9, MC: .8, MEI: .6, MD: .6, ME: .6, PD: 1, PE: 1, ATA: 3.2 };
 const CROSS_W: Record<Pos, number> = { GOL: 0, ZAG: .1, LD: 2, LE: 2, VOL: .3, MC: .8, MEI: 1.2, MD: 2.2, ME: 2.2, PD: 2.2, PE: 2.2, ATA: .3 };
 const ps = (e: SideEntry | undefined | null, id: PsId) => psLevel(e?.P, id);
 
@@ -259,6 +262,14 @@ export class Match {
     this.addEv(si, 'info', tx('tackle', { d: d.name, p: a.name }));
   }
 
+  /** Quem cria a jogada e por qual lado: alas, pontas abertos e laterais que apoiam puxam o lance para as pontas. */
+  origin(att: Side): { lado: 'esq' | 'dir' | 'meio'; creator: SideEntry } {
+    const W: Record<Pos, number> = { GOL: 0, ZAG: .15, LD: 1.3, LE: 1.3, VOL: .5, MC: 1, MEI: 1.6, MD: 1.8, ME: 1.8, PD: 2.2, PE: 2.2, ATA: 1 };
+    const creator = weightedPlayer(att, W, null, e => (e.ofx ? .5 * e.ofx.cross + .5 * e.ofx.assist : 1));
+    const x = slotsOf(att.form)[att.xi.indexOf(creator)]?.x ?? 50;
+    return { lado: x < 26 ? 'esq' : x > 74 ? 'dir' : 'meio', creator };
+  }
+
   /** Lance jogável para o usuário, se ainda houver e o intervalo mínimo tiver passado. */
   private canMoment(att: Side): boolean {
     return att.you && !!this.onMoment && this.momentsLeft > 0 && this.min - this.lastMom >= 10;
@@ -303,7 +314,7 @@ export class Match {
     const gkE = def.xi.find(e => e.pos === 'GOL' && !e.red), gk = gkE ? gkE.name : 'o goleiro';
     const isPen = R() < CALIB.penChance;
     if (this.canMoment(att) && (isPen || R() < .3)) {
-      await this.playMoment(att, si, isPen ? { kind: 'penalti', taker: penaltyTaker(att) } : { kind: att.style === 'contra' || R() < .25 ? 'contra' : 'ataque' });
+      await this.playMoment(att, si, isPen ? { kind: 'penalti', taker: penaltyTaker(att) } : { kind: att.style === 'contra' || R() < .25 ? 'contra' : 'ataque', ...this.origin(att) });
       return;
     }
     this.st.sh[si]++;
@@ -317,7 +328,9 @@ export class Match {
     }
     // Tipo de finalização: normal, de longe ou de cabeça (mais frequentes com os especialistas em campo).
     const wLong = .22 * (1 + .12 * Math.min(4, teamFx(att, 'chute-de-longe', [0, 1, 2])));
-    const wHead = .16 * (1 + .1 * Math.min(4, teamFx(att, 'cruzamento', [0, 1, 2]) + teamFx(att, 'cabeceio', [0, 1, 2])));
+    // Times que jogam pelas pontas (alas, pontas abertos) cruzam mais: mais cabeçadas
+    const wide = att.xi.reduce((t, e) => t + (e.red ? 0 : Math.max(0, (e.ofx?.cross ?? 1) - 1)), 0);
+    const wHead = .16 * (1 + .1 * Math.min(4, teamFx(att, 'cruzamento', [0, 1, 2]) + teamFx(att, 'cabeceio', [0, 1, 2]))) * (1 + .12 * Math.min(3, wide));
     const kind = wpick([['normal', .62], ['longe', wLong], ['cabeca', wHead]] as const);
     const shooter = kind === 'longe' ? weightedPlayer(att, LONG_W, null, e => 1 + 1.3 * ps(e, 'chute-de-longe'), 'long')
       : kind === 'cabeca' ? weightedPlayer(att, HEAD_W, null, e => 1 + 1.3 * ps(e, 'cabeceio') + .3 * ps(e, 'imposicao-fisica'), 'head')
@@ -420,6 +433,13 @@ export class Match {
   }
 
   /** Notas de 0 a 10 dos jogadores (quem começou ou entrou), pelo que fizeram no jogo e pelo resultado. */
+  /** Gols e assistências de cada jogador do lado A (para as estatísticas da temporada). */
+  userNumbers(): Record<string, { g: number; a: number }> {
+    const o: Record<string, { g: number; a: number }> = {};
+    for (const e of this.A.xi) { const x = e.sx; if (x) o[e.name] = { g: x.g, a: x.a }; }
+    return o;
+  }
+
   notas(): Nota[] {
     const out: Nota[] = [];
     for (const [side, si, other] of [[this.A, 0, this.B], [this.B, 1, this.A]] as const) {
@@ -427,9 +447,11 @@ export class Match {
       for (const e of side.xi) {
         const x = e.sx ?? { g: 0, a: 0, d: 0, s: 0, c: 0 };
         const r = ROLE(e.pos);
-        let n = 6.2 + .12 * (e.base - 75) / 5 + 1.1 * x.g + .7 * x.a + .3 * x.d + .4 * x.s + .15 * x.c + .3 * res;
-        if (r === 'G') n -= .45 * sof; else if (r === 'D') n -= .2 * sof;
-        if (r === 'G' && sof === 0) n += .5; else if (r === 'D' && sof === 0) n += .3;
+        const poss = si ? 1 - this.possessionPct / 100 : this.possessionPct / 100;
+        let n = 6.2 + .12 * (e.base - 75) / 5 + 1.1 * x.g + .7 * x.a + .3 * x.d + .25 * x.s + .15 * x.c + .35 * res;
+        if (r === 'G') n -= .15 + .4 * sof; else if (r === 'D') n -= .2 * sof;
+        if (r === 'G' && sof === 0) n += .3; else if (r === 'D' && sof === 0) n += .3;
+        if (r === 'M') n += (poss - .5) * 1.5; // meio-campo que domina a posse joga bem
         if (e.yc) n -= .3;
         if (e.red) n -= 2;
         n += (R() - .5) * .5;

@@ -58,6 +58,12 @@ function finalize(m: Match, fx: Fixture | null): { coins: number; pens?: Shootou
   S.coins += coins; S.rec[res]++; S.rec.gf += g; S.rec.ga += o;
   let pens: Shootout | undefined;
   if (fx && S.career) {
+    // Números da temporada: gols, assistências, jogos e notas de quem esteve em campo
+    const st = S.career.stats ??= {}, nums = m.userNumbers();
+    for (const n of m.notas().filter(x => x.side === 0)) {
+      const r = st[n.name] ??= { g: 0, a: 0, j: 0, n: 0 };
+      r.j++; r.n += n.nota; r.g += nums[n.name]?.g ?? 0; r.a += nums[n.name]?.a ?? 0;
+    }
     if (needsPens(fx, g, o)) pens = penaltyShootout(m.A, m.B);
     recordResult(S.career, g, o, pens ? [pens.a, pens.b] : undefined);
   }
@@ -182,8 +188,8 @@ function openSubs(): void {
   const draw = () => {
     const sh = openSheet(out === null
       ? `<h2>Quem sai?</h2><p class="small muted" style="margin-top:-4px">${A.subs} substituições restantes. O cansaço pesa depois dos 55 minutos.</p>
-        <div class="plist">${A.xi.map((e, i) => e.red ? '' : `<button class="prow" data-sub-out="${i}">${cardHTML(e.P as CardPlayer)}<div><div class="nm">${esc(e.P.name)}</div><div class="meta">${e.pos}${e.yc ? ' · amarelado' : ''}</div></div><div class="right"><b>${Math.round(effNow(e, M.min))}</b><div>fôlego ${Math.round(100 - fatigue(e, M.min) * 60)}%</div></div></button>`).join('')}</div>`
-      : `<h2>Quem entra no lugar de ${esc(A.xi[out].name)}?</h2><div class="plist">${A.bench.map((P, j) => `<button class="prow" data-sub-in="${j}">${cardHTML(P as CardPlayer)}<div><div class="nm">${esc(P.name)}</div><div class="meta">${P.pos}${P.alt.length ? ' / ' + P.alt.join(' / ') : ''}${!inPos(P, A.xi[out!].pos) ? ' · <span class="down">fora de posição</span>' : ''}</div></div><div class="right"><b>${P.ovr}</b></div></button>`).join('') || '<p class="empty-note">Sem reservas disponíveis.</p>'}</div>`,
+        <div class="plist">${A.xi.map((e, i) => e.red ? '' : `<button class="prow" data-sub-out="${i}">${cardHTML(e.P as CardPlayer)}<div><div class="nm">${esc(e.name)}</div><div class="meta">${e.pos}${e.yc ? ' · amarelado' : ''}</div></div><div class="right"><b>${Math.round(effNow(e, M.min))}</b><div>fôlego ${Math.round(100 - fatigue(e, M.min) * 60)}%</div></div></button>`).join('')}</div>`
+      : `<h2>Quem entra no lugar de ${esc(A.xi[out].name)}?</h2><div class="plist">${A.bench.map((P, j) => `<button class="prow" data-sub-in="${j}">${cardHTML(P as CardPlayer)}<div><div class="nm">${esc(P.short)}</div><div class="meta">${P.pos}${P.alt.length ? ' / ' + P.alt.join(' / ') : ''}${!inPos(P, A.xi[out!].pos) ? ' · <span class="down">fora de posição</span>' : ''}</div></div><div class="right"><b>${P.ovr}</b></div></button>`).join('') || '<p class="empty-note">Sem reservas disponíveis.</p>'}</div>`,
       '', resume);
     sh.addEventListener('click', e => {
       const t = e.target as HTMLElement;
@@ -232,7 +238,7 @@ export function devMoment(kind: 'ataque' | 'contra' | 'penalti' | 'falta'): Prom
   const opp = allClubs()[0];
   const m = new Match(A, sideOpp(oppFromClub(opp)));
   const taker = kind === 'falta' ? freeKickTaker(A) : kind === 'penalti' ? penaltyTaker(A) : undefined;
-  return runMoment(m, { kind, taker });
+  return runMoment(m, { kind, taker, ...(kind === 'ataque' || kind === 'contra' ? m.origin(A) : {}) });
 }
 
 export const matchActions = {

@@ -59,3 +59,25 @@ describe('funções no time do usuário', () => {
     for (const f of FORM_IDS) { const s = slotsOf(f); expect(s).toHaveLength(11); expect(s.filter(x => x.p === 'GOL')).toHaveLength(1); }
   });
 });
+
+import { Match, sideFromTeam, sideOpp } from '../src/engine/match';
+import { oppFromId } from '../src/engine/season';
+import { orderAt, newCareerGame } from '../src/engine/state';
+
+describe('por onde nascem os lances', () => {
+  const origem = (alas: boolean) => {
+    const S = newCareerGame('CAM', {});
+    if (alas) slotsOf(S.squad.form).forEach((sl, i) => { if (sl.p === 'LD' || sl.p === 'LE') setOrder(S, i, { f: 'ala' }); if (sl.p === 'PD' || sl.p === 'PE') setOrder(S, i, { f: 'aberto' }); });
+    const T = teamInfo(S), ord = T.slots.map((sl, i) => orderAt(S, i, T.xi[i], sl.p));
+    const A = sideFromTeam(T, { name: 'CAM', form: S.squad.form, style: 'equilibrado', ment: 2, bench: [], ord });
+    const m = new Match(A, sideOpp(oppFromId('FLA')));
+    let lados = 0;
+    for (let k = 0; k < 1500; k++) if (m.origin(A).lado !== 'meio') lados++;
+    return lados / 1500;
+  };
+  it('boa parte das jogadas sai pelas pontas, e mais ainda com alas e pontas abertos', () => {
+    const normal = origem(false), abertos = origem(true);
+    expect(normal).toBeGreaterThan(.4);
+    expect(abertos).toBeGreaterThan(normal);
+  });
+});

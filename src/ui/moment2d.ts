@@ -19,7 +19,7 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
     const bKit = awayKit([M.A.c1, M.A.c2], [M.B.c1, M.B.c2]);
     const ov = document.createElement('div');
     ov.className = 'moment';
-    ov.innerHTML = `<div class="mo-head"><span class="mo-tag">${M.label}</span><b>${TITLES[kind]}</b><span class="acts" id="moActs"></span></div>
+    ov.innerHTML = `<div class="mo-head"><span class="mo-tag">${M.label}</span><b>${sc.title}</b><span class="acts" id="moActs"></span></div>
       <canvas id="moCv"></canvas>
       <div class="mo-help">${HELP[kind === 'contra' ? 'ataque' : kind]}</div>
       <div class="mo-msg" id="moMsg"></div>`;

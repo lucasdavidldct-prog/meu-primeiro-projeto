@@ -145,6 +145,18 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.4
+
+- **Jogadas pelas pontas**: o lance nasce de quem criou a jogada. Alas, pontas abertos e laterais que apoiam puxam o
+  lance para a lateral ("Jogada pela esquerda/direita!"), com marcador em cima e dois companheiros atacando a área.
+  Com o 4-3-3 padrão ~60% dos lances saem pelos lados; com alas e pontas abertos, mais ainda.
+- **Cruzamento e finalização de primeira**: passe alto (2 toques) para quem está na área deixa o chute de primeira
+  (defesa fora de posição, goleiro reage tarde; mais difícil de acertar). Playstyle Cruzamento acerta mais.
+- A chance ao lado de cada nome mostra a melhor opção (↑ = passe alto é melhor).
+- **Fim de temporada** com campanha (V-E-D, gols), artilheiro, garçom e craque da temporada (média das notas).
+- Substituições com nomes curtos (não cortam mais na tela); artilharia e notas mais realistas
+  (artilheiro ~20 gols por Brasileirão; goleiro não domina as notas).
+
 ## Versão 1.3
 
 - **Treino de lances** (Clube → Treino de lances, ou no guia inicial): lance guiado em 3 passos (passe rasteiro,
