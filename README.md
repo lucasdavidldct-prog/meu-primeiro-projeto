@@ -104,7 +104,7 @@ inclusive em outro aparelho. No APK, "Exportar save" abre o menu de compartilhar
 O app Android é o mesmo jogo empacotado com [Capacitor](https://capacitorjs.com) (pasta `android/`).
 
 **Sem instalar nada (recomendado):** a cada push, o GitHub Actions (`.github/workflows/apk.yml`) roda os testes,
-gera o APK e publica em **Releases → "Esquadrão FC — APK mais recente"** (tag `apk`). Abra essa página no celular,
+gera o APK e publica em **Releases → "Esquadrão FC — APK mais recente"** (tag `esquadrao-apk`). Abra essa página no celular,
 baixe `esquadrao-fc.apk` e instale (o Android pede para permitir "instalar apps desconhecidos" do navegador).
 O APK também fica como artefato da execução em **Actions**.
 

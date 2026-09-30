@@ -1,9 +1,9 @@
-# Gera o APK Android a cada push e publica em Releases (tag "apk").
+# Gera o APK Android a cada push e publica em Releases (tag "esquadrao-apk").
 name: APK Android
 
 on:
   push:
-    branches: ['**']
+    branches: [main, ccr-cb341374-5fzvcp]
   workflow_dispatch:
 
 permissions:
@@ -59,8 +59,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete apk --cleanup-tag --yes || true
-          gh release create apk esquadrao-fc.apk \
+          gh release delete esquadrao-apk --cleanup-tag --yes || true
+          gh release create esquadrao-apk esquadrao-fc.apk \
             --target "$GITHUB_SHA" \
             --title "Esquadrão FC — APK mais recente" \
             --notes "Build #${{ github.run_number }} da branch ${{ github.ref_name }} ($(git log -1 --format=%h)). Baixe o esquadrao-fc.apk no celular e instale (permita 'instalar apps desconhecidos')."
