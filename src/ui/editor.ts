@@ -9,7 +9,7 @@ import { POSS, PROFILE } from '../engine/positions';
 import { clearStrengthCache } from '../engine/squads';
 import { sanitizeState } from '../engine/state';
 import type { Pos } from '../engine/types';
-import { NACOES, W, loadWorld } from '../engine/world';
+import { NACOES, W, applyEdits, loadWorld } from '../engine/world';
 import { discardEditedLiga, loadEditedLigas, saveEditedLiga } from '../save/dados';
 import { crestHTML } from './crest';
 import { app, render, save } from './ctx';
@@ -263,7 +263,6 @@ export const editorActions: Record<string, Handler> = {
   async edDiscard(d) {
     await discardEditedLiga(d.l!); ed.local.delete(d.l!);
     const edits = await loadEditedLigas().catch(() => ({}));
-    const { applyEdits } = await import('../engine/world');
     applyEdits(edits); clearCardCache(); clearStrengthCache(); sanitizeState(app.S); save();
     ed.working = structuredClone(W.ligas);
     toast('Edições descartadas'); render();
