@@ -145,6 +145,23 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.8.0
+
+- **Uniformes**: cada clube tem titular e reserva com desenho (listras, aros, faixa, diagonal); o **Galo tem 3** (listrado, branco e o terceiro preto e dourado). O visitante troca quando as camisas se confundem, e os goleiros ganham cor própria. Dá para fixar o uniforme no Clube.
+- **Jogadores 3D com cara de gente**: altura e porte pelo jogador (zagueiro e goleiro mais altos, físico mais largo), tons de pele, cabelos variados e visual marcante de alguns craques; nome e número nas costas.
+- **Bola nova** de gomos e **rede que balança** quando entra o gol.
+- **Câmeras** Padrão, TV, Aérea e Atrás do jogador, com botões para **girar 360°** durante o lance.
+- **Clima**: dia, sol, noite, chuva e neve (no Brasil não neva). Chuva e neve deixam passe e chute um pouco mais difíceis. **Gramados** em faixas, xadrez, círculos, diagonal ou liso.
+- **Estádio à vista**: o lance começa mostrando a torcida; arquibancada e torcida nas cores do mandante. **Galo em casa joga na Arena MRV** (estilizada, desenho nosso).
+- **Cartas**: design novo com visual próprio, **cartas de evento semanais** (esta semana: Destinado à Glória · Time 2) e **Hall da Fama atualizado**.
+- **Fora de Série**: no máximo 3 por posição (Ronaldinho, Ronaldo, Reinaldo…), muito difíceis de parar, raríssimos nos pacotes e caros no mercado.
+- **Regras**: impedimento de verdade, escanteio e lateral jogáveis e **finta** (drible de habilidade).
+- **Cartões e lesões**: vermelho bem mais raro e com peso (um a menos custa caro); suspensão por vermelho e por 3 amarelos; lesões que tiram o jogador de algumas partidas.
+- **Clássicos**: jogo de rivalidade mais difícil e mais pegado, com prêmio maior. Perdeu? **Revanche**.
+- **Elencos salvos** (até 5, com formação e tática) e **número da camisa** editável.
+- **Estatísticas** do time (gols, assistências, finalizações, desarmes, erros, defesas) e da liga (artilharia e assistências), **melhores por posição** e **guia tático** que simula o seu elenco.
+- Fotos: lendas que estavam sem foto são procuradas de novo automaticamente.
+
 ## Versão 1.7
 
 - **Atributos detalhados** em cada jogador (Aceleração, Pique, Chute de longe, Voleio, Pênalti, Precisão na falta, Curva…),
