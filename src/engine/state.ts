@@ -5,11 +5,11 @@ import { slotsOf } from './positions';
 import { pick } from './rng';
 import { newSeason, type Season } from './season';
 import type { FormationId, OwnedCard, Pos, SlotDef, StyleId, Variant } from './types';
-import { POOL } from './world';
+import { W, getPlayer } from './world';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
-export interface CardRef { u: number; p: number; v: Variant }
+export interface CardRef { u: number; p: string; v: Variant }
 export interface GameState {
   v: number;
   t: number;
@@ -24,6 +24,8 @@ export interface GameState {
   lastFree: string;
   moments: boolean;
   titles: number;
+  /** Mensagem para mostrar uma vez ao abrir o jogo (não é salva de volta). */
+  aviso?: string;
 }
 
 export function newGame(): GameState {
@@ -34,9 +36,10 @@ export function newGame(): GameState {
     rec: { w: 0, d: 0, l: 0, gf: 0, ga: 0, packs: 0 }, lastFree: '', moments: true, titles: 0,
   };
   const need: Pos[] = ['GOL', 'GOL', 'ZAG', 'ZAG', 'ZAG', 'LD', 'LE', 'VOL', 'MC', 'MC', 'MEI', 'PE', 'PD', 'ATA', 'ATA', 'ME', 'MD', 'LD'];
-  const got = new Set<number>();
+  const got = new Set<string>();
   for (const pos of need) {
-    const cand = POOL.filter(p => p.pos === pos && p.ovr >= 57 && p.ovr <= 66 && !got.has(p.id));
+    let cand = W.pool.filter(p => p.pos === pos && p.ovr >= 64 && p.ovr <= 70 && !got.has(p.id));
+    if (!cand.length) cand = W.pool.filter(p => p.pos === pos && !got.has(p.id));
     const p = pick(cand);
     got.add(p.id);
     addCard(S, p.id, 'base');
@@ -45,7 +48,7 @@ export function newGame(): GameState {
   return S;
 }
 
-export function addCard(S: GameState, p: number, v: Variant): CardRef {
+export function addCard(S: GameState, p: string, v: Variant): CardRef {
   const c = { u: S.uid++, p, v };
   S.cards.push(c);
   return c;
@@ -68,7 +71,7 @@ export function removeCard(S: GameState, u: number): void {
 export function autoLineup(S: GameState): void {
   const slots = slotsOf(S.squad.form);
   const all = allCards(S);
-  const usedU = new Set<number>(), usedP = new Set<number>(), xi: number[] = Array(11).fill(0);
+  const usedU = new Set<number>(), usedP = new Set<string>(), xi: number[] = Array(11).fill(0);
   const order = slots.map((_, i) => i).sort((a, b) => (slots[a].p === 'GOL' ? -1 : 0) - (slots[b].p === 'GOL' ? -1 : 0));
   for (const pass of [0, 1, 2]) for (const i of order) {
     if (xi[i]) continue;
@@ -85,7 +88,7 @@ export function autoLineup(S: GameState): void {
   }
   S.squad.xi = xi;
   const rest = all.filter(P => !usedU.has(P.u)).sort((a, b) => b.ovr - a.ovr);
-  const bench: number[] = [], bp = new Set<number>();
+  const bench: number[] = [], bp = new Set<string>();
   const g = rest.find(P => P.pos === 'GOL');
   if (g) { bench.push(g.u); bp.add(g.id); }
   for (const P of rest) {
@@ -137,4 +140,12 @@ export function duplicates(S: GameState): number[] {
 export function today(): string {
   const d = new Date();
   return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+}
+
+/** Remove cartas de jogadores que não existem mais (ex.: apagados no editor). Retorna quantas saíram. */
+export function sanitizeState(S: GameState): number {
+  const before = S.cards.length;
+  const gone = S.cards.filter(c => !getPlayer(c.p)).map(c => c.u);
+  for (const u of gone) removeCard(S, u);
+  return before - S.cards.length;
 }

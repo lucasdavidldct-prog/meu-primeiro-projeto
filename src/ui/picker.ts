@@ -3,7 +3,7 @@ import { calcChem, effOvr } from '../engine/chemistry';
 import { slotsOf } from '../engine/positions';
 import { allCards, cardByUid, xiCards } from '../engine/state';
 import type { BasePlayer } from '../engine/types';
-import { clubOf, NATIONS } from '../engine/world';
+import { clubOf, nationOf } from '../engine/world';
 import { cardHTML, pips } from './card';
 import { app, render } from './ctx';
 import { esc, openSheet } from './dom';
@@ -36,7 +36,7 @@ export function openPicker(kind: 'xi' | 'bench', i: number): void {
    ${kind === 'bench' && cur ? `<button class="btn block" style="margin-bottom:10px" data-act="benchClear" data-i="${i}">Deixar vaga livre</button>` : ''}
    <div class="plist">${rows.map(r => {
      const P = r.P, d = r.chemAfter != null ? r.chemAfter - baseChem : 0;
-     return `<button class="prow" data-act="pickP" data-u="${P.u}">${cardHTML(P)}<div style="min-width:0"><div class="nm">${esc(P.name)}</div><div class="meta">${P.pos}${P.alt.length ? ' / ' + P.alt.join(' / ') : ''} · ${NATIONS[P.nat].n} · ${esc(clubOf(P).n)}</div><div class="meta">${r.where}${kind === 'xi' && pos && !inPos(P, pos) ? ' · <span class="down">fora de posição</span>' : ''}</div></div>
+     return `<button class="prow" data-act="pickP" data-u="${P.u}">${cardHTML(P)}<div style="min-width:0"><div class="nm">${esc(P.name)}</div><div class="meta">${P.pos}${P.alt.length ? ' / ' + P.alt.join(' / ') : ''} · ${nationOf(P.nat).n} · ${esc(clubOf(P).n)}</div><div class="meta">${r.where}${kind === 'xi' && pos && !inPos(P, pos) ? ' · <span class="down">fora de posição</span>' : ''}</div></div>
      <div class="right"><b>${P.ovr}</b>${kind === 'xi' ? `<div>${pips(r.myChem)}</div><div class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">Quím. ${d > 0 ? '+' : ''}${d}</div>` : ''}</div></button>`;
    }).join('')}</div>`, '', () => { app.sel = null; render(); });
 }

@@ -1,7 +1,8 @@
 import { DIVS, ROUNDS, nextOpponent, standings } from '../../engine/season';
 import { teamInfo } from '../../engine/state';
 import { STYLES, counterOf } from '../../engine/tactics';
-import { app } from '../ctx';
+import { app, userClub } from '../ctx';
+import { crestHTML } from '../crest';
 import { esc } from '../dom';
 
 export function viewSeason(): string {
@@ -12,9 +13,9 @@ export function viewSeason(): string {
   if (!done) {
     const o = nextOpponent(se), T = teamInfo(S);
     nextHTML = `<div class="panel"><div class="small muted" style="text-align:center;margin-bottom:10px;letter-spacing:.08em;text-transform:uppercase">Rodada ${se.round + 1} de ${ROUNDS}</div>
-     <div class="fixture"><div><div class="team-crest" style="--a:var(--gold);--b:var(--gold-d)">${esc(S.name[0] || 'E')}</div><div class="nm">${esc(S.name)}</div><div class="small muted">Geral ${T.ovr}</div></div>
+     <div class="fixture"><div>${crestHTML(userClub(), 'team')}<div class="nm">${esc(S.name)}</div><div class="small muted">Geral ${T.ovr}</div></div>
      <div class="vs">×</div>
-     <div><div class="team-crest" style="--a:${o.c1};--b:${o.c2}">${o.s}</div><div class="nm">${esc(o.n)}</div><div class="small muted">Geral ${o.str} · ${o.form}</div></div></div>
+     <div>${crestHTML(o, 'team')}<div class="nm">${esc(o.n)}</div><div class="small muted">Geral ${o.str} · ${o.form}</div></div></div>
      <div class="tip">O adversário joga em <b>${STYLES[o.style].n}</b>. ${o.style === 'equilibrado' ? 'Nenhum estilo leva vantagem clara contra ele.' : `Estilo que leva vantagem: <b>${STYLES[counterOf(o.style)].n}</b>.`}</div>
      <div class="row" style="margin-top:12px"><button class="btn pri" style="flex:1" data-act="play">Jogar partida</button><button class="btn" data-act="friendly">Amistoso</button></div></div>`;
   } else {
@@ -30,6 +31,6 @@ export function viewSeason(): string {
   ${nextHTML}
   <h3>Classificação</h3>
   <div class="panel tbl-wrap" style="padding:6px 8px"><table><thead><tr><th>#</th><th>Time</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th><th>Pts</th></tr></thead><tbody>
-  ${table.map((t, i) => `<tr class="${t.you ? 'you' : ''} ${i < 3 && se.div < 4 ? 'zone-up' : ''} ${i >= 8 && se.div > 0 ? 'zone-down' : ''}"><td>${i + 1}</td><td>${esc(t.n)}</td><td>${t.P}</td><td>${t.W}</td><td>${t.D}</td><td>${t.L}</td><td>${t.GF - t.GA > 0 ? '+' : ''}${t.GF - t.GA}</td><td><b>${t.Pts}</b></td></tr>`).join('')}
+  ${table.map((t, i) => `<tr class="${t.you ? 'you' : ''} ${i < 3 && se.div < 4 ? 'zone-up' : ''} ${i >= 8 && se.div > 0 ? 'zone-down' : ''}"><td>${i + 1}</td><td><span class="team-cell">${crestHTML(t.you ? userClub() : (se.teams[t.i] as { s: string; n: string; c1: string; c2: string }), 'row')}<span>${esc(t.n)}</span></span></td><td>${t.P}</td><td>${t.W}</td><td>${t.D}</td><td>${t.L}</td><td>${t.GF - t.GA > 0 ? '+' : ''}${t.GF - t.GA}</td><td><b>${t.Pts}</b></td></tr>`).join('')}
   </tbody></table></div>${last}`;
 }

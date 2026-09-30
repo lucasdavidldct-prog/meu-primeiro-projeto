@@ -6,7 +6,8 @@ import { cardByUid, teamInfo } from '../engine/state';
 import { MENT, STYLES, STYLE_IDS } from '../engine/tactics';
 import type { CardPlayer, StyleId } from '../engine/types';
 import { cardHTML } from './card';
-import { app, render, save } from './ctx';
+import { app, render, save, userClub } from './ctx';
+import { crestHTML } from './crest';
 import { closeSheet, esc, fmt, openSheet, toast } from './dom';
 import { runMoment2D } from './moment2d';
 
@@ -19,6 +20,7 @@ export function startMatch(opp: OppTeam, league: boolean): void {
   if (!T.full) { toast('Complete os 11 titulares antes de jogar'); app.tab = 'squad'; render(); return; }
   const bench = S.squad.bench.filter(Boolean).map(u => cardByUid(S, u)!) as CardPlayer[];
   const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench });
+  Object.assign(A, { s: userClub().s });
   const m = new Match(A, sideOpp(opp), {
     moments: S.moments ? 4 : 0,
     onMoment: S.moments ? async (mm, req) => {
@@ -67,9 +69,9 @@ export function renderMatch(): void {
   const res = A.goals > B.goals ? 'Vitória' : A.goals === B.goals ? 'Empate' : 'Derrota';
   ov.innerHTML = `<div class="ov-inner">
    <div class="board">
-     <div><div class="team-crest" style="--a:${A.c1};--b:${A.c2}">${esc(A.s)}</div><div class="tn">${esc(A.name)}</div></div>
+     <div>${crestHTML({ n: A.name, s: A.s, c1: A.c1, c2: A.c2 }, 'team')}<div class="tn">${esc(A.name)}</div></div>
      <div><div class="score">${A.goals} – ${B.goals}</div><span class="clock">${M.over ? 'Encerrado' : M.ht ? 'Intervalo' : M.label}</span></div>
-     <div><div class="team-crest" style="--a:${B.c1};--b:${B.c2}">${esc(B.s)}</div><div class="tn">${esc(B.name)}</div></div>
+     <div>${crestHTML({ n: B.name, s: B.s, c1: B.c1, c2: B.c2 }, 'team')}<div class="tn">${esc(B.name)}</div></div>
    </div>
    <div class="scorers"><div>${A.scorers.map(esc).join('<br>')}</div><div>${B.scorers.map(esc).join('<br>')}</div></div>
    ${M.over ? `<div class="ht"><h2 style="margin:0 0 4px">${res}</h2><p style="margin:0 0 10px">+${fmt(L.reward ?? 0)} moedas${L.league ? ' · resultado lançado na tabela' : ' · amistoso'}.</p><button class="btn pri block" data-act="closeMatch">Continuar</button></div>` : ''}

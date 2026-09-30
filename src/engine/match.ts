@@ -1,15 +1,14 @@
 // Motor de partida minuto a minuto (sem interface). A interface injeta onMoment
 // para transformar chances do usuário em lances jogáveis.
-import { inPos } from './cards';
 import { calcChem, effOvr, rate, type Ratings } from './chemistry';
 import { slotsOf } from './positions';
-import { R, clamp, pick, rn, wpick } from './rng';
+import { R, clamp, rn, wpick } from './rng';
 import type { OppTeam } from './season';
 import { STYLES, sv } from './tactics';
 import { tx } from './narration';
 import type { BasePlayer, FormationId, Pos, StyleId } from './types';
 import type { TeamInfo } from './state';
-import { POOL } from './world';
+import { bestXI, squadOf } from './squads';
 
 export interface SideEntry { P: BasePlayer; pos: Pos; base: number; inMin: number; yc: number; red: boolean; name: string }
 export interface Side {
@@ -36,26 +35,16 @@ export function sideFromTeam(T: TeamInfo, o: { name: string; form: FormationId; 
     const P = T.xi[i]!;
     return { P, pos: s.p, base: effOvr(P, s.p, T.chem.per[i]), inMin: 0, yc: 0, red: false, name: P.short };
   });
-  return { you: true, name: o.name, s: (o.name[0] || 'E').toUpperCase(), c1: '#e8c35f', c2: '#a67c1c', form: o.form, style: o.style,
+  return { you: true, name: o.name, s: (o.name[0] || 'E').toUpperCase(), c1: '#e8c35f', c2: '#1d1403', form: o.form, style: o.style,
     ment: o.ment - 2, xi, bench: o.bench, subs: 5, goals: 0, scorers: [] };
 }
 
-function poolPick(pos: Pos, str: number, used: Set<number>): BasePlayer {
-  let c = POOL.filter(p => !used.has(p.id) && p.pos === pos && Math.abs(p.ovr - str) <= 5);
-  if (!c.length) c = POOL.filter(p => !used.has(p.id) && inPos(p, pos));
-  const p = pick(c);
-  used.add(p.id);
-  return p;
-}
-
-/** Adversário montado a partir da força média do time. */
+/** Adversário real: escala o melhor XI do elenco do clube na formação escolhida. */
 export function sideOpp(t: OppTeam): Side {
-  const used = new Set<number>();
-  const xi = slotsOf(t.form).map(s => {
-    const p = poolPick(s.p, t.str, used);
-    return { P: p, pos: s.p, base: t.str + rn(-2.5, 2.5), inMin: 0, yc: 0, red: false, name: p.short };
-  });
-  const bench = (['GOL', 'ZAG', 'MC', 'PD', 'ATA', 'LD', 'MEI'] as Pos[]).map(pp => poolPick(pp, t.str - 2, used));
+  const { xi: players, bench } = bestXI(squadOf(t.club), t.form, t.club);
+  const slots = slotsOf(t.form);
+  const chem = calcChem(players, t.form);
+  const xi = players.map((P, i) => ({ P, pos: slots[i].p, base: effOvr(P, slots[i].p, chem.per[i]), inMin: 0, yc: 0, red: false, name: P.short }));
   return { you: false, name: t.n, s: t.s, c1: t.c1, c2: t.c2, form: t.form, style: t.style, ment: 0, xi, bench, subs: 5, goals: 0, scorers: [], str: t.str };
 }
 
@@ -190,11 +179,16 @@ export class Match {
     for (const mm of [62, 70, 80]) {
       if (m >= mm && !this.aiDone['s' + mm] && B.subs > 0 && B.bench.length) {
         this.aiDone['s' + mm] = true;
-        const outs = B.xi.filter(e => !e.red && e.pos !== 'GOL');
-        const o = outs[Math.floor(R() * outs.length)], inn = B.bench.shift();
-        if (!o || !inn) continue;
+        // Sai o mais cansado (ou o pior em campo); entra o reserva que melhor encaixa na posição.
+        const outs = B.xi.filter(e => !e.red && e.pos !== 'GOL').sort((a, b) => effNow(a, m) - effNow(b, m) + (R() - .5) * 4);
+        const o = outs[0];
+        if (!o) continue;
+        const cands = B.bench.filter(p => p.pos !== 'GOL');
+        if (!cands.length) continue;
+        const inn = cands.reduce((a, b) => (effOvr(b, o.pos, 1) > effOvr(a, o.pos, 1) ? b : a));
+        B.bench.splice(B.bench.indexOf(inn), 1);
         this.addEv(1, 'info', `Substituição no ${B.name}: sai ${o.name}, entra ${inn.short}.`);
-        Object.assign(o, { P: inn, name: inn.short, inMin: m, yc: 0, base: (B.str ?? 70) + rn(-3, 2) });
+        Object.assign(o, { P: inn, name: inn.short, inMin: m, yc: 0, base: effOvr(inn, o.pos, 1) });
         B.subs--;
       }
     }

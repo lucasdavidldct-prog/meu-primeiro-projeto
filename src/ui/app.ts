@@ -1,11 +1,11 @@
 import { STAT_G, STAT_L } from '../engine/positions';
 import { VAR, TIER_N, sellValue } from '../engine/cards';
 import { packById, type PackId } from '../engine/packs';
-import { clamp, pick, ri } from '../engine/rng';
-import { ALL_CLUBS, NATIONS, clubOf, leagueName } from '../engine/world';
-import { FORM_IDS } from '../engine/positions';
-import { STYLE_IDS } from '../engine/tactics';
-import { newSeason, nextOpponent, seasonEnd } from '../engine/season';
+import { pick } from '../engine/rng';
+import { allClubs, clubOf, leagueName, nationOf } from '../engine/world';
+import { clubStrength } from '../engine/squads';
+import { PS_BY_ID, parsePs } from '../engine/data/schema';
+import { newSeason, nextOpponent, oppFromClub, seasonEnd } from '../engine/season';
 import { applyPick, autoLineup, cardByUid, duplicates, newGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
 import type { FormationId, StyleId } from '../engine/types';
 import { exportJson, flushSave, importJson } from '../save/db';
@@ -19,15 +19,18 @@ import { viewClub } from './views/club';
 import { viewSeason } from './views/season';
 import { viewSquad } from './views/squad';
 import { viewStore } from './views/store';
+import { bindEditorInputs, editorActions, resumeEditorIfNeeded, viewEditor } from './editor';
 
 function renderApp(): void {
   const S = app.S;
   document.getElementById('coins')!.textContent = fmt(S.coins);
   document.getElementById('clubName')!.textContent = S.name;
   document.getElementById('crest')!.textContent = (S.name.trim()[0] || 'E').toUpperCase();
-  document.querySelectorAll<HTMLElement>('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.t === app.tab ? 'true' : 'false'));
+  const tabNow = app.tab === 'editor' ? 'club' : app.tab;
+  document.querySelectorAll<HTMLElement>('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.t === tabNow ? 'true' : 'false'));
   const v = document.getElementById('view')!;
-  v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : viewSeason();
+  v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : app.tab === 'editor' ? viewEditor() : viewSeason();
+  if (app.tab === 'editor') bindEditorInputs(v);
 }
 
 function showCard(u: number): void {
@@ -38,8 +41,10 @@ function showCard(u: number): void {
   openSheet(`<div style="display:grid;justify-items:center;gap:12px">${cardHTML(P, 'lg')}</div>
    <h2 style="margin-top:14px">${esc(P.name)}</h2>
    <div class="small muted">${P.v === 'base' ? TIER_N[P.tier] : VAR[P.v].n} · ${P.pos}${P.alt.length ? ' (também ' + P.alt.join(', ') + ')' : ''} · ${P.age} anos</div>
-   <div class="small muted">${NATIONS[P.nat].n} · ${esc(leagueName(P))} · ${esc(clubOf(P).n)}</div>
+   <div class="small muted">${nationOf(P.nat).n} · ${P.leg ? esc(P.hist ?? 'Ícones') + (P.epoca ? ' (' + esc(P.epoca) + ')' : '') : esc(leagueName(P)) + ' · ' + esc(clubOf(P).n)}</div>
+   <dl class="kv"><dt>Pé bom</dt><dd>${{ D: 'Direito', E: 'Esquerdo', A: 'Ambidestro' }[P.foot]}</dd>${P.leg ? '' : `<dt>Idade</dt><dd>${P.age} anos</dd>`}${P.legClub === 'CAM' ? '<dt>Ídolo</dt><dd>Atlético Mineiro</dd>' : ''}</dl>
    <div class="bars" style="margin-top:12px">${P.st.map((s, i) => `<div class="bar">${L[i]}<i><b style="width:${s}%"></b></i><span>${s}</span></div>`).join('')}</div>
+   ${P.ps.length ? `<h3>Playstyles</h3><div class="ps-list">${P.ps.map(x => { const { id, plus } = parsePs(x), d = PS_BY_ID.get(id); return d ? `<div class="ps-item ${plus ? 'plus' : ''}"><span class="ic">${d.icone}</span><div><b>${d.nome}</b><span class="muted">${plus ? d.descPlus : d.desc}</span></div></div>` : ''; }).join('')}</div>` : ''}
    <div style="margin-top:16px">${inSq ? '<p class="small muted">Está no seu elenco. Tire do time para poder vender.</p>' : `<button class="btn danger block" data-act="sell" data-u="${P.u}">Vender por ${fmt(sellValue(P))} moedas</button>`}</div>`);
 }
 
@@ -121,8 +126,10 @@ const ACT: Record<string, Handler> = {
   },
   play() { startMatch(nextOpponent(app.S.season), true); },
   friendly() {
-    const c = pick(ALL_CLUBS), T = teamInfo(app.S);
-    startMatch({ n: c.n, s: c.s, c1: c.c1, c2: c.c2, str: clamp(T.ovr + ri(-3, 4), 50, 92), form: pick(FORM_IDS), style: pick(STYLE_IDS) }, false);
+    const T = teamInfo(app.S);
+    // Um clube real de nível parecido com o seu time
+    const near = allClubs().map(c => ({ c, d: Math.abs(clubStrength(c.id) - T.ovr) })).sort((a, b) => a.d - b.d).slice(0, 12);
+    startMatch(oppFromClub(pick(near).c), false);
   },
   endSeason() {
     const S = app.S, r = seasonEnd(S.season, S.name);
@@ -134,6 +141,7 @@ const ACT: Record<string, Handler> = {
   },
   closeSheet() { closeSheet(); },
   ...matchActions,
+  ...editorActions,
 };
 
 export function startApp(S: GameState): void {
@@ -148,4 +156,6 @@ export function startApp(S: GameState): void {
   // Garante que o último estado vá para o disco ao fechar/ocultar a aba
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') void flushSave(app.S); });
   render();
+  if (S.aviso) { setTimeout(() => toast(S.aviso!), 400); delete S.aviso; save(); }
+  resumeEditorIfNeeded();
 }

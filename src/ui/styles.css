@@ -208,3 +208,33 @@ tr.you td{background:rgba(232,195,95,.1);font-weight:700}
 /* ---------- Adições do projeto ---------- */
 .file-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .boot{display:grid;place-items:center;min-height:60vh;color:var(--muted);font-family:var(--f-disp);font-size:22px;text-transform:uppercase;letter-spacing:.06em}
+.flag.h,.flagbig.h{background:linear-gradient(180deg,var(--a) 33.3%,var(--b) 0 66.6%,var(--c) 0)}
+.crest-box{display:inline-grid;place-items:center;flex:none;line-height:0}
+.crest-box svg,.crest-box img{width:100%;height:100%;display:block;object-fit:contain}
+.crest-box.badge{width:1.35em;height:1.6em;clip-path:none;background:none}
+.crest-box.team{width:54px;height:64px;margin:0 auto 6px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.crest-box.big{width:120px;height:144px;margin:0 auto 14px;filter:drop-shadow(0 0 40px var(--glow))}
+.crest-box.row{width:18px;height:22px;vertical-align:-5px;margin-right:6px}
+.crest-box.mid{width:40px;height:48px}
+.team-cell{display:flex;align-items:center;min-width:0}
+.team-cell span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-list{display:grid;gap:6px;margin-top:12px}
+.ps-item{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;padding:8px 10px;border-radius:10px;background:var(--panel2);font-size:13px}
+.ps-item .ic{font-size:18px;line-height:1.2;text-align:center}
+.ps-item b{display:block;font-size:14px}
+.ps-item.plus{border:1px solid var(--gold)}
+.ps-item.plus b::after{content:" +";color:var(--gold)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;margin-top:10px}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+.club-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;margin-top:12px}
+.club-tile{display:grid;justify-items:center;gap:4px;padding:10px 6px;border-radius:12px;background:var(--panel);border:1px solid var(--line);text-align:center;font-size:13px;line-height:1.15}
+.club-tile b{font-weight:700}
+.pos-pill{display:inline-grid;place-items:center;min-width:38px;height:28px;border-radius:8px;background:var(--panel);font-family:var(--f-disp);font-weight:800;font-size:15px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.form-grid label,.attr-grid label{display:grid;gap:3px;font-size:12px;color:var(--muted)}
+.form-grid input,.form-grid select{width:100%;min-width:0}
+.attr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.attr-grid input{width:100%;min-width:0}
+.ps-chip.s2{background:linear-gradient(180deg,#f2d27a,var(--gold));color:#1d1403;border-color:#f5dd95}
+code{font-size:.9em;background:var(--panel2);padding:1px 5px;border-radius:5px}
+input[type=color]{width:44px;height:32px;padding:2px;vertical-align:middle;cursor:pointer}

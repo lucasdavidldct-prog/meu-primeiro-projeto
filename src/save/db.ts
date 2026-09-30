@@ -1,25 +1,29 @@
 // Save em IndexedDB (um registro por slot), mais exportação/importação em JSON.
-import { SAVE_VERSION, type GameState } from '../engine/state';
+import { SAVE_VERSION, newGame, sanitizeState, type GameState } from '../engine/state';
 
 const DB_NAME = 'esquadrao-fc';
 const STORE = 'saves';
 const SLOT = 'principal';
+/** Loja com as ligas editadas no Editor de elencos (chave = id da liga). */
+export const STORE_DADOS = 'dados';
 
-function openDb(): Promise<IDBDatabase> {
+export function openDb(): Promise<IDBDatabase> {
   return new Promise((res, rej) => {
-    const rq = indexedDB.open(DB_NAME, 1);
-    rq.onupgradeneeded = () => { rq.result.createObjectStore(STORE); };
+    const rq = indexedDB.open(DB_NAME, 2);
+    rq.onupgradeneeded = () => {
+      for (const s of [STORE, STORE_DADOS]) if (!rq.result.objectStoreNames.contains(s)) rq.result.createObjectStore(s);
+    };
     rq.onsuccess = () => res(rq.result);
     rq.onerror = () => rej(rq.error);
   });
 }
 
-async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+export async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>, store = STORE): Promise<T> {
   const db = await openDb();
   try {
     return await new Promise<T>((res, rej) => {
-      const t = db.transaction(STORE, mode);
-      const rq = fn(t.objectStore(STORE));
+      const t = db.transaction(store, mode);
+      const rq = fn(t.objectStore(store));
       t.oncomplete = () => res(rq.result);
       t.onerror = () => rej(t.error);
       t.onabort = () => rej(t.error);
@@ -45,9 +49,17 @@ export function isGameState(o: unknown): o is GameState {
   return !!g && typeof g === 'object' && Array.isArray(g.cards) && !!g.squad && Array.isArray(g.squad.xi) && typeof g.coins === 'number';
 }
 
-/** Atualiza saves antigos (inclusive o do esquadrao.html, versão 1). */
+/** Atualiza saves antigos. Saves das versões 1 e 2 usavam jogadores fictícios:
+ *  mantém nome, moedas, campanha e troféus, e começa um elenco novo com jogadores reais. */
 export function migrate(S: GameState): GameState {
-  if (!S.v || S.v < 2) S.v = SAVE_VERSION;
+  if (!S.v || S.v < 3 || S.cards.some(c => typeof c.p !== 'string')) {
+    const N = newGame();
+    Object.assign(N, { name: S.name || N.name, coins: S.coins ?? N.coins, rec: S.rec ?? N.rec, titles: S.titles ?? 0, lastFree: S.lastFree ?? '', moments: S.moments ?? true });
+    N.aviso = 'Seu save era da versão com jogadores fictícios. Mantivemos nome, moedas e campanha, e o elenco agora tem jogadores reais.';
+    return N;
+  }
+  const n = sanitizeState(S);
+  if (n) S.aviso = `${n} carta(s) de jogadores removidos no editor saíram da coleção.`;
   return S;
 }
 

@@ -2,8 +2,9 @@ import { VAR, cardData, isSpecial, sellValue } from '../engine/cards';
 import { packContents, type PackId } from '../engine/packs';
 import { addCard } from '../engine/state';
 import type { OwnedCard } from '../engine/types';
-import { NATIONS, clubOf } from '../engine/world';
-import { cardHTML } from './card';
+import { clubOf, nationOf } from '../engine/world';
+import { cardHTML, flagHTML } from './card';
+import { crestHTML } from './crest';
 import { app, render, save } from './ctx';
 import { esc, fmt } from './dom';
 
@@ -34,11 +35,11 @@ export function walkout(P: OwnedCard, done: () => void): void {
   w.className = 'walk';
   const glow = GLOW[P.tier] || '#f5d77a';
   w.style.setProperty('--glow', glow);
-  const f = NATIONS[P.nat].f, c = clubOf(P);
+  const c = clubOf(P);
   const steps = [
-    `<div class="flagbig" style="--a:${f[0]};--b:${f[1]};--c:${f[2]}"></div><div class="big">${NATIONS[P.nat].n}</div>`,
+    `${flagHTML(P.nat, 'flagbig')}<div class="big">${nationOf(P.nat).n}</div>`,
     `<div class="big" style="font-size:120px;color:${glow}">${P.pos}</div>`,
-    `<div class="crestbig" style="--a:${c.c1};--b:${c.c2}"></div><div class="big" style="font-size:48px">${esc(c.n)}</div>`,
+    `${crestHTML(c, 'big')}<div class="big" style="font-size:48px">${esc(c.n)}</div>`,
     `${cardHTML(P, 'xl')}<div style="margin-top:14px;font-size:22px;color:${glow}">${esc(P.name)}${P.v !== 'base' ? ' · ' + VAR[P.v].n : ''}</div>`,
   ];
   let i = 0, timer: ReturnType<typeof setTimeout>;

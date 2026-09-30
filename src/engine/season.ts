@@ -1,13 +1,13 @@
-import { FORM_IDS } from './positions';
-import { pick, poisson, ri, shuffle } from './rng';
+import { pick, poisson, shuffle } from './rng';
+import { bestFormation, clubStrength, squadOf } from './squads';
 import { STYLE_IDS } from './tactics';
 import type { FormationId, StyleId } from './types';
-import { ALL_CLUBS } from './world';
+import { allClubs, type ClubInfo } from './world';
 
-export const DIVS = [{ n: 'Série D', s: 61, m: 1 }, { n: 'Série C', s: 67, m: 1.3 }, { n: 'Série B', s: 72, m: 1.7 }, { n: 'Série A', s: 77, m: 2.2 }, { n: 'Elite Mundial', s: 83, m: 3 }];
+export const DIVS = [{ n: 'Série D', s: 65, m: 1 }, { n: 'Série C', s: 69, m: 1.3 }, { n: 'Série B', s: 73, m: 1.7 }, { n: 'Série A', s: 77, m: 2.2 }, { n: 'Elite Mundial', s: 81, m: 3 }];
 
 export interface Row { P: number; W: number; D: number; L: number; GF: number; GA: number; Pts: number }
-export interface OppTeam { n: string; s: string; c1: string; c2: string; lg?: string; str: number; form: FormationId; style: StyleId }
+export interface OppTeam { club: string; n: string; s: string; c1: string; c2: string; lg?: string; str: number; form: FormationId; style: StyleId }
 export type SeasonTeam = Row & ({ you: true; n: string; s: string; c1: string; c2: string } | (OppTeam & { you?: false }));
 export interface Season { div: number; num: number; round: number; teams: SeasonTeam[]; fx: [number, number][][]; last: [number, number, number, number][] }
 
@@ -24,12 +24,21 @@ export function roundRobin(n: number): [number, number][][] {
 
 const emptyRow = (): Row => ({ P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, Pts: 0 });
 
+/** Adversário real: força e formação vêm do elenco. */
+export function oppFromClub(c: ClubInfo): OppTeam {
+  return { club: c.id, n: c.n, s: c.s, c1: c.c1, c2: c.c2, lg: c.lg, str: clubStrength(c.id), form: bestFormation(squadOf(c.id), c.id), style: pick(STYLE_IDS) };
+}
+
 export function newSeason(div: number, num = 1): Season {
   const D = DIVS[div];
-  const clubs = shuffle(ALL_CLUBS).slice(0, 9);
+  // Os 16 clubes reais com força mais próxima da divisão; sorteia 9 deles.
+  // Prefere clubes com elenco real suficiente (sem depender de reservas genéricos).
+  const cands = allClubs().filter(c => squadOf(c.id).length >= 14);
+  const near = (cands.length >= 16 ? cands : allClubs()).map(c => ({ c, d: Math.abs(clubStrength(c.id) - D.s) })).sort((a, b) => a.d - b.d).slice(0, 16).map(x => x.c);
+  const clubs = shuffle(near).slice(0, 9);
   const teams: SeasonTeam[] = [
     { you: true, n: '', s: '', c1: '', c2: '', ...emptyRow() },
-    ...clubs.map(c => ({ n: c.n, s: c.s, c1: c.c1, c2: c.c2, lg: c.lg, str: D.s + ri(-4, 4), form: pick(FORM_IDS), style: pick(STYLE_IDS), ...emptyRow() })),
+    ...clubs.map(c => ({ ...oppFromClub(c), ...emptyRow() })),
   ];
   return { div, num, round: 0, teams, fx: shuffle(roundRobin(10)), last: [] };
 }

@@ -14,14 +14,17 @@ Outros comandos:
 
 | Comando | O que faz |
 | --- | --- |
-| `npm test` | testes do motor de partida e da química (Vitest) |
+| `npm test` | testes do motor de partida, da química e dos dados (Vitest) |
+| `npm run validar-dados` | confere se os JSON de `data/` estão consistentes (`-- --avisos` mostra todos os avisos) |
 | `npm run typecheck` | checagem de tipos |
 | `npm run build` | build de produção em `dist/` |
 
 ## Estrutura
 
 ```
-data/            dados das ligas em JSON (etapa 2)
+data/ligas/      um JSON por liga: clubes (nome, sigla, cidade, cores) e elencos reais
+data/lendas.json ícones históricos, com destaque para os ídolos do Galo
+data/nacoes.json nações e cores das bandeiras
 legacy/          esquadrao.html original, para referência
 public/escudos/  seus escudos em PNG: <SIGLA>.png substitui o escudo gerado
 src/engine/      regras e simulação, sem interface (química, pacotes, temporada, partida)
@@ -31,6 +34,20 @@ src/three/       cenas 3D dos lances (etapa 5)
 tests/           testes
 ```
 
+## Dados reais e Editor de elencos
+
+Os ratings são estimativas próprias, baseadas no nível real de cada jogador (não copiam nenhum jogo comercial).
+Elencos conferidos até setembro de 2026. O Atlético Mineiro foi pesquisado jogador a jogador; nos demais clubes
+as principais transferências da janela de 2026 foram aplicadas, mas pode haver defasagem, e clubes menores
+(especialmente da Saudi Pro League e da MLS) têm elencos parciais — o jogo completa com "Reservas" genéricos.
+
+Para corrigir: **Clube → Editor de elencos**. Com `npm run dev` rodando, cada correção é gravada direto em
+`data/ligas/<liga>.json`. Sem o servidor (celular, build), as correções ficam no navegador e podem ser
+baixadas em JSON para substituir o arquivo.
+
+Escudos: o jogo gera escudos com as cores e a sigla. Para usar uma imagem sua, salve `public/escudos/<SIGLA>.png`
+(ex.: `CAM.png`).
+
 ## Save
 
 O progresso fica no IndexedDB do navegador. Em **Clube → Save** dá para exportar o save em JSON e importar de volta,
@@ -39,7 +56,7 @@ inclusive em outro aparelho.
 ## Etapas
 
 1. ✅ Estrutura do projeto e migração do jogo atual
-2. Base de dados real e editor de elencos
+2. ✅ Base de dados real e editor de elencos
 3. Playstyles
 4. Carreira e competições
 5. Lances 3D

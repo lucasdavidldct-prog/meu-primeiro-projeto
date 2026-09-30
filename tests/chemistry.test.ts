@@ -5,7 +5,8 @@ import type { BasePlayer, Pos } from '../src/engine/types';
 
 let id = 1;
 function pl(pos: Pos, o: Partial<BasePlayer> = {}): BasePlayer {
-  return { id: id++, name: 'J' + id, short: 'J', nat: 'BRA', pos, alt: [], ovr: 70, lg: 'BR', club: 0, age: 25, st: [70, 70, 70, 70, 70, 70], ...o };
+  id++;
+  return { id: 'j' + id, name: 'J' + id, short: 'J', nat: 'BRA', pos, alt: [], ovr: 70, lg: 'BR', club: 'CAM', age: 25, st: [70, 70, 70, 70, 70, 70], foot: 'D', ps: [], ...o };
 }
 const xiFor = (mk: (p: Pos, i: number) => Partial<BasePlayer>) => slotsOf('4-3-3').map((s, i) => pl(s.p, mk(s.p, i)));
 
@@ -32,7 +33,7 @@ describe('química', () => {
   it('sem nenhum vínculo a química é zero', () => {
     const nats = ['BRA', 'ARG', 'POR', 'ESP', 'FRA', 'ING', 'ALE', 'ITA', 'HOL', 'URU', 'COL'];
     const lgs = nats.map(n => 'L' + n);
-    const c = calcChem(xiFor((_, i) => ({ nat: nats[i], lg: lgs[i], club: i })), '4-3-3');
+    const c = calcChem(xiFor((_, i) => ({ nat: nats[i], lg: lgs[i], club: 'C' + i })), '4-3-3');
     expect(c.total).toBe(0);
   });
 
@@ -40,7 +41,7 @@ describe('química', () => {
     const nats = ['BRA', 'ARG', 'POR', 'ESP', 'FRA', 'ING', 'ALE', 'ITA', 'HOL', 'URU', 'COL'];
     const lgs = ['BR', 'IB', 'EN', 'IT', 'NO', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6'];
     // mesmo clube exige mesma liga; testamos só o componente de clube isolando país
-    const mk = (n: number) => xiFor((_, i) => (i < n ? { nat: nats[i], lg: 'BR', club: 0 } : { nat: nats[i], lg: lgs[i], club: 50 + i }));
+    const mk = (n: number) => xiFor((_, i) => (i < n ? { nat: nats[i], lg: 'BR', club: 'CAM' } : { nat: nats[i], lg: lgs[i], club: 'X' + i }));
     // com n na mesma liga/clube, liga também pontua: 2 jogadores → clube 1 + liga 0
     expect(calcChem(mk(2), '4-3-3').per[0]).toBe(1);
     // 4 → clube 2 + liga 1 = 3
@@ -49,8 +50,8 @@ describe('química', () => {
 
   it('lenda sempre tem química 3 e soma 2 para compatriotas', () => {
     const nats = ['ARG', 'ARG', 'POR', 'ESP', 'FRA', 'ING', 'ALE', 'ITA', 'HOL', 'URU', 'COL'];
-    const xi = xiFor((_, i) => ({ nat: nats[i], lg: 'L' + i, club: i }));
-    xi[0] = pl('GOL', { nat: 'ARG', leg: true, lg: 'ICO', club: -1 });
+    const xi = xiFor((_, i) => ({ nat: nats[i], lg: 'L' + i, club: 'C' + i }));
+    xi[0] = pl('GOL', { nat: 'ARG', leg: true, lg: 'ICO', club: 'ICO' });
     const c = calcChem(xi, '4-3-3');
     expect(c.per[0]).toBe(3);
     // ARG: 1 jogador + lenda (2) = 3 → faixa 1
