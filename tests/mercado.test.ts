@@ -5,10 +5,12 @@ import { seedRng } from '../src/engine/rng';
 import { W } from '../src/engine/world';
 
 describe('mercado de leilão', () => {
-  it('Ronaldinho custa entre centenas de milhares e ~1 milhão; carta comum vale pouco', () => {
+  it('lenda comum custa centenas de milhares; Fora de Série (Ronaldinho) passa de 1 milhão; carta comum vale pouco', () => {
+    const k = W.legends.find(p => p.short === 'Kaká')!;
+    const vk = marketValue(cardData(k.id, 'lenda'));
+    expect(vk).toBeGreaterThan(200000); expect(vk).toBeLessThan(1000000);
     const r = W.legends.find(p => p.short === 'Ronaldinho')!;
-    const v = marketValue(cardData(r.id, 'lenda'));
-    expect(v).toBeGreaterThan(400000); expect(v).toBeLessThan(1500000);
+    expect(marketValue(cardData(r.id, 'lenda'))).toBeGreaterThan(1000000);
     const comum = W.pool.find(p => p.ovr === 72 && !p.filler)!;
     expect(marketValue(cardData(comum.id, 'base'))).toBeLessThan(1000);
   });
