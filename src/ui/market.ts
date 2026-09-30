@@ -1,5 +1,5 @@
 // Tela do mercado de leilão: buscar por nome, dar lance contra a CPU, comprar já e vender as suas cartas.
-import { cardData } from '../engine/cards';
+import { TIER_N, cardData } from '../engine/cards';
 import { bid, buyNow, committed, listMine, marketValue, netOf, newMarket, nextBid, roundPrice, search, tick, TAXA, variantName, type Listing } from '../engine/market';
 import { addCard, allCards, cardByUid, removeCard } from '../engine/state';
 import { cardHTML } from './card';
@@ -22,7 +22,7 @@ function row(l: Listing): string {
       <button class="btn pri" data-act="mkBid" data-id="${l.id}" ${l.bidder === 'voce' ? 'disabled' : ''}>${l.bidder === 'voce' ? 'Ganhando' : 'Lance ' + fmt(nextBid(l.bid, l.start))}</button>
       <button class="btn" data-act="mkBuy" data-id="${l.id}">Compre já ${fmt(l.buyNow)}</button></div>`;
   return `<div class="mk-row ${l.done ? 'done' : ''}">${cardHTML(P)}
-    <div class="mk-info"><div class="nm">${esc(P.short)}${l.v !== 'base' ? ` <small class="muted">· ${esc(variantName(l.v))}</small>` : ''}</div>
+    <div class="mk-info"><div class="nm">${esc(P.short)}${l.v !== 'base' ? ` <small class="muted">· ${esc(P.leg ? TIER_N[P.tier] : variantName(l.v))}</small>` : ''}</div>
       <div class="meta">${esc(P.name)} · ${P.pos} · ${P.ovr} · valor ~${fmt(val)}</div>
       <div class="meta">Lance: <b>${l.bid ? fmt(l.bid) : 'inicial ' + fmt(l.start)}</b> (${lead}) · <span class="mk-t">${status}</span></div>${acts}</div></div>`;
 }

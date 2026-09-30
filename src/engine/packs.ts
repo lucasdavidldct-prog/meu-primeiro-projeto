@@ -11,7 +11,7 @@ export const PACKS: PackDef[] = [
   { id: 'ouro', n: 'Ouro', price: 3500, cls: 'p-ouro', d: '8 jogadores ouro. 10% de chance de uma carta especial.' },
   { id: 'premium', n: 'Ouro Premium', price: 8000, cls: 'p-premium', d: '10 ouros, 3 deles 81+. 30% de chance de especial.' },
   { id: 'especial', n: 'Especiais', price: 18000, cls: 'p-especial', d: '5 ouros 79+ com uma carta especial garantida.' },
-  { id: 'lenda', n: 'Lenda', price: 45000, cls: 'p-lenda', d: 'Uma Lenda garantida e mais 3 ouros 81+.' },
+  { id: 'lenda', n: 'Lenda', price: 45000, cls: 'p-lenda', d: 'Uma lenda garantida (Ídolo, Herói ou Hall da Fama) e mais 3 ouros 81+.' },
 ];
 export const packById = (id: PackId): PackDef => PACKS.find(p => p.id === id)!;
 
@@ -36,6 +36,13 @@ function drawSpecial(): Draw {
   return { p: wpick(cand.map(p => [p, Math.exp(-(p.ovr - 70) * .08)] as const)).id, v };
 }
 
+/** Lenda do pacote: Ídolo 30%, Herói 35%, Hall da Fama 35%. */
+function pickLegend() {
+  const r = R(), cat = r < .3 ? 'idolo' : r < .65 ? 'heroi' : 'hall';
+  const g = W.legends.filter(p => (p.legCat ?? 'idolo') === cat);
+  return pick(g.length ? g : W.legends);
+}
+
 export function packContents(id: PackId): Draw[] {
   const out: Draw[] = [];
   if (id === 'bronze') { for (let i = 0; i < 6; i++) out.push(i === 0 && R() < .3 ? drawRange(68, 75) : drawRange(40, 67)); }
@@ -43,6 +50,6 @@ export function packContents(id: PackId): Draw[] {
   else if (id === 'ouro') { for (let i = 0; i < 8; i++) out.push(drawRange(76, 99)); if (R() < .1) out[0] = drawSpecial(); }
   else if (id === 'premium') { for (let i = 0; i < 10; i++) out.push(i < 3 ? drawRange(81, 99) : drawRange(76, 99)); if (R() < .3) out[0] = drawSpecial(); }
   else if (id === 'especial') { out.push(drawSpecial()); for (let i = 0; i < 4; i++) out.push(drawRange(79, 99)); }
-  else if (id === 'lenda') { out.push({ p: pick(W.legends).id, v: 'lenda' }); for (let i = 0; i < 3; i++) out.push(drawRange(81, 99)); }
+  else if (id === 'lenda') { out.push({ p: pickLegend().id, v: 'lenda' }); for (let i = 0; i < 3; i++) out.push(drawRange(81, 99)); }
   return out;
 }

@@ -1,7 +1,7 @@
 export type Pos = 'GOL' | 'ZAG' | 'LD' | 'LE' | 'VOL' | 'MC' | 'MEI' | 'MD' | 'ME' | 'PD' | 'PE' | 'ATA';
 export type Role = 'G' | 'D' | 'M' | 'A';
 export type Variant = 'base' | 'dest' | 'heroi' | 'fc' | 'elite' | 'lenda';
-export type Tier = 'bronze' | 'prata' | 'ouro' | Exclude<Variant, 'base'>;
+export type Tier = 'bronze' | 'prata' | 'ouro' | Exclude<Variant, 'base'> | 'lheroi' | 'hall';
 export type StyleId = 'equilibrado' | 'posse' | 'contra' | 'pressao' | 'retranca';
 export type FormationId =
   | '4-3-3' | '4-4-2' | '4-2-3-1' | '4-1-2-1-2' | '3-5-2' | '3-4-3' | '5-3-2'
@@ -31,6 +31,8 @@ export interface BasePlayer {
   /** Playstyles (ids; sufixo + para a versão forte). */
   ps: string[];
   leg?: boolean;
+  /** Categoria da lenda: ídolo, herói ou hall da fama. */
+  legCat?: 'idolo' | 'heroi' | 'hall';
   /** Lendas: clube em que marcou época, época e clube atual ligado (ex.: CAM). */
   hist?: string;
   epoca?: string;

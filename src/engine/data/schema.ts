@@ -48,7 +48,11 @@ export interface LendaData extends JogadorData {
   /** Sigla do clube atual ligado ao ídolo, se houver (ex.: CAM). */
   clube?: string;
   epoca: string;
+  /** Ídolo (ícone), Herói ou Hall da Fama. Padrão: ídolo. */
+  categoria?: LegCat;
 }
+export type LegCat = 'idolo' | 'heroi' | 'hall';
+export const LEG_CATS: Record<LegCat, string> = { idolo: 'Ídolo', heroi: 'Herói', hall: 'Hall da Fama' };
 export interface LendasData { atualizadoEm: string; lendas: LendaData[] }
 
 export interface NacaoData { nome: string; cores: [string, string, string]; horizontal?: boolean }

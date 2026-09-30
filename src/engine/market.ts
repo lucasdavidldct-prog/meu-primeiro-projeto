@@ -10,7 +10,7 @@ import { W } from './world';
 export function marketValue(P: CardPlayer): number {
   // Comum vale pouco (tem muito no mercado); o preço dispara só nas cartas de elite e nas lendas
   let v = 100 + 12 * Math.pow(1.35, P.ovr - 65);
-  if (P.leg) v *= 5;
+  if (P.leg) v *= P.legCat === 'hall' ? 2.6 : P.legCat === 'heroi' ? 3.2 : 5;
   else if (isSpecial(P.tier)) v *= P.v === 'elite' ? 2.6 : P.v === 'fc' ? 2.2 : P.v === 'heroi' ? 1.9 : 1.5;
   const plus = P.ps.filter(x => parsePs(x).plus).length;
   v *= 1 + .04 * P.ps.length + .06 * plus;

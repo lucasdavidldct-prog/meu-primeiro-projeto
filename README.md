@@ -145,6 +145,16 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.5.1
+
+- **Lendas em 3 categorias**, cada uma com carta própria: **Ídolo** (clara), **Herói** (laranja) e **Hall da Fama** (roxa).
+  Ídolos: a lista masculina de ícones por país (Brasil, Argentina, França, Alemanha, Holanda, Itália, Espanha, Inglaterra…)
+  mais todos os ídolos do Galo. Heróis e Hall da Fama conforme a lista enviada.
+- Pacote Lenda: Ídolo 30%, Herói 35%, Hall da Fama 35%. Preço no mercado: Ídolo > Herói > Hall da Fama.
+- Lendas que saíram da lista somem da coleção e devolvem 60.000 moedas cada.
+- A versão especial "Herói" das cartas atuais passou a se chamar "Craque do Mês" (para não confundir com as lendas).
+- Ícones próprios em SVG para os 32 estilos de jogo.
+
 ## Versão 1.5
 
 - **Opções ao iniciar a carreira**: ligar/desligar a *evolução dos jogadores* e o *mercado de leilão*.

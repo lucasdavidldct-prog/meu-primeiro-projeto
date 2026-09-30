@@ -1,4 +1,5 @@
 // Save em IndexedDB (um registro por slot), mais exportação/importação em JSON.
+import { getPlayer } from '../engine/world';
 import { SAVE_VERSION, newGame, sanitizeState, type GameState } from '../engine/state';
 
 const DB_NAME = 'esquadrao-fc';
@@ -66,10 +67,16 @@ export function migrate(S: GameState): GameState {
     S.career = null; S.v = SAVE_VERSION;
     S.aviso = 'Novo modo carreira! Escolha o seu clube para começar.';
   }
+  // Lendas que saíram da lista: a carta some e as moedas voltam
+  const legGone = S.cards.filter(c => c.p.startsWith('lenda-') && !getPlayer(c.p)).length;
   const n = sanitizeState(S);
-  if (n) S.aviso = `${n} carta(s) de jogadores removidos no editor saíram da coleção.`;
+  if (legGone) { S.coins += legGone * LEG_REFUND; S.aviso = `A lista de lendas foi atualizada: ${legGone} carta(s) de lenda saíram da coleção e você recebeu ${(legGone * LEG_REFUND).toLocaleString('pt-BR')} moedas de volta.`; }
+  else if (n) S.aviso = `${n} carta(s) de jogadores removidos no editor saíram da coleção.`;
   return S;
 }
+
+/** Moedas devolvidas por carta de lenda removida da lista. */
+const LEG_REFUND = 60000;
 
 export function exportJson(S: GameState): string {
   return JSON.stringify({ app: 'esquadrao-fc', exportado: new Date().toISOString(), save: S }, null, 1);

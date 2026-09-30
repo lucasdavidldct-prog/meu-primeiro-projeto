@@ -33,6 +33,7 @@
   "ESC": {"nome": "Escócia", "cores": ["#005eb8", "#ffffff", "#005eb8"]},
   "ESL": {"nome": "Eslováquia", "cores": ["#ffffff", "#0b4ea2", "#ee1c25"], "horizontal": true},
   "ESN": {"nome": "Eslovênia", "cores": ["#ffffff", "#0000ff", "#ff0000"], "horizontal": true},
+  "ESQ": {"nome": "Eslováquia", "cores": ["#ffffff", "#0b4ea2", "#ee1c25"], "horizontal": true},
   "ESP": {"nome": "Espanha", "cores": ["#aa151b", "#f1bf00", "#aa151b"], "horizontal": true},
   "EUA": {"nome": "Estados Unidos", "cores": ["#b22234", "#ffffff", "#3c3b6e"]},
   "FIN": {"nome": "Finlândia", "cores": ["#ffffff", "#002f6c", "#ffffff"]},

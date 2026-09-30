@@ -5,7 +5,7 @@ import { packById, type PackId } from '../engine/packs';
 import { pick } from '../engine/rng';
 import { allClubs, clubOf, leagueName, nationOf } from '../engine/world';
 import { clubStrength } from '../engine/squads';
-import { PS_BY_ID, PS_CATS, parsePs, type PsCat } from '../engine/data/schema';
+import { PS_BY_ID, PS_CATS, parsePs, type PsCat, LEG_CATS } from '../engine/data/schema';
 import { oppFromClub, oppFromId } from '../engine/season';
 import { endSeason as careerEnd, nextFixture } from '../engine/career';
 import { teamStrength, setFormation, setOrder, setRole, applyPick, autoLineup, blankGame, cardByUid, duplicates, newCareerGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
@@ -70,8 +70,8 @@ function showCard(u: number): void {
   const L = P.pos === 'GOL' ? STAT_G : STAT_L;
   openSheet(`<div style="display:grid;justify-items:center;gap:12px">${cardHTML(P, 'lg')}</div>
    <h2 style="margin-top:14px">${esc(P.name)}</h2>
-   <div class="small muted">${P.v === 'base' ? TIER_N[P.tier] : VAR[P.v].n} · ${P.pos}${P.alt.length ? ' (também ' + P.alt.join(', ') + ')' : ''} · ${P.age} anos</div>
-   <div class="small muted">${nationOf(P.nat).n} · ${P.leg ? esc(P.hist ?? 'Ícones') + (P.epoca ? ' (' + esc(P.epoca) + ')' : '') : esc(leagueName(P)) + ' · ' + esc(clubOf(P).n)}</div>
+   <div class="small muted">${P.v === 'base' || P.leg ? TIER_N[P.tier] : VAR[P.v].n} · ${P.pos}${P.alt.length ? ' (também ' + P.alt.join(', ') + ')' : ''} · ${P.age} anos</div>
+   <div class="small muted">${nationOf(P.nat).n} · ${P.leg ? `<b>${LEG_CATS[P.legCat ?? 'idolo']}</b> · ` + esc(P.hist ?? 'Lendas') + (P.epoca ? ' (' + esc(P.epoca) + ')' : '') : esc(leagueName(P)) + ' · ' + esc(clubOf(P).n)}</div>
    <dl class="kv"><dt>Pé bom</dt><dd>${{ D: 'Direito', E: 'Esquerdo', A: 'Ambidestro' }[P.foot]}</dd>${P.leg ? '' : `<dt>Idade</dt><dd>${P.age} anos</dd>`}${P.legClub === 'CAM' ? '<dt>Ídolo</dt><dd>Atlético Mineiro</dd>' : ''}</dl>
    <div class="bars" style="margin-top:12px">${P.st.map((s, i) => `<div class="bar">${L[i]}<i><b style="width:${s}%"></b></i><span>${s}</span></div>`).join('')}</div>
    ${P.ps.length ? `<h3>Playstyles</h3>${psDetail(P.ps)}` : ''}

@@ -366,3 +366,8 @@ body.is-dragging{cursor:grabbing}
 .ps-item.plus .ic{color:#f6d77a;background:#231a05}
 .ps-chip .psi,.ps-mini .psi{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em}
 .ps-mini{display:inline-block;margin-left:2px}
+/* Lendas: Herói (laranja/bronze vivo) e Hall da Fama (roxo com dourado) — visuais próprios */
+.t-lheroi{--cbg:linear-gradient(160deg,#2a1204,#b8561a 50%,#f0a24a);--ct:#fff4e6;--cpat:repeating-linear-gradient(115deg,rgba(255,255,255,.12) 0 2px,transparent 2px 14px)}
+.t-hall{--cbg:linear-gradient(160deg,#1c1238,#5a3fa8 55%,#241646);--ct:#f3e7ff;--cpat:radial-gradient(circle at 75% 18%,rgba(240,207,106,.55),transparent 40%)}
+/* Etiqueta da versão no topo da carta (não cobre os atributos) */
+.c-tag{top:3.5%;bottom:auto;left:31%;right:auto;padding:.15em .55em;border-radius:1em;background:rgba(0,0,0,.35);color:#fff;font-size:.5em;letter-spacing:.08em;white-space:nowrap;z-index:4}

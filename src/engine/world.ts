@@ -30,7 +30,7 @@ export const nationOf = (code: string): Nation => NATIONS[code] ?? UNKNOWN_NATIO
 export interface ClubInfo extends Club { id: string; lg: string; city: string; forca?: number }
 export interface LeagueInfo { id: string; n: string; pais: string; temporada: string; clubs: ClubInfo[] }
 
-export const LEGEND_CLUB: ClubInfo = { id: 'ICO', n: 'Ícones', s: 'ICO', c1: '#d9c28a', c2: '#3a2a08', lg: 'ICO', city: '' };
+export const LEGEND_CLUB: ClubInfo = { id: 'ICO', n: 'Lendas', s: 'ICO', c1: '#d9c28a', c2: '#3a2a08', lg: 'ICO', city: '' };
 
 /** Estado do mundo: substituído por inteiro em loadWorld. */
 export const W = {
@@ -74,7 +74,7 @@ export function loadWorld(ligas: LigaData[], lendas: LendasData = BUNDLED_LENDAS
     }
     W.leagues.push(info);
   }
-  W.legends = lendas.lendas.map(j => ({ ...toPlayer(j, 'ICO', 'ICO'), leg: true, hist: j.clubeHistorico, epoca: j.epoca, legClub: j.clube }));
+  W.legends = lendas.lendas.map(j => ({ ...toPlayer(j, 'ICO', 'ICO'), leg: true, hist: j.clubeHistorico, epoca: j.epoca, legClub: j.clube, legCat: j.categoria ?? 'idolo' }));
   for (const p of W.legends) W.players.set(p.id, p);
 }
 loadWorld(BUNDLED_LIGAS);
