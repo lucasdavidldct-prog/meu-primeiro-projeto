@@ -20,3 +20,5 @@ Resposta final em pt-BR:
 - O que entrou, saiu e mudou, com contagens.
 - Quaisquer dúvidas sobre fatos.
 - Efeito nos saves: cartas removidas e moedas devolvidas.
+
+Converse sempre em português do Brasil, inclusive nas mensagens de progresso.

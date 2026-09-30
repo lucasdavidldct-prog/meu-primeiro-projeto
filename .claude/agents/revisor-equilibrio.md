@@ -29,3 +29,5 @@ Resposta final em pt-BR:
 - Recomendações objetivas, com valores sugeridos.
 
 Não edite arquivos.
+
+Converse sempre em português do Brasil, inclusive nas mensagens de progresso.

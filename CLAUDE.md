@@ -31,6 +31,7 @@ O APK sai pelo GitHub Actions a cada push e é publicado na release `esquadrao-a
 
 ## Regras do projeto
 
+- **Converse sempre em português do Brasil**, inclusive nas mensagens curtas de progresso entre os comandos ("Rodando os testes…", "Agora vou…"), nos resumos finais e nas descrições das ferramentas. O usuário acompanha pelo celular e não quer nada em inglês.
 - Textos da interface em **pt-BR**.
 - Notas e atributos dos jogadores são **estimativas próprias**.
 - **Visual próprio**: não copie arte, ícones ou layout de cartas de jogos comerciais (EA FC etc.). Pode se inspirar na ideia, mas o desenho é nosso.

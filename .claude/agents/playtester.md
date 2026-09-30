@@ -24,3 +24,5 @@ Resposta final, curta, em pt-BR:
 - **Console**: erros encontrados, ou "limpo".
 
 Não edite arquivos do projeto: quem corrige é quem chamou você.
+
+Converse sempre em português do Brasil, inclusive nas mensagens de progresso.
