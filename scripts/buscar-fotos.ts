@@ -1,9 +1,10 @@
 // Busca fotos livres (Wikimedia Commons) dos jogadores pelo Wikidata e grava data/fotos.json.
 // Uso: npm run fotos   (precisa de internet; só procura quem ainda não está no arquivo)
 //      npm run fotos -- --refazer   (procura de novo quem ficou sem foto)
+// Lendas sem foto são procuradas de novo a cada execução, com buscas extras e a imagem livre da Wikipédia como plano B.
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { escolherFoto, nomesDeBusca, type Candidato, type FotoRef } from '../src/engine/data/fotos';
+import { FUTEBOLISTA, escolherFoto, nomesDeBusca, type Candidato, type FotoRef } from '../src/engine/data/fotos';
 
 const API = 'https://www.wikidata.org/w/api.php';
 const UA = 'EsquadraoFC/1.0 (jogo pessoal; https://github.com/lucasdavidldct-prog/meu-primeiro-projeto)';
@@ -11,7 +12,7 @@ const ARQ = 'data/fotos.json';
 const ANO = new Date().getFullYear();
 const refazer = process.argv.includes('--refazer');
 
-interface Jog { id: string; nome: string; nomeCurto: string; idade: number; lenda?: boolean }
+interface Jog { id: string; nome: string; nomeCurto: string; idade: number; lenda?: boolean; clubeHistorico?: string }
 
 function jogadores(): Jog[] {
   const out: Jog[] = [];
@@ -41,13 +42,34 @@ async function api(params: Record<string, string>): Promise<any> {
   throw new Error('Wikidata não respondeu: ' + url);
 }
 
+/** Páginas da Wikipédia de cada item do Wikidata (para o plano B da foto). */
+const paginas = new Map<string, [string, string][]>();
+
+/** Plano B para lendas: a imagem principal livre (pilicense=free) da página da Wikipédia do jogador. */
+async function fotoDaWikipedia(cands: Candidato[]): Promise<FotoRef> {
+  for (const c of cands) {
+    if (!c.ocupacoes.includes(FUTEBOLISTA) || (c.nascimento && c.nascimento > 1995)) continue;
+    for (const [lang, titulo] of paginas.get(c.q) ?? []) {
+      const url = `https://${lang}.wikipedia.org/w/api.php?` + new URLSearchParams({ format: 'json', action: 'query', prop: 'pageimages', piprop: 'name', pilicense: 'free', titles: titulo });
+      try {
+        const r = await (await fetch(url, { headers: { 'User-Agent': UA } })).json() as { query?: { pages?: Record<string, { pageimage?: string }> } };
+        const img = Object.values(r.query?.pages ?? {})[0]?.pageimage;
+        if (img && !/\.svg$/i.test(img)) return { f: img.replace(/_/g, ' '), q: c.q };
+      } catch { /* tenta a próxima */ }
+    }
+  }
+  return null;
+}
+
 async function candidatos(busca: string): Promise<Candidato[]> {
   const s = await api({ action: 'wbsearchentities', search: busca, language: 'pt', uselang: 'pt', type: 'item', limit: '7' });
   const ids: string[] = (s.search ?? []).map((x: { id: string }) => x.id);
   if (!ids.length) return [];
-  const e = await api({ action: 'wbgetentities', ids: ids.join('|'), props: 'claims' });
+  const e = await api({ action: 'wbgetentities', ids: ids.join('|'), props: 'claims|sitelinks', sitefilter: 'ptwiki|enwiki' });
   return ids.map(q => {
     const cl = e.entities?.[q]?.claims ?? {};
+    const sl = e.entities?.[q]?.sitelinks ?? {};
+    paginas.set(q, [['pt', sl.ptwiki?.title], ['en', sl.enwiki?.title]].filter((x): x is [string, string] => !!x[1]));
     const vals = (p: string) => (cl[p] ?? []).map((c: any) => c.mainsnak?.datavalue?.value).filter(Boolean);
     const t = vals('P569')[0]?.time as string | undefined;
     return { q, ocupacoes: vals('P106').map((v: any) => v.id), nascimento: t ? parseInt(t.slice(1, 5), 10) : undefined, imagem: vals('P18')[0] as string | undefined };
@@ -57,17 +79,23 @@ async function candidatos(busca: string): Promise<Candidato[]> {
 async function main(): Promise<void> {
   const fotos: Record<string, FotoRef> = existsSync(ARQ) ? JSON.parse(readFileSync(ARQ, 'utf8')) : {};
   const todos = jogadores();
-  const fila = todos.filter(j => !(j.id in fotos) || (refazer && fotos[j.id] === null));
+  const fila = todos.filter(j => !(j.id in fotos) || ((refazer || j.lenda) && fotos[j.id] === null));
   console.log(`${todos.length} jogadores, ${fila.length} para procurar.`);
   let feitos = 0, achados = 0, falhas = 0;
   const trabalhador = async () => {
     for (let j = fila.shift(); j; j = fila.shift()) {
       try {
         let ref: FotoRef = null;
-        for (const b of nomesDeBusca(j.nome, j.nomeCurto)) {
-          ref = escolherFoto(await candidatos(b), { idade: j.idade, lenda: j.lenda }, ANO);
+        const buscas = nomesDeBusca(j.nome, j.nomeCurto);
+        if (j.lenda) buscas.push(`${j.nomeCurto} futebolista`, `${j.nomeCurto} ${j.clubeHistorico?.split('/')[0].trim() ?? ''}`.trim(), `${j.nome} footballer`);
+        const vistos: Candidato[] = [];
+        for (const b of [...new Set(buscas)]) {
+          const cs = await candidatos(b);
+          vistos.push(...cs);
+          ref = escolherFoto(cs, { idade: j.idade, lenda: j.lenda }, ANO);
           if (ref) break;
         }
+        if (!ref && j.lenda) ref = await fotoDaWikipedia(vistos);
         fotos[j.id] = ref;
         if (ref) achados++;
       } catch (e) { falhas++; console.warn(j.id, (e as Error).message); }
