@@ -145,6 +145,12 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.4.1
+
+- **Escalar melhor time** agora maximiza a Força (posição, química e funções), testando trocas vaga a vaga:
+  não deixa mais cartas melhores no banco por causa da posição exata.
+- Histórico de temporadas mostra o artilheiro do seu time em cada ano.
+
 ## Versão 1.4
 
 - **Jogadas pelas pontas**: o lance nasce de quem criou a jogada. Alas, pontas abertos e laterais que apoiam puxam o

@@ -18,7 +18,7 @@ export interface CupComp { year: number; groups: LibGroup[]; groupRound: number;
 
 export type CalItem = { c: 'liga'; round: number } | { c: 'lib'; phase: 'grupos'; round: number } | { c: 'lib'; phase: 'quartas' | 'semi'; leg: 0 | 1 } | { c: 'lib'; phase: 'final' };
 export interface Trophy { comp: 'brasileirao' | 'serie-b' | 'libertadores'; name: string; year: number }
-export interface SeasonRecord { year: number; div: 'A' | 'B'; pos: number; pts: number; lib: string | null; coins: number }
+export interface SeasonRecord { year: number; div: 'A' | 'B'; pos: number; pts: number; lib: string | null; coins: number; /** Artilheiro do seu time na temporada. */ art?: string }
 
 export interface Career {
   club: string;

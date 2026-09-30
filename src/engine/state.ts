@@ -115,7 +115,35 @@ export function removeCard(S: GameState, u: number): void {
   S.squad.bench = S.squad.bench.map(x => (x === u ? 0 : x));
 }
 
-/** Escala o melhor time: primeiro posição exata, depois alternativa, depois qualquer um. */
+/**
+ * Melhora a escalação trocando jogadores enquanto a Força do time (setores, com química, posição e funções) subir.
+ * Parte do time montado por posição e testa, vaga a vaga, cada carta da coleção (ou trocar dois titulares de lugar).
+ */
+function optimizeXI(S: GameState, all: OwnedCard[]): void {
+  const score = (xi: number[]) => { const T = teamInfo({ ...S, squad: { ...S.squad, xi } }); return T.full ? power(T.r) * 10 + T.chem.total * .01 : -1; };
+  let xi = S.squad.xi.slice(), best = score(xi);
+  const idOf = new Map(all.map(P => [P.u, P.id]));
+  for (let pass = 0; pass < 4; pass++) {
+    let improved = false;
+    for (let i = 0; i < 11; i++) {
+      for (const P of all) {
+        if (P.u === xi[i]) continue;
+        const j = xi.indexOf(P.u), cand = xi.slice();
+        if (j >= 0) { cand[j] = xi[i]; cand[i] = P.u; }
+        else {
+          if (xi.some((u, k) => k !== i && idOf.get(u) === P.id)) continue; // mesma pessoa em outra versão
+          cand[i] = P.u;
+        }
+        const v = score(cand);
+        if (v > best + 1e-9) { best = v; xi = cand; improved = true; }
+      }
+    }
+    if (!improved) break;
+  }
+  S.squad.xi = xi;
+}
+
+/** Escala o melhor time: monta por posição e depois otimiza pela Força (química e posição incluídas). */
 export function autoLineup(S: GameState): void {
   const slots = squadSlots(S);
   const all = allCards(S);
@@ -135,6 +163,9 @@ export function autoLineup(S: GameState): void {
     if (best) { xi[i] = best.u; usedU.add(best.u); usedP.add(best.id); }
   }
   S.squad.xi = xi;
+  optimizeXI(S, all);
+  usedU.clear(); usedP.clear();
+  for (const u of S.squad.xi) { const P = all.find(c => c.u === u); if (P) { usedU.add(u); usedP.add(P.id); } }
   const rest = all.filter(P => !usedU.has(P.u)).sort((a, b) => b.ovr - a.ovr);
   const bench: number[] = [], bp = new Set<string>();
   const g = rest.find(P => P.pos === 'GOL');

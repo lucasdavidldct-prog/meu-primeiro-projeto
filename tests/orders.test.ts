@@ -81,3 +81,19 @@ describe('por onde nascem os lances', () => {
     expect(abertos).toBeGreaterThan(normal);
   });
 });
+
+import { addCard, autoLineup, teamStrength } from '../src/engine/state';
+import { packContents } from '../src/engine/packs';
+describe('escalar melhor time', () => {
+  it('não perde Força para a escalação por posição exata e mantém química alta', () => {
+    const S = newCareerGame('CAM', {});
+    for (let k = 0; k < 4; k++) for (const x of packContents('ouro')) addCard(S, x.p, x.v);
+    const base = teamStrength(teamInfo(S));
+    autoLineup(S);
+    const T = teamInfo(S);
+    expect(teamStrength(T)).toBeGreaterThanOrEqual(base);
+    expect(T.full).toBe(true);
+    const ids = T.xi.map(P => P!.id);
+    expect(new Set(ids).size).toBe(11);
+  });
+});

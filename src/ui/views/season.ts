@@ -50,7 +50,7 @@ function viewTrophies(C: Career): string {
   return `<div class="trophies">${cab.map(([k, n, ic]) => `<div class="trophy ${count(k) ? 'won' : ''}"><span class="ic">${ic}</span><b>${count(k)}</b><span>${n}</span></div>`).join('')}</div>
   ${C.trophies.length ? `<div class="panel" style="margin-top:10px">${C.trophies.slice().reverse().map(t => `<div class="res"><span>${t.year}</span><b>${esc(t.name)}</b><span></span></div>`).join('')}</div>` : '<p class="empty-note">A sala de troféus ainda está vazia. Bora encher!</p>'}
   <h3>Temporadas</h3>
-  ${C.history.length ? `<div class="panel tbl-wrap" style="padding:6px 8px"><table><thead><tr><th>Ano</th><th>Divisão</th><th>Pos.</th><th>Pts</th><th>Libertadores</th></tr></thead><tbody>${C.history.slice().reverse().map(h => `<tr><td>${h.year}</td><td style="text-align:left">Série ${h.div}</td><td>${h.pos}º</td><td>${h.pts}</td><td>${h.lib ? esc(h.lib) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-note">Nenhuma temporada encerrada ainda.</p>'}`;
+  ${C.history.length ? `<div class="panel tbl-wrap" style="padding:6px 8px"><table><thead><tr><th>Ano</th><th>Divisão</th><th>Pos.</th><th>Pts</th><th>Libertadores</th><th>Artilheiro</th></tr></thead><tbody>${C.history.slice().reverse().map(h => `<tr><td>${h.year}</td><td style="text-align:left">Série ${h.div}</td><td>${h.pos}º</td><td>${h.pts}</td><td>${h.lib ? esc(h.lib) : '—'}</td><td style="text-align:left">${h.art ? esc(h.art) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-note">Nenhuma temporada encerrada ainda.</p>'}`;
 }
 
 export function viewSeason(): string {

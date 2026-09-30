@@ -230,6 +230,8 @@ const ACT: Record<string, Handler> = {
       craque ? `⭐ Craque da temporada: <b>${esc(craque[0])}</b> (média ${(craque[1].n / craque[1].j).toFixed(1)} em ${craque[1].j} jogos)` : '',
     ].filter(Boolean);
     const r = careerEnd(S.career!);
+    const last = S.career!.history[S.career!.history.length - 1];
+    if (last && art && art[1].g) last.art = `${art[0]} (${art[1].g})`;
     S.career!.stats = {};
     S.coins += r.coins;
     S.titles += r.trophies.length;
