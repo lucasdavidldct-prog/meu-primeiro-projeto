@@ -6,6 +6,7 @@ import { pick } from './rng';
 import { newCareer, type Career, type CareerOpts } from './career';
 import type { FormationId, OwnedCard, Pos, SlotDef, StyleId, Variant } from './types';
 import { W, getPlayer } from './world';
+import { ROLE_SWAPS, orderFx, suggestOrder, type Order } from './orders';
 
 export const SAVE_VERSION = 4;
 
@@ -17,7 +18,13 @@ export interface GameState {
   coins: number;
   uid: number;
   cards: CardRef[];
-  squad: { form: FormationId; xi: number[]; bench: number[] };
+  squad: {
+    form: FormationId; xi: number[]; bench: number[];
+    /** Função escolhida em cada vaga ('' = a do esquema). Volta ao padrão ao trocar de formação. */
+    roles?: (Pos | '')[];
+    /** Orientação individual de cada vaga (função e participação). */
+    ord?: (Order | null)[];
+  };
   tac: { style: StyleId; ment: number };
   /** Modo carreira (null = ainda não escolheu o clube). */
   career: Career | null;
@@ -35,6 +42,8 @@ export interface GameState {
   /** Já viu as dicas de como jogar. */
   dicasVistas?: boolean;
   titles: number;
+  /** Dificuldade: 0 fácil, 1 normal, 2 difícil, 3 lenda (padrão: normal). */
+  dif?: 0 | 1 | 2 | 3;
   /** Mensagem para mostrar uma vez ao abrir o jogo (não é salva de volta). */
   aviso?: string;
 }
@@ -108,7 +117,7 @@ export function removeCard(S: GameState, u: number): void {
 
 /** Escala o melhor time: primeiro posição exata, depois alternativa, depois qualquer um. */
 export function autoLineup(S: GameState): void {
-  const slots = slotsOf(S.squad.form);
+  const slots = squadSlots(S);
   const all = allCards(S);
   const usedU = new Set<number>(), usedP = new Set<string>(), xi: number[] = Array(11).fill(0);
   const order = slots.map((_, i) => i).sort((a, b) => (slots[a].p === 'GOL' ? -1 : 0) - (slots[b].p === 'GOL' ? -1 : 0));
@@ -139,10 +148,43 @@ export function autoLineup(S: GameState): void {
   S.squad.bench = bench;
 }
 
+/** Vagas do esquema com as funções escolhidas pelo usuário (ex.: VOL jogando de MC). */
+export function squadSlots(S: GameState): SlotDef[] {
+  const roles = S.squad.roles ?? [];
+  return slotsOf(S.squad.form).map((s, i) => {
+    const r = roles[i];
+    return r && ROLE_SWAPS[s.p].includes(r) ? { ...s, p: r } : s;
+  });
+}
+/** Muda a função de uma vaga (a posição do esquema volta a ser a padrão se for a mesma). */
+export function setRole(S: GameState, i: number, p: Pos): void {
+  const base = slotsOf(S.squad.form)[i].p;
+  const roles = S.squad.roles ?? Array(11).fill('');
+  roles[i] = p === base ? '' : p;
+  S.squad.roles = roles;
+  // Função tática de outro setor não vale mais
+  if (S.squad.ord?.[i]) S.squad.ord[i] = { p: S.squad.ord[i]!.p };
+}
+export function setOrder(S: GameState, i: number, o: Order): void {
+  const ord = S.squad.ord ?? Array(11).fill(null);
+  ord[i] = { ...ord[i], ...o };
+  S.squad.ord = ord;
+}
+/** Orientação valendo numa vaga: a escolhida ou, se nenhuma, a sugerida pelos atributos do jogador. */
+export function orderAt(S: GameState, i: number, P: OwnedCard | null, pos: Pos): Order {
+  const o = S.squad.ord?.[i], sug = suggestOrder(P, pos);
+  return { f: o?.f ?? sug.f, p: o?.p ?? 0 };
+}
+/** Trocar de formação zera funções e orientações (as vagas mudam). */
+export function setFormation(S: GameState, f: FormationId): void {
+  if (S.squad.form === f) return;
+  S.squad.form = f; S.squad.roles = undefined; S.squad.ord = undefined;
+}
+
 export interface TeamInfo { xi: (OwnedCard | null)[]; chem: Chem; slots: SlotDef[]; r: Ratings; ovr: number; full: boolean }
 export function teamInfo(S: GameState): TeamInfo {
-  const xi = xiCards(S), form = S.squad.form, slots = slotsOf(form), chem = calcChem(xi, form);
-  const entries = slots.map((s, i) => ({ pos: s.p, eff: effOvr(xi[i], s.p, chem.per[i]) }));
+  const xi = xiCards(S), slots = squadSlots(S), chem = calcChem(xi, slots);
+  const entries = slots.map((s, i) => ({ pos: s.p, eff: effOvr(xi[i], s.p, chem.per[i]), P: xi[i], ofx: orderFx(s.p, orderAt(S, i, xi[i], s.p)) }));
   const filled = xi.filter(Boolean) as OwnedCard[];
   const ovr = filled.length ? Math.round(filled.reduce((a, P) => a + P.ovr, 0) / 11) : 0;
   return { xi, chem, slots, r: rate(entries), ovr, full: filled.length === 11 };

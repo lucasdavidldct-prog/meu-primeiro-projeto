@@ -10,12 +10,19 @@ import type { BasePlayer, FormationId, Pos, StyleId } from './types';
 import type { TeamInfo } from './state';
 import { bestXI, squadOf } from './squads';
 import { FX, psLevel, teamFx, type PsId } from './playstyles';
+import { funcOf, orderFx, suggestOrder, type Order, type OrderFx } from './orders';
 
-export interface SideEntry { P: BasePlayer; pos: Pos; base: number; inMin: number; yc: number; red: boolean; name: string }
+export interface SideEntry {
+  P: BasePlayer; pos: Pos; base: number; inMin: number; yc: number; red: boolean; name: string;
+  /** Efeito da função/orientação do jogador e o id da função (para a narração). */
+  ofx?: OrderFx; fn?: string;
+}
 export interface Side {
   you: boolean; name: string; s: string; c1: string; c2: string;
   form: FormationId; style: StyleId; ment: number;
   xi: SideEntry[]; bench: BasePlayer[]; subs: number; goals: number; scorers: string[]; str?: number;
+  /** Orientações por vaga (o usuário escolhe; a IA usa as sugeridas pelos atributos). */
+  ord?: Order[];
 }
 export type EvType = 'info' | 'goal' | 'goal opp' | 'goal lance' | 'chance' | 'card-y' | 'card-r' | 'lance';
 export interface MatchEvent { l: string; side: 0 | 1; type: EvType; text: string }
@@ -35,46 +42,51 @@ const ASSIST_W: Record<Pos, number> = { GOL: .05, ZAG: .3, LD: .9, LE: .9, VOL: 
 const FOUL_W: Record<Pos, number> = { GOL: .1, ZAG: 1.4, LD: 1.1, LE: 1.1, VOL: 1.5, MC: 1, MEI: .6, MD: .8, ME: .8, PD: .5, PE: .5, ATA: .5 };
 /** Constantes calibradas com npm run calibrar (média ~2,6 gols entre times do mesmo nível). */
 export const CALIB = {
-  chanceBase: .118,   // chance base de criar uma finalização por minuto
+  chanceBase: .112,   // chance base de criar uma finalização por minuto
   penChance: .013,    // fração das finalizações que viram pênalti
   penConv: .78,       // conversão base do pênalti
-  shotBase: .05,      // chance mínima de gol numa finalização
-  shotQ: .16,         // parte que depende da qualidade da chance
-  attExp: 1.5,          // peso da relação ataque/defesa na criação de chances
-  possExp: 2.5,         // peso do meio-campo na posse
-  finExp: 1,          // peso da qualidade do finalizador contra o goleiro
-  home: 1.16,         // multiplicador de chances do mandante
-  away: .9,           // multiplicador de chances do visitante
+  shotBase: .042,     // chance mínima de gol numa finalização
+  shotQ: .15,         // parte que depende da qualidade da chance
+  attExp: 2.1,        // peso da relação ataque/defesa na criação de chances (diferença de nível pesa mais)
+  possExp: 2.8,       // peso do meio-campo na posse
+  finExp: 1.5,        // peso da qualidade do finalizador contra o goleiro
+  home: 1.22,         // multiplicador de chances do mandante
+  away: .84,          // multiplicador de chances do visitante
+  homeMid: 1.02,      // a torcida empurra: meio-campo do mandante um pouco mais forte
 };
 
 const POSS_MOD: Record<StyleId, number> = { posse: .07, retranca: -.08, contra: -.06, pressao: .03, equilibrado: 0 };
 
 /** Lado do usuário a partir do time escalado. */
-export function sideFromTeam(T: TeamInfo, o: { name: string; form: FormationId; style: StyleId; ment: number; bench: BasePlayer[] }): Side {
+export function sideFromTeam(T: TeamInfo, o: { name: string; form: FormationId; style: StyleId; ment: number; bench: BasePlayer[]; ord?: Order[] }): Side {
   const xi = T.slots.map((s, i) => {
-    const P = T.xi[i]!;
-    return { P, pos: s.p, base: effOvr(P, s.p, T.chem.per[i]), inMin: 0, yc: 0, red: false, name: P.short };
+    const P = T.xi[i]!, od = o.ord?.[i] ?? suggestOrder(P, s.p);
+    return { P, pos: s.p, base: effOvr(P, s.p, T.chem.per[i]), inMin: 0, yc: 0, red: false, name: P.short, ofx: orderFx(s.p, od), fn: funcOf(s.p, od).id };
   });
   return { you: true, name: o.name, s: (o.name[0] || 'E').toUpperCase(), c1: '#e8c35f', c2: '#1d1403', form: o.form, style: o.style,
-    ment: o.ment - 2, xi, bench: o.bench, subs: 5, goals: 0, scorers: [] };
+    ment: o.ment - 2, xi, bench: o.bench, subs: 5, goals: 0, scorers: [], ord: o.ord };
 }
 
 /** Adversário real: escala o melhor XI do elenco do clube na formação escolhida. */
-export function sideOpp(t: OppTeam): Side {
+export function sideOpp(t: OppTeam, boost = 0): Side {
   const { xi: players, bench } = bestXI(squadOf(t.club), t.form, t.club);
   const slots = slotsOf(t.form);
   const chem = calcChem(players, t.form);
-  const xi = players.map((P, i) => ({ P, pos: slots[i].p, base: effOvr(P, slots[i].p, chem.per[i]), inMin: 0, yc: 0, red: false, name: P.short }));
+  const xi = players.map((P, i) => {
+    const od = suggestOrder(P, slots[i].p);
+    return { P, pos: slots[i].p, base: effOvr(P, slots[i].p, chem.per[i]) + boost, inMin: 0, yc: 0, red: false, name: P.short, ofx: orderFx(slots[i].p, od), fn: od.f };
+  });
   return { you: false, name: t.n, s: t.s, c1: t.c1, c2: t.c2, form: t.form, style: t.style, ment: 0, xi, bench, subs: 5, goals: 0, scorers: [], str: t.str };
 }
 
 /** Cansaço de 0 a 1: começa aos 55 minutos em campo. Incansável reduz. */
 export const fatigue = (e: SideEntry, min: number): number =>
-  clamp((min - e.inMin - 55) / 35, 0, 1) * FX.incansavel[psLevel(e.P, 'incansavel')];
+  clamp((min - e.inMin - 55 / (e.ofx?.tire ?? 1)) / 35, 0, 1) * FX.incansavel[psLevel(e.P, 'incansavel')] * (e.ofx?.tire ?? 1);
 export const effNow = (e: SideEntry, min: number): number => (e.red ? 0 : e.base * (1 - fatigue(e, min) * .08));
 
-function weightedPlayer(side: Side, W: Record<Pos, number>, excl?: SideEntry | null, bonus?: (e: SideEntry) => number): SideEntry {
-  const c = side.xi.filter(e => !e.red && e !== excl).map(e => [e, (W[e.pos] || .1) * Math.pow(Math.max(e.base, 30) / 70, 3) * (bonus ? bonus(e) : 1)] as const);
+type Play = 'score' | 'assist' | 'head' | 'long' | 'cross';
+function weightedPlayer(side: Side, W: Record<Pos, number>, excl?: SideEntry | null, bonus?: (e: SideEntry) => number, play?: Play): SideEntry {
+  const c = side.xi.filter(e => !e.red && e !== excl).map(e => [e, (W[e.pos] || .1) * Math.pow(Math.max(e.base, 30) / 70, 3) * (bonus ? bonus(e) : 1) * (play && e.ofx ? e.ofx[play] : 1)] as const);
   return c.length ? wpick(c) : side.xi[0];
 }
 const LONG_W: Record<Pos, number> = { GOL: 0, ZAG: .3, LD: .4, LE: .4, VOL: 1.2, MC: 2, MEI: 2.6, MD: 1.4, ME: 1.4, PD: 2.2, PE: 2.2, ATA: 1.6 };
@@ -106,7 +118,7 @@ export class Match {
   label = "0'";
   min = 0;
   ev: MatchEvent[] = [];
-  st = { poss: [0, 0], sh: [0, 0], on: [0, 0], yc: [0, 0] };
+  st = { poss: [0, 0], sh: [0, 0], on: [0, 0], yc: [0, 0], ck: [0, 0] };
   ht = false;
   over = false;
   momentsLeft: number;
@@ -116,11 +128,14 @@ export class Match {
   onMoment?: MomentHandler;
   /** Mandante: 0 = A, 1 = B, null = campo neutro. */
   home: 0 | 1 | null;
+  /** Goleiro mais difícil de bater nos lances jogáveis (dificuldade e jogo fora de casa). */
+  keeperBoost: number;
 
-  constructor(public A: Side, public B: Side, opts: { moments?: number; onMoment?: MomentHandler; home?: 0 | 1 | null } = {}) {
-    this.momentsLeft = opts.onMoment ? (opts.moments ?? 4) : 0;
+  constructor(public A: Side, public B: Side, opts: { moments?: number; onMoment?: MomentHandler; home?: 0 | 1 | null; keeperBoost?: number } = {}) {
+    this.momentsLeft = opts.onMoment ? (opts.moments ?? 3) : 0;
     this.onMoment = opts.onMoment;
     this.home = opts.home ?? null;
+    this.keeperBoost = opts.keeperBoost ?? 0;
     const s1 = 1 + Math.floor(R() * 3), s2 = 2 + Math.floor(R() * 4);
     for (let m = 1; m <= 45; m++) this.seq.push({ m, l: m + "'" });
     for (let k = 1; k <= s1; k++) this.seq.push({ m: 45, l: '45+' + k + "'" });
@@ -128,10 +143,13 @@ export class Match {
     for (let m = 46; m <= 90; m++) this.seq.push({ m, l: m + "'" });
     for (let k = 1; k <= s2; k++) this.seq.push({ m: 90, l: '90+' + k + "'" });
     this.addEv(0, 'info', `${A.name} (${A.form}, ${STYLES[A.style].n}) × ${B.name} (${B.form}, ${STYLES[B.style].n}). Bola rolando!`);
+    if (this.home !== null) this.addEv(this.home, 'info', this.home === 0 ? `Casa cheia! A torcida do ${A.name} empurra o time.` : `Pressão da torcida do ${B.name}: jogar fora de casa é mais difícil.`);
   }
 
   addEv(side: 0 | 1, type: EvType, text: string): void { this.ev.unshift({ l: this.label, side, type, text }); }
-  ratingsOf(side: Side): Ratings { return rate(side.xi.map(e => ({ pos: e.pos, eff: effNow(e, this.min), red: e.red }))); }
+  ratingsOf(side: Side): Ratings { return rate(side.xi.map(e => ({ pos: e.pos, eff: effNow(e, this.min), red: e.red, P: e.P, ofx: e.ofx }))); }
+  /** Espaço que o time deixa atrás (laterais-alas, volantes que sobem...): aumenta as chances do rival, principalmente no contra-ataque. */
+  exposure(side: Side): number { return side.xi.reduce((s, e) => s + (e.red ? 0 : e.ofx?.expose ?? 0), 0); }
 
   /** Avança um minuto. Retorna o que aconteceu com o relógio. */
   async step(): Promise<'tick' | 'ht' | 'end'> {
@@ -142,6 +160,7 @@ export class Match {
     if ('ht' in it) { this.ht = true; this.addEv(0, 'info', 'Fim do primeiro tempo.'); return 'ht'; }
     this.min = it.m; this.label = it.l;
     const { A, B } = this, rA = this.ratingsOf(A), rB = this.ratingsOf(B);
+    if (this.home === 0) rA.mid *= CALIB.homeMid; else if (this.home === 1) rB.mid *= CALIB.homeMid;
     // Passe Preciso / em Profundidade fortalecem o meio (posse)
     rA.mid *= 1 + Math.min(.04, teamFx(A, 'passe-preciso', FX.passe) + teamFx(A, 'passe-em-profundidade', FX.passe));
     rB.mid *= 1 + Math.min(.04, teamFx(B, 'passe-preciso', FX.passe) + teamFx(B, 'passe-em-profundidade', FX.passe));
@@ -156,14 +175,15 @@ export class Match {
     };
     const hA = this.home === 0 ? CALIB.home : this.home === 1 ? CALIB.away : 1;
     const hB = this.home === 1 ? CALIB.home : this.home === 0 ? CALIB.away : 1;
-    const cA = chance(rA.att, rB.def, pA, A.style, B.style, A.ment, B.ment) * this.psChance(A, B) * hA;
-    const cB = chance(rB.att, rA.def, 1 - pA, B.style, A.style, B.ment, A.ment) * this.psChance(B, A) * hB;
+    const cA = chance(rA.att, rB.def, pA, A.style, B.style, A.ment, B.ment) * this.psChance(A, B) * hA * this.exposed(B, A);
+    const cB = chance(rB.att, rA.def, 1 - pA, B.style, A.style, B.ment, A.ment) * this.psChance(B, A) * hB * this.exposed(A, B);
     const rollA = R(), rollB = R();
     if (rollA < cA) await this.shot(A, B, rA, 0);
     else if (rollA < cA / this.tackleKeep(B)) this.tackleEvent(B, A, 1);
     if (!this.over && rollB < cB) await this.shot(B, A, rB, 1);
     else if (rollB < cB / this.tackleKeep(A)) this.tackleEvent(A, B, 0);
     if (!this.over) await this.freeKicks();
+    if (!this.over) this.ambient(pA, rA, rB);
     this.cards();
     this.aiManage();
     return 'tick';
@@ -183,6 +203,31 @@ export class Match {
     }
   }
 
+  /** Multiplicador das chances de `att` pelo espaço que `def` deixa atrás (mais forte se `att` joga no contra-ataque). */
+  private exposed(def: Side, att: Side): number {
+    const x = this.exposure(def) * (att.style === 'contra' ? 1.6 : 1);
+    return clamp(1 + .045 * x, .82, 1.3);
+  }
+
+  /** Narração do jogo corrido (lances de construção, escanteios, impedimentos) com os nomes e funções dos jogadores. */
+  private ambient(pA: number, rA: Ratings, rB: Ratings): void {
+    if (R() > .16) return;
+    const si: 0 | 1 = R() < pA ? 0 : 1, att = si ? this.B : this.A, def = si ? this.A : this.B;
+    const who = (play: Play, W: Record<Pos, number> = ASSIST_W) => weightedPlayer(att, W, null, undefined, play);
+    const roll = R();
+    if (roll < .18) { this.st.ck[si]++; this.addEv(si, 'info', tx('corner', { p: who('cross', CROSS_W).name })); return; }
+    if (roll < .26) { this.addEv(si, 'info', tx('offside', { p: who('score', SCORE_W).name })); return; }
+    const a = who('assist');
+    const fn = a.fn ?? '';
+    const k = fn === 'pivo' ? 'bPivo' : fn === 'falso-9' ? 'bFalso9' : fn === 'armador' || fn === 'regista' ? 'bArmador' : fn === 'ala' ? 'bAla'
+      : fn === 'aberto' ? 'bAberto' : fn === 'invertido' ? 'bInvertido' : fn === 'box-to-box' || fn === 'infiltrador' ? 'bBox' : fn === 'construtor' || fn === 'libero' ? 'bSaida' : 'build';
+    const d = weightedPlayer(def, { GOL: 0, ZAG: 1, LD: .8, LE: .8, VOL: 1.2, MC: .6, MEI: .2, MD: .4, ME: .4, PD: .1, PE: .1, ATA: .05 });
+    this.addEv(si, 'info', tx(k as Parameters<typeof tx>[0], { p: a.name, q: who('score', SCORE_W).name, d: d.name }));
+    // Pressão: quem domina muito faz a torcida perceber
+    const dom = si ? rB.att / rA.def : rA.att / rB.def;
+    if (dom > 1.08 && R() < .25) this.addEv(si, 'info', tx('pressure', { t: att.name }));
+  }
+
   /** Fração das chances que sobra depois dos desarmes e interceptações do rival. */
   private tackleKeep(def: Side): number {
     return 1 - Math.min(.16, teamFx(def, 'desarme', FX.desarme) + teamFx(def, 'interceptacao', FX.intercept));
@@ -190,7 +235,12 @@ export class Match {
   /** Multiplicador de criação de chances pelos playstyles (desarmes do rival, velocistas no contra-ataque). */
   private psChance(att: Side, def: Side): number {
     let m = this.tackleKeep(def);
-    if (att.style === 'contra') m *= 1 + Math.min(.12, teamFx(att, 'velocista', FX.velocista));
+    if (att.style === 'contra') {
+      m *= 1 + Math.min(.16, teamFx(att, 'velocista', FX.velocista));
+      // Velocidade (RIT) de quem ataca o espaço decide o contra-ataque
+      const fwd = att.xi.filter(e => !e.red && (e.pos === 'ATA' || e.pos === 'PD' || e.pos === 'PE' || e.fn === 'profundidade' || e.fn === 'velocista'));
+      if (fwd.length) m *= clamp(Math.pow(fwd.reduce((s, e) => s + (e.P.st?.[0] ?? 70), 0) / fwd.length / 78, 1.6), .8, 1.25);
+    }
     return m;
   }
   /** Narra um desarme que matou a jogada (só às vezes, para não poluir). */
@@ -243,7 +293,7 @@ export class Match {
   private async shot(att: Side, def: Side, ra: Ratings, si: 0 | 1): Promise<void> {
     const gkE = def.xi.find(e => e.pos === 'GOL' && !e.red), gk = gkE ? gkE.name : 'o goleiro';
     const isPen = R() < CALIB.penChance;
-    if (this.canMoment(att) && (isPen || R() < .34)) {
+    if (this.canMoment(att) && (isPen || R() < .3)) {
       await this.playMoment(att, si, isPen ? { kind: 'penalti', taker: penaltyTaker(att) } : { kind: att.style === 'contra' || R() < .25 ? 'contra' : 'ataque' });
       return;
     }
@@ -260,11 +310,11 @@ export class Match {
     const wLong = .22 * (1 + .12 * Math.min(4, teamFx(att, 'chute-de-longe', [0, 1, 2])));
     const wHead = .16 * (1 + .1 * Math.min(4, teamFx(att, 'cruzamento', [0, 1, 2]) + teamFx(att, 'cabeceio', [0, 1, 2])));
     const kind = wpick([['normal', .62], ['longe', wLong], ['cabeca', wHead]] as const);
-    const shooter = kind === 'longe' ? weightedPlayer(att, LONG_W, null, e => 1 + 1.3 * ps(e, 'chute-de-longe'))
-      : kind === 'cabeca' ? weightedPlayer(att, HEAD_W, null, e => 1 + 1.3 * ps(e, 'cabeceio') + .3 * ps(e, 'imposicao-fisica'))
-      : weightedPlayer(att, SCORE_W, null, e => 1 + .4 * ps(e, 'finalizacao-precisa'));
-    const assist = kind === 'cabeca' ? weightedPlayer(att, CROSS_W, shooter, e => FX.cruzamento[ps(e, 'cruzamento')])
-      : R() < .62 ? weightedPlayer(att, ASSIST_W, shooter, e => FX.profundidade[ps(e, 'passe-em-profundidade')] + .2 * ps(e, 'passe-preciso')) : null;
+    const shooter = kind === 'longe' ? weightedPlayer(att, LONG_W, null, e => 1 + 1.3 * ps(e, 'chute-de-longe'), 'long')
+      : kind === 'cabeca' ? weightedPlayer(att, HEAD_W, null, e => 1 + 1.3 * ps(e, 'cabeceio') + .3 * ps(e, 'imposicao-fisica'), 'head')
+      : weightedPlayer(att, SCORE_W, null, e => 1 + .4 * ps(e, 'finalizacao-precisa'), 'score');
+    const assist = kind === 'cabeca' ? weightedPlayer(att, CROSS_W, shooter, e => FX.cruzamento[ps(e, 'cruzamento')], 'cross')
+      : R() < .62 ? weightedPlayer(att, ASSIST_W, shooter, e => FX.profundidade[ps(e, 'passe-em-profundidade')] + .2 * ps(e, 'passe-preciso'), 'assist') : null;
     // Bloqueio (chutes rasteiros e de longe)
     if (kind !== 'cabeca') {
       const bl = Math.min(.2, teamFx(def, 'bloqueio', FX.bloqueio));
@@ -274,7 +324,11 @@ export class Match {
       }
     }
     const q = R();
-    const fin = effNow(shooter, this.min), gkv = gkE ? effNow(gkE, this.min) : 30;
+    // Atributos pesam: FIN no chute normal, FIN + FIS de longe, FIN + FIS (impulsão) de cabeça; goleiro por REF/MER/POS.
+    const st = shooter.P.st ?? [], ovr = shooter.P.ovr;
+    const attr = shooter.P.pos === 'GOL' ? ovr : kind === 'normal' ? st[1] : kind === 'longe' ? .6 * st[1] + .4 * st[5] : .5 * st[1] + .5 * st[5];
+    const fin = effNow(shooter, this.min) + .8 * ((attr ?? ovr) - ovr);
+    const gkv = gkE ? effNow(gkE, this.min) + .7 * ((gkE.P.st ? .35 * gkE.P.st[3] + .35 * gkE.P.st[0] + .3 * gkE.P.st[5] : gkE.P.ovr) - gkE.P.ovr) : 30;
     let gp = (CALIB.shotBase + CALIB.shotQ * q * q) * Math.pow(clamp((fin * .6 + ra.att * .4) / gkv, .6, 1.8), CALIB.finExp);
     gp *= FX.reflexos[ps(gkE, 'reflexos')];
     if (kind === 'normal') gp *= 1.12 * FX.finalizacao[ps(shooter, 'finalizacao-precisa')];
@@ -292,8 +346,20 @@ export class Match {
     else if (q > .45) this.addEv(si, 'chance', kind === 'longe' ? tx('missLong', o) : kind === 'cabeca' ? tx('missHead', o) : tx('miss', o));
   }
 
+  /** IA lê o jogo aos 30 minutos: se está sendo dominada, muda o plano. */
+  private aiReact(): void {
+    const B = this.B, A = this.A, m = this.min;
+    if (m < 30 || this.aiDone.r30) return;
+    this.aiDone.r30 = true;
+    const poss = 100 - this.possessionPct, shotsDiff = this.st.sh[0] - this.st.sh[1];
+    if (B.style === 'posse' && poss < 42) { B.style = 'contra'; this.addEv(1, 'info', `${B.name} não consegue ficar com a bola e passa a jogar no contra-ataque.`); }
+    else if (shotsDiff >= 4 && B.goals <= A.goals) { B.ment = Math.max(-2, B.ment - 1); this.addEv(1, 'info', `${B.name} recua as linhas para suportar a pressão.`); }
+    else if (A.style === 'posse' && B.style === 'equilibrado' && R() < .5) { B.style = 'pressao'; this.addEv(1, 'info', `${B.name} adianta a marcação para tirar a bola do ${A.name}.`); }
+  }
+
   /** IA do time B: muda a mentalidade conforme o placar e faz substituições. */
   private aiManage(): void {
+    this.aiReact();
     const B = this.B, diff = B.goals - this.A.goals, m = this.min;
     if (m >= 46 && !this.aiDone.ht) {
       this.aiDone.ht = true;

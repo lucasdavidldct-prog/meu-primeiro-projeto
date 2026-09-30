@@ -9,11 +9,14 @@ import { R, clamp, pick, rn, type Rng } from './rng';
 export interface Actor { id: number; x: number; y: number; tx: number; ty: number; e?: SideEntry; gk?: boolean; team: 0 | 1; num: number }
 export type Target =
   | { kind: 'shot'; ax: number; power: number; curve: number }
-  | { kind: 'pass'; m: Actor }
+  /** Passe: rasteiro (1 toque) ou alto (2 toques), por cima da marcação. */
+  | { kind: 'pass'; m: Actor; alto?: boolean }
+  /** Lançamento em profundidade: a bola vai para o espaço e o companheiro corre até ela. */
+  | { kind: 'lanc'; m: Actor; x: number; y: number }
   | { kind: 'drib'; x: number; y: number };
 export interface BallKey { x: number; y: number; h: number }
 export interface Plan {
-  kind: 'pass' | 'drib' | 'shot' | 'fk';
+  kind: 'pass' | 'drib' | 'shot' | 'fk' | 'lanc';
   ok: boolean;
   /** Trajetória da bola (pontos igualmente espaçados no tempo). */
   ball: BallKey[];
@@ -64,7 +67,9 @@ export class LanceScene {
     const A = M.A, B = M.B, kind = req.kind;
     this.kind = kind; this.label = M.label;
     this.gkE = B.xi.find(e => e.pos === 'GOL' && !e.red);
-    this.gkOvr = this.gkE ? effNow(this.gkE, M.min) : 35;
+    // Goleiro do lance: força + atributos de goleiro + dificuldade (e mando)
+    const gP = this.gkE?.P;
+    this.gkOvr = (this.gkE ? effNow(this.gkE, M.min) + (gP?.st ? .7 * (.35 * gP.st[3] + .35 * gP.st[0] + .3 * gP.st[5] - gP.ovr) : 0) : 35) + (M.keeperBoost ?? 0);
     this.km = keeperMods(this.gkE?.P);
     this.setup = kind === 'falta' ? fkSetup(r) : null;
     this.actions = kind === 'penalti' || kind === 'falta' ? 1 : 6;
@@ -116,7 +121,8 @@ export class LanceScene {
   private stat(k: number, m = this.carrier) { return m.e!.P.st ? m.e!.P.st[k] : m.e!.base; }
 
   // ---------- Probabilidades ----------
-  passP(to: Actor): number {
+  passP(to: Actor, alto = false): number {
+    if (alto) return this.loftP(to);
     const c = this.carrier, Ln = dist(c, to), md0 = this.mods();
     let ok = 1;
     const Rr = (2 + Ln * .05 - (this.stat(2) - 70) * .02) * md0.passRadius;
@@ -125,6 +131,30 @@ export class LanceScene {
     if (md < 2.4) ok *= .55 + .45 * md / 2.4;
     ok *= clamp(1 - Math.max(0, Ln - 24) * .02 * md0.longPass, .5, 1);
     return clamp(ok, .03, .97);
+  }
+  /** Passe alto: passa por cima de quem está no meio do caminho, mas é menos preciso e o receptor disputa no alto. */
+  loftP(to: Pt): number {
+    const c = this.carrier, Ln = dist(c, to), md0 = this.mods(), pas = this.stat(2);
+    let ok = clamp(1 - Math.max(0, Ln - 10) * .011 * md0.longPass * (1 - (pas - 70) * .02), .35, .97);
+    // Só quem está colado no passador consegue travar a bola na saída
+    for (const f of this.field()) { const d = dist(f, c); if (d < 1.6) ok *= .6 + .4 * d / 1.6; }
+    // Disputa com o marcador mais próximo do receptor (cabeceio/força ajudam quem recebe)
+    const rc = this.mates.find(m => m.x === to.x && m.y === to.y), md = Math.min(...this.field().map(f => dist(f, to)), 99);
+    const air = rc?.e ? (rc.e.P.st?.[5] ?? 70) / 75 + .15 * (rc.e.P.ps.some(x => x.startsWith('cabeceio')) ? 1 : 0) : 1;
+    if (md < 3) ok *= clamp((.45 + .55 * md / 3) * air, .2, 1);
+    return clamp(ok, .05, .95);
+  }
+  /** Lançamento: corrida do companheiro até o ponto contra o defensor mais próximo. */
+  lancP(m: Actor, spot: Pt): number {
+    const c = this.carrier, md0 = this.mods(), pas = this.stat(2);
+    let ok = 1;
+    const Rr = (1.8 + dist(c, spot) * .04 - (pas - 70) * .02) * md0.passRadius;
+    for (const f of this.field()) { const d = segD(f, c, spot); if (d < Rr) ok *= 1 - .8 * (1 - d / Rr); }
+    const pace = (a?: Actor) => (a?.e?.P.st?.[0] ?? 72) / 10;
+    const tRun = dist(m, spot) / pace(m), tDef = Math.min(...this.field().map(f => dist(f, spot)), 99) / 7.2;
+    ok *= clamp(.55 + (tDef - tRun) * .35, .08, 1);
+    ok *= clamp(1 - Math.max(0, dist(c, spot) - 22) * .02 * md0.longPass, .5, 1);
+    return clamp(ok, .03, .95);
   }
   dribP(to: Pt): number {
     const c = this.carrier;
@@ -156,7 +186,7 @@ export class LanceScene {
     const path = this.shotPath(ax, curve);
     let block = 0;
     for (const f of this.field()) if (pathD(f, path) < 1.2) block = 1 - (1 - block) * .55;
-    let save = clamp(((this.gkOvr / 100) * .8 * (1 - .55 * edge) + D * .014 * md.shotDist - (fin - 70) * .004 - .1) * this.km.save, .05, .95);
+    let save = clamp(((this.gkOvr / 100) * .9 * (1 - .5 * edge) + D * .015 * md.shotDist - (fin - 70) * .004 - .07) * this.km.save, .06, .95);
     save *= clamp(1 - Math.abs(gk.x - ax) / 11, .45, 1) * (1 - .15 * ac * md.curve) * (1 + weak * 1.6);
     save = clamp(save, .04, .97);
     return { goal: (1 - miss) * (1 - block) * (1 - save), miss, save, block };
@@ -181,7 +211,20 @@ export class LanceScene {
     const ax = c.x + dx * (-c.y / dy);
     return { kind: 'shot', ax: clamp(ax, 22, 46), power: g.power, curve: g.curve };
   }
-  prob(t: Target): number { return t.kind === 'pass' ? this.passP(t.m) : t.kind === 'drib' ? this.dribP(t) : this.shotOdds(t.ax, t.power, t.curve).goal; }
+  prob(t: Target): number {
+    return t.kind === 'pass' ? this.passP(t.m, t.alto) : t.kind === 'lanc' ? this.lancP(t.m, t) : t.kind === 'drib' ? this.dribP(t) : this.shotOdds(t.ax, t.power, t.curve).goal;
+  }
+  /** Fim de um traço que não vai para o gol: perto de um companheiro = passe; no espaço = lançamento para quem estiver mais perto. */
+  throughTarget(x: number, y: number): Target | null {
+    if (this.kind === 'penalti' || this.kind === 'falta') return null;
+    const spot = { x: clamp(x, 2, 66), y: clamp(y, 2, 44) }, c = this.carrier;
+    let best: Actor | null = null, bd = 99;
+    for (const m of this.mates) { if (m === c) continue; const d = dist(m, spot); if (d < bd) { bd = d; best = m; } }
+    if (!best) return null;
+    if (bd < 3.4) return { kind: 'pass', m: best };
+    if (bd > 14 || dist(c, spot) < 4) return this.target(x, y);
+    return { kind: 'lanc', m: best, x: spot.x, y: spot.y };
+  }
 
   // ---------- Falta ----------
   fkFromGesture(g: Gesture): { shot: FkShot; goal: number } | null {
@@ -214,11 +257,26 @@ export class LanceScene {
   /** Executa a ação: sorteia o resultado e devolve o plano de animação. */
   perform(t: Target): Plan {
     const r = this.r, c = this.carrier, from = this.ballAt, nm = c.e!.name;
+    if (t.kind === 'lanc') {
+      this.actions--;
+      const p = this.lancP(t.m, t), L = dist(c, t), dur = Math.min(1100, 380 + L * 22), m = t.m;
+      m.tx = t.x; m.ty = t.y + .8;
+      if (r() < p) {
+        return { kind: 'lanc', ok: true, ball: arc(from, { x: t.x, y: t.y }, L > 18 ? 1.4 : .25, 12), dur,
+          commit: () => { this.lastPasser = c; m.x = t.x; m.y = t.y + .8; this.carrier = m; this.react(); if (this.actions <= 0) this.done = true; },
+          end: this.actions <= 0 ? this.died() : undefined };
+      }
+      const f = this.field().sort((a, b) => dist(a, t) - dist(b, t))[0];
+      if (f) { f.tx = t.x; f.ty = t.y - .6; }
+      this.done = true;
+      return { kind: 'lanc', ok: false, ball: arc(from, { x: t.x, y: t.y }, .3, 10), dur, commit: () => {},
+        end: { res: { goal: false, shot: false, text: `lançamento de ${nm} cortado pela defesa.` }, text: 'Cortado!', color: '#f06a5a', goal: false } };
+    }
     if (t.kind === 'pass') {
       this.actions--;
-      const p = this.passP(t.m), L = dist(c, t.m), dur = Math.min(900, 280 + L * 20);
+      const p = this.passP(t.m, t.alto), L = dist(c, t.m), dur = t.alto ? Math.min(1300, 520 + L * 26) : Math.min(900, 280 + L * 20);
       if (r() < p) {
-        return { kind: 'pass', ok: true, ball: arc(from, { x: t.m.x, y: t.m.y - .8 }, L > 20 ? 2.2 : .35, 12), dur,
+        return { kind: 'pass', ok: true, ball: arc(from, { x: t.m.x, y: t.m.y - .8 }, t.alto ? 2.6 + L * .09 : L > 20 ? 1.2 : .25, 14), dur,
           commit: () => { this.lastPasser = c; this.carrier = t.m; this.react(); if (this.actions <= 0) this.done = true; },
           end: this.actions <= 0 ? this.died() : undefined };
       }
@@ -228,8 +286,8 @@ export class LanceScene {
       const to = f ?? t.m;
       if (f) { f.tx = f.x; f.ty = f.y; }
       this.done = true;
-      return { kind: 'pass', ok: false, ball: arc(from, to, .3, 10), dur: 450, commit: () => {},
-        end: { res: { goal: false, shot: false, text: `passe de ${nm} interceptado.` }, text: 'Interceptado!', color: '#f06a5a', goal: false } };
+      return { kind: 'pass', ok: false, ball: arc(from, to, t.alto ? 2.4 + L * .07 : .3, 10), dur: t.alto ? dur : 450, commit: () => {},
+        end: { res: { goal: false, shot: false, text: t.alto ? `passe alto de ${nm} perdido na disputa.` : `passe de ${nm} interceptado.` }, text: t.alto ? 'Perdeu no alto!' : 'Interceptado!', color: '#f06a5a', goal: false } };
     }
     if (t.kind === 'drib') {
       this.actions--;

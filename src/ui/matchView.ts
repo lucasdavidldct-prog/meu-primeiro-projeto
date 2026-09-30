@@ -4,7 +4,7 @@ import { allClubs } from '../engine/world';
 import { clamp } from '../engine/rng';
 import { oppFromClub, type OppTeam } from '../engine/season';
 import { needsPens, recordResult, type Fixture } from '../engine/career';
-import { cardByUid, teamInfo } from '../engine/state';
+import { cardByUid, orderAt, teamInfo } from '../engine/state';
 import { MENT, STYLES, STYLE_IDS } from '../engine/tactics';
 import type { CardPlayer, StyleId } from '../engine/types';
 import { cardHTML } from './card';
@@ -24,6 +24,15 @@ export async function runMoment(m: Match, req: Parameters<typeof runMoment2D>[1]
   return runMoment2D(m, req);
 }
 
+export const DIF_NAMES = ['Fácil', 'Normal', 'Difícil', 'Lenda'];
+/** Dificuldade: força extra do adversário, goleiro dos lances e quantos lances você joga (fora de casa: um a menos). */
+export function difficulty(home: 0 | 1 | null): { boost: number; keeper: number; moments: number } {
+  const d = app.S.dif ?? 1;
+  const boost = [-3, 0, 2.5, 5][d], keeper = [-6, 0, 5, 9][d] + (home === 1 ? 3 : 0);
+  const moments = [4, 3, 3, 2][d] - (home === 1 ? 1 : 0);
+  return { boost, keeper, moments: Math.max(1, moments) };
+}
+
 interface Live { m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout }
 let L: Live | null = null;
 const DELAYS = [0, 650, 300, 110];
@@ -33,7 +42,8 @@ function userSide(): Side | null {
   const S = app.S, T = teamInfo(S);
   if (!T.full) { toast('Complete os 11 titulares antes de jogar'); app.tab = 'squad'; render(); return null; }
   const bench = S.squad.bench.filter(Boolean).map(u => cardByUid(S, u)!) as CardPlayer[];
-  const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench });
+  const ord = T.slots.map((sl, i) => orderAt(S, i, T.xi[i], sl.p));
+  const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench, ord });
   const uc = userClub();
   Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2 });
   return A;
@@ -57,9 +67,10 @@ function finalize(m: Match, fx: Fixture | null): { coins: number; pens?: Shootou
 export function startMatch(opp: OppTeam, fx: Fixture | null): void {
   const S = app.S, A = userSide();
   if (!A) return;
-  const m = new Match(A, sideOpp(opp), {
-    home: fx ? fx.home : null,
-    moments: S.moments ? 4 : 0,
+  const home = fx ? fx.home : null, d = difficulty(home);
+  const m = new Match(A, sideOpp(opp, d.boost), {
+    home, keeperBoost: d.keeper,
+    moments: S.moments ? d.moments : 0,
     onMoment: S.moments ? async (mm, req) => {
       L!.busy = true; renderMatch();
       const res = await runMoment(mm, req);
@@ -103,7 +114,7 @@ function endMatch(): void {
 export async function quickPlay(opp: OppTeam, fx: Fixture): Promise<void> {
   const A = userSide();
   if (!A) return;
-  const m = await simulate(A, sideOpp(opp), fx.home);
+  const m = await simulate(A, sideOpp(opp, difficulty(fx.home).boost), fx.home);
   const r = finalize(m, fx);
   const res = m.A.goals > m.B.goals ? 'Vitória' : m.A.goals === m.B.goals ? 'Empate' : 'Derrota';
   render();
@@ -124,7 +135,7 @@ export function renderMatch(): void {
   ov.innerHTML = `<div class="ov-inner">
    <div class="board">
      <div>${crestHTML({ n: A.name, s: A.s, c1: A.c1, c2: A.c2 }, 'team')}<div class="tn">${esc(A.name)}</div></div>
-     <div><div class="score">${A.goals} – ${B.goals}</div><span class="clock">${M.over ? 'Encerrado' : M.ht ? 'Intervalo' : M.label}</span></div>
+     <div><div class="score">${A.goals} – ${B.goals}</div><span class="clock">${M.over ? 'Encerrado' : M.ht ? 'Intervalo' : M.label}</span><div class="small muted" style="margin-top:4px">${M.home === 0 ? 'Em casa' : M.home === 1 ? 'Fora de casa' : 'Campo neutro'}</div></div>
      <div>${crestHTML({ n: B.name, s: B.s, c1: B.c1, c2: B.c2 }, 'team')}<div class="tn">${esc(B.name)}</div></div>
    </div>
    <div class="scorers"><div>${A.scorers.map(esc).join('<br>')}</div><div>${B.scorers.map(esc).join('<br>')}</div></div>
@@ -145,7 +156,7 @@ export function renderMatch(): void {
      <button class="chip" data-act="mMent" data-d="1" aria-label="Mais ofensivo">+</button>
    </div>` : ''}
    <div class="feed">${M.ev.map(e => `<div class="ev ${e.type} ${e.side ? 'opp' : ''}"><span class="m">${e.l}</span><span class="t">${e.side && e.type !== 'info' ? '<b style="color:var(--opp)">' + esc(B.s) + '</b> ' : ''}${esc(e.text)}</span></div>`).join('')}</div>
-   <div class="mstats">${ms('Posse %', poss, 100 - poss)}${ms('Finalizações', M.st.sh[0], M.st.sh[1])}${ms('No alvo', M.st.on[0], M.st.on[1])}${ms('Amarelos', M.st.yc[0], M.st.yc[1])}</div>
+   <div class="mstats">${ms('Posse %', poss, 100 - poss)}${ms('Finalizações', M.st.sh[0], M.st.sh[1])}${ms('No alvo', M.st.on[0], M.st.on[1])}${ms('Escanteios', M.st.ck[0], M.st.ck[1])}${ms('Amarelos', M.st.yc[0], M.st.yc[1])}</div>
   </div>`;
   const st = ov.querySelector<HTMLSelectElement>('#mStyle');
   if (st) st.onchange = () => { M.setStyle(st.value as StyleId); renderMatch(); };

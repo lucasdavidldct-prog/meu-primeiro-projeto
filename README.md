@@ -121,6 +121,37 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
   tela sempre em pé (retrato).
 - Ícone e tela de abertura vêm de `assets/` (regerar com `npx capacitor-assets generate --android`).
 
+## Menu da carta, funções e orientações
+
+- Toque numa carta do time: **Substituir**, **Detalhes**, **Função no campo** (ex.: VOL ↔ MC ↔ ZAG) e **Orientação**.
+- Orientações por setor (`src/engine/orders.ts`): goleiro tradicional/líbero; zagueiro marcador/construtor/de cobertura;
+  lateral de apoio/ala/invertido/defensivo; volante cabeça de área/construtor/box-to-box; meio-campista box-to-box/
+  armador/marcador/infiltrador; meia armador/meia-atacante/flutuante; ponta aberto/invertido/de profundidade;
+  atacante centroavante/pivô/falso 9/veloz. Mais a participação: volta para defender · equilibrado · fica no ataque.
+- Isso muda o peso de cada jogador no ataque, meio e defesa, quem finaliza, cruza e dá assistência, o cansaço e o espaço
+  que o time deixa atrás (contra-ataques do rival). A IA escolhe as funções pelos atributos; as suas cartas começam com a
+  mesma sugestão.
+- **Atributos** (RIT, FIN, PAS, DRI, DEF, FIS; goleiro REF/MER/POS) pesam na força de cada setor e na finalização.
+  **Playstyles** somam força ao setor e as versões **+** valem bem mais.
+- 18 formações: 4-3-3, 4-4-2, 4-2-3-1, 4-1-2-1-2, 3-5-2, 3-4-3, 5-3-2, 4-1-4-1, 4-5-1, 4-2-2-2, 4-3-1-2, 4-3-2-1,
+  4-4-1-1, 4-2-4, 3-4-2-1, 3-4-1-2, 5-4-1, 5-2-3.
+
+## Partida, mando e dificuldade
+
+- Calibragem nova (`npm run calibrar`): ~2,2 gols por jogo entre times do mesmo nível; mandante vence 44% e perde 25%;
+  goleada só com diferença grande (+15 de força: 90% de vitórias, 3 gols por jogo).
+- Narração mais viva: construção das jogadas com os nomes e funções (pivô ajeita, falso 9 recua, ala cruza…),
+  escanteios, impedimentos, pressão; a IA lê o jogo aos 30 minutos e muda o plano.
+- **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
+  Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
+
+## Lance 3D (controles estilo Score)
+
+- Tela cheia, câmera alta atrás do ataque. Nomes dos companheiros fora da tela ficam na borda e também podem ser tocados.
+- **1 toque** no companheiro = passe rasteiro · **2 toques** = passe alto · toque no campo = conduzir.
+- **Desenhe um traço** em direção ao gol = chute: direção mira, curva do traço dá o efeito, velocidade do gesto dá a força.
+- Traço para o espaço = lançamento em profundidade (o companheiro mais perto corre até a bola).
+
 ## Escalação e modo teste
 
 - Em **Time**, toque numa carta para escolher outro jogador, ou **segure e arraste** a carta para outra posição

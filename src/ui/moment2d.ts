@@ -103,12 +103,12 @@ export function runMoment2D(M: Match, req: MomentRequest): Promise<MomentResult>
       const c = sc.carrier;
       if (hover && !busy()) {
         const p = sc.prob(hover), col = probColor(p);
-        const tx2 = hover.kind === 'pass' ? hover.m.x : hover.kind === 'drib' ? hover.x : hover.ax;
-        const ty2 = hover.kind === 'pass' ? hover.m.y : hover.kind === 'drib' ? hover.y : -1.2;
+        const tx2 = hover.kind === 'pass' ? hover.m.x : hover.kind === 'drib' || hover.kind === 'lanc' ? hover.x : hover.ax;
+        const ty2 = hover.kind === 'pass' ? hover.m.y : hover.kind === 'drib' || hover.kind === 'lanc' ? hover.y : -1.2;
         ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.setLineDash(hover.kind === 'drib' ? [6, 6] : []);
         ctx.beginPath(); ctx.moveTo(SX(c.x), SY(c.y)); ctx.lineTo(SX(tx2), SY(ty2)); ctx.stroke(); ctx.setLineDash([]);
         if (hover.kind === 'shot') { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(SX(tx2), SY(ty2), .7 * U, 0, 7); ctx.fill(); }
-        label((hover.kind === 'pass' ? 'Passe ' : hover.kind === 'drib' ? 'Conduzir ' : 'Chute · gol ') + Math.round(p * 100) + '%', SX(tx2), SY(ty2) + (hover.kind === 'shot' ? U * 4.5 : -U * 3.2), col);
+        label((hover.kind === 'pass' ? 'Passe ' : hover.kind === 'drib' ? 'Conduzir ' : hover.kind === 'lanc' ? 'Lançamento ' : 'Chute · gol ') + Math.round(p * 100) + '%', SX(tx2), SY(ty2) + (hover.kind === 'shot' ? U * 4.5 : -U * 3.2), col);
       }
       if (fk && gesture && !busy()) {
         ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2; ctx.beginPath();

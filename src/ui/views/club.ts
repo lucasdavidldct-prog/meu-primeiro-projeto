@@ -6,6 +6,7 @@ import { app } from '../ctx';
 import { webglAvailable } from '../../three/support';
 import { esc, fmt } from '../dom';
 import { isNative } from '../native';
+import { DIF_NAMES } from '../matchView';
 
 export function viewClub(): string {
   const S = app.S, all = allCards(S);
@@ -26,6 +27,9 @@ export function viewClub(): string {
     </div>
     <div class="row" style="margin-top:12px;justify-content:space-between"><span class="small muted">Lances jogáveis nas partidas</span><button class="chip" data-act="togMom" aria-pressed="${S.moments}">${S.moments ? 'Ligados' : 'Desligados'}</button></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Visual dos lances${webglAvailable() ? '' : ' (sem 3D neste aparelho)'}</span><div class="chips"><button class="chip" data-act="lance3d" data-v="1" aria-pressed="${S.lance3d !== false && webglAvailable()}" ${webglAvailable() ? '' : 'disabled'}>3D</button><button class="chip" data-act="lance3d" data-v="0" aria-pressed="${S.lance3d === false || !webglAvailable()}">2D (leve)</button></div></div>
+    <div style="margin-top:10px"><span class="small muted">Dificuldade</span>
+      <div class="chips" style="margin-top:4px">${DIF_NAMES.map((n, k) => `<button class="chip" data-act="dif" data-d="${k}" aria-pressed="${(S.dif ?? 1) === k}">${n}</button>`).join('')}</div>
+      <p class="small muted" style="margin:4px 0 0">${['Adversários mais fracos e goleiros mais fáceis nos lances.', 'Equilibrado. Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.', 'Adversários mais fortes e goleiros melhores nos lances.', 'Para quem quer sofrer: rivais bem mais fortes e só 2 lances por jogo.'][S.dif ?? 1]}</p></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Sons</span><button class="chip" data-act="togSom" aria-pressed="${S.som !== false}">${S.som !== false ? 'Ligados' : 'Desligados'}</button></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Vibração</span><button class="chip" data-act="togVib" aria-pressed="${S.vibrar !== false}">${S.vibrar !== false ? 'Ligada' : 'Desligada'}</button></div>
     <div class="row" style="margin-top:8px;justify-content:space-between"><span class="small muted">Fotos dos jogadores (internet, Wikimedia Commons)</span><button class="chip" data-act="togFotos" aria-pressed="${S.fotos !== false}">${S.fotos !== false ? 'Ligadas' : 'Desligadas'}</button></div>

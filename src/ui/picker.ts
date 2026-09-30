@@ -1,7 +1,6 @@
 import { inPos } from '../engine/cards';
 import { calcChem, effOvr } from '../engine/chemistry';
-import { slotsOf } from '../engine/positions';
-import { allCards, cardByUid, xiCards } from '../engine/state';
+import { allCards, cardByUid, squadSlots, xiCards } from '../engine/state';
 import type { BasePlayer } from '../engine/types';
 import { clubOf, nationOf } from '../engine/world';
 import { cardHTML, pips } from './card';
@@ -12,7 +11,7 @@ import { esc, openSheet } from './dom';
 export function openPicker(kind: 'xi' | 'bench', i: number): void {
   const S = app.S;
   app.sel = { kind, i }; render();
-  const form = S.squad.form, slots = slotsOf(form), xi = xiCards(S);
+  const slots = squadSlots(S), form = slots, xi = xiCards(S);
   const cur = kind === 'xi' ? xi[i] : (S.squad.bench[i] ? cardByUid(S, S.squad.bench[i]) : null);
   const pos = kind === 'xi' ? slots[i].p : null;
   const baseChem = calcChem(xi, form).total;

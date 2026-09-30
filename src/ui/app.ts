@@ -7,8 +7,8 @@ import { clubStrength } from '../engine/squads';
 import { PS_BY_ID, parsePs } from '../engine/data/schema';
 import { oppFromClub, oppFromId } from '../engine/season';
 import { endSeason as careerEnd, nextFixture } from '../engine/career';
-import { applyPick, autoLineup, blankGame, cardByUid, duplicates, newCareerGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
-import type { FormationId, StyleId } from '../engine/types';
+import { setFormation, setOrder, setRole, applyPick, autoLineup, blankGame, cardByUid, duplicates, newCareerGame, removeCard, teamInfo, today, type GameState } from '../engine/state';
+import type { FormationId, Pos, StyleId } from '../engine/types';
 import { exportJson, flushSave, importJson } from '../save/db';
 import { cardHTML } from './card';
 import { app, render, save, saveNow, setRender, userClub, type Tab } from './ctx';
@@ -25,8 +25,8 @@ import { viewSquad } from './views/squad';
 import { viewStore } from './views/store';
 import { sfx, unlockAudio } from './sfx';
 import { initNative, isNative, shareFile } from './native';
-import { HELP } from './moment2d';
 import { initSquadDrag } from './squadDrag';
+import { slotMenuHTML } from './slotMenu';
 import { definirMinhaFoto, fotoDe, removerMinhaFoto, temFotoCommons } from './fotos';
 import { bindEditorInputs, editorActions, resumeEditorIfNeeded, viewEditor } from './editor';
 
@@ -71,9 +71,10 @@ function showHelp(): void {
   openSheet(`<h2>Como jogar</h2>
   <div class="help">
    <h3>Carreira</h3><p>Na aba <b>Temporada</b> você joga a próxima partida do Brasileirão ou da Libertadores. <b>Jogar</b> abre a partida com narração e lances; <b>Simular</b> resolve na hora. Terminar entre os 5 primeiros leva à Libertadores; os 4 últimos caem.</p>
-   <h3>Time e química</h3><p>Em <b>Time</b>, toque numa posição para trocar o jogador. Jogadores do mesmo clube, liga ou país ligados na formação somam química; fora de posição, o rendimento cai. <b>Melhor time</b> escala automaticamente.</p>
+   <h3>Time e química</h3><p>Em <b>Time</b>, toque numa carta para abrir o menu: <b>Substituir</b>, <b>Detalhes</b>, <b>Função no campo</b> (ex.: VOL jogando de MC) e <b>Orientação</b> (pivô, falso 9, armador, box-to-box, ala… e se ele fica no ataque ou volta para defender). Tudo isso muda a partida. Segure e arraste uma carta para trocar dois jogadores de lugar. Jogadores do mesmo clube, liga ou país ligados na formação somam química; fora de posição, o rendimento cai. <b>Melhor time</b> escala automaticamente.</p>
    <h3>Pacotes</h3><p>Ganhe moedas nos jogos e compre pacotes em <b>Pacotes</b>. Todo dia há um pacote grátis. Repetidas podem ser vendidas.</p>
-   <h3>Lances jogáveis</h3><p>${HELP.ataque}</p><p>${HELP.falta}</p><p>${HELP.penalti}</p>
+   <h3>Lances jogáveis</h3><p><b>1 toque</b> num companheiro: passe rasteiro. <b>2 toques</b>: passe alto, por cima da marcação. Toque no <b>campo</b>: conduzir a bola.</p><p><b>Desenhe um traço</b> da bola em direção ao gol para chutar: a direção mira, a <b>curva do traço</b> dá o efeito e a <b>velocidade</b> do gesto dá a força (rápido demais vai por cima). Traço para o espaço vazio: <b>lançamento</b> para quem estiver mais perto. Falta e pênalti: também com o traço.</p>
+   <h3>Mando e dificuldade</h3><p>Jogar em casa ajuda (torcida, mais chances); fora é mais difícil e você tem um lance a menos. A dificuldade fica em <b>Clube</b>.</p>
    <h3>Playstyles</h3><p>Os ícones na carta são habilidades (Chute de Longe, Velocista…). As versões <b>+</b> são mais fortes. Elas pesam na simulação e nos lances.</p>
   </div>
   <button class="btn pri block" style="margin-top:14px" data-act="closeSheet">Entendi</button>`);
@@ -87,6 +88,15 @@ function photoPanel(id: string): string {
     ${f?.fonte === 'minha' ? `<button class="btn" data-act="photoDel" data-id="${esc(id)}">Remover minha foto</button>` : ''}</div>`;
 }
 
+function openSlotMenu(i: number): void {
+  const h = slotMenuHTML(i);
+  if (!h) return;
+  // Reabre no mesmo ponto de rolagem (as opções mudam na hora)
+  const old = document.querySelector<HTMLElement>('#sheet .sheet'), reopen = !!old?.querySelector('.slot-menu'), prev = old?.scrollTop ?? 0;
+  const bg = openSheet(h), sh = bg.querySelector<HTMLElement>('.sheet')!;
+  if (reopen) { bg.style.animation = 'none'; sh.style.animation = 'none'; sh.scrollTop = prev; }
+}
+
 function replaceState(S: GameState): void { app.S = S; app.sel = null; }
 
 const TEST_COINS = 1_000_000;
@@ -94,7 +104,11 @@ const TEST_COINS = 1_000_000;
 type Handler = (d: DOMStringMap, el: HTMLElement) => void;
 const ACT: Record<string, Handler> = {
   tab(d) { app.tab = d.t as Tab; app.sel = null; render(); window.scrollTo(0, 0); },
-  slot(d) { openPicker('xi', +d.i!); },
+  slot(d) { if (app.S.squad.xi[+d.i!]) openSlotMenu(+d.i!); else openPicker('xi', +d.i!); },
+  slotSub(d) { openPicker('xi', +d.i!); },
+  slotRole(d) { setRole(app.S, +d.i!, d.p as Pos); save(); render(); openSlotMenu(+d.i!); },
+  slotFunc(d) { setOrder(app.S, +d.i!, { f: d.f }); save(); render(); openSlotMenu(+d.i!); },
+  slotPart(d) { setOrder(app.S, +d.i!, { p: +d.p! as -1 | 0 | 1 }); save(); render(); openSlotMenu(+d.i!); },
   bslot(d) { openPicker('bench', +d.i!); },
   pickP(d) {
     if (!app.sel) return;
@@ -104,7 +118,7 @@ const ACT: Record<string, Handler> = {
   },
   benchClear(d) { app.S.squad.bench[+d.i!] = 0; app.sel = null; closeSheet(); save(); render(); },
   auto() { autoLineup(app.S); save(); render(); toast('Melhor time escalado'); },
-  form(d) { app.S.squad.form = d.f as FormationId; save(); render(); },
+  form(d) { setFormation(app.S, d.f as FormationId); save(); render(); },
   style(d) { app.S.tac.style = d.s as StyleId; save(); render(); },
   ment(d) { app.S.tac.ment = +d.m!; save(); render(); },
   buy(d) {
@@ -144,6 +158,7 @@ const ACT: Record<string, Handler> = {
   togSom() { app.S.som = app.S.som === false; save(); render(); if (app.S.som) sfx.coin(); },
   togVib() { app.S.vibrar = app.S.vibrar === false; save(); render(); },
   help() { showHelp(); },
+  dif(d) { app.S.dif = +d.d! as 0 | 1 | 2 | 3; save(); render(); },
   togFotos() { app.S.fotos = app.S.fotos === false; save(); render(); },
   photoPick(d) {
     const inp = document.createElement('input');

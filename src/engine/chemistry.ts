@@ -1,12 +1,14 @@
 import { inPos } from './cards';
 import { slotsOf } from './positions';
-import type { BasePlayer, FormationId, Pos } from './types';
+import type { BasePlayer, FormationId, Pos, SlotDef } from './types';
+import type { OrderFx } from './orders';
+import { psLevel, type PsId } from './playstyles';
 
 export interface Chem { per: number[]; total: number }
 
 /** Química por posição (0 a 3) e total (máx. 33). Legendas valem como 2 compatriotas e reforçam a liga de todos. */
-export function calcChem(xi: (BasePlayer | null)[], form: FormationId): Chem {
-  const slots = slotsOf(form);
+export function calcChem(xi: (BasePlayer | null)[], form: FormationId | SlotDef[]): Chem {
+  const slots = typeof form === 'string' ? slotsOf(form) : form;
   const club: Record<string, number> = {}, nat: Record<string, number> = {}, lg: Record<string, number> = {};
   let legs = 0;
   xi.forEach(P => {
@@ -40,17 +42,60 @@ export const W_MID: Record<Pos, number> = { GOL: 0, ZAG: .2, LD: .3, LE: .3, VOL
 const refW = (W: Record<Pos, number>) => slotsOf('4-3-3').reduce((s, x) => s + W[x.p], 0);
 const REF = { att: refW(W_ATT), def: refW(W_DEF), mid: refW(W_MID) };
 
-export interface RateEntry { pos: Pos; eff: number; red?: boolean }
+export interface RateEntry { pos: Pos; eff: number; red?: boolean; P?: BasePlayer | null; ofx?: OrderFx }
 export interface Ratings { att: number; def: number; mid: number; gk: number }
+export type Sector = 'att' | 'mid' | 'def';
 
-/** Força por setor, ponderada pela posição; expulsões pesam 5% cada. */
+/** Quanto os atributos puxam a força do jogador em cada setor para cima ou para baixo do overall. */
+export const ATTR_K = .65;
+/** Composição de atributos por setor (RIT FIN PAS DRI DEF FIS). */
+const COMP: Record<Sector, number[]> = {
+  att: [.2, .32, .13, .25, 0, .1],
+  mid: [.05, .03, .42, .23, .12, .15],
+  def: [.15, 0, .08, 0, .52, .25],
+};
+/** Bônus (em pontos) de cada playstyle no setor: [normal, +]. As versões + pesam bem mais. */
+const PS_SECTOR: Partial<Record<PsId, Partial<Record<Sector | 'gk', [number, number]>>>> = {
+  'finalizacao-precisa': { att: [1.5, 3.5] }, 'chute-de-longe': { att: [1, 2.5] }, 'drible-rapido': { att: [1.5, 3.5], mid: [.5, 1.5] },
+  velocista: { att: [1.5, 3.5] }, 'primeiro-toque': { att: [1, 2], mid: [1, 2.5] }, 'passe-preciso': { mid: [1.5, 3.5] },
+  'passe-em-profundidade': { att: [1, 2.5], mid: [1, 2] }, cruzamento: { att: [1, 2.5] }, cabeceio: { att: [.8, 2], def: [1, 2.5] },
+  desarme: { def: [1.5, 3.5] }, interceptacao: { def: [1.5, 3.5], mid: [.5, 1.5] }, bloqueio: { def: [1, 2.5] },
+  'imposicao-fisica': { def: [1, 2.5], mid: [.5, 1.5] }, incansavel: { mid: [.5, 1.5] }, 'reposicao-longa': { mid: [.5, 1.5] },
+  reflexos: { gk: [1.5, 3.5] }, 'saida-do-gol': { gk: [1, 2] }, 'pegador-de-penalti': { gk: [.3, .8] },
+};
+function psBonus(P: BasePlayer, k: Sector | 'gk'): number {
+  let b = 0;
+  for (const id in PS_SECTOR) {
+    const v = PS_SECTOR[id as PsId]![k];
+    if (!v) continue;
+    const l = psLevel(P, id as PsId);
+    if (l) b += v[l - 1];
+  }
+  return b;
+}
+/** Força do jogador num setor: overall efetivo ajustado pelos atributos daquele setor e pelos playstyles. */
+export function sectorEff(e: RateEntry, k: Sector): number {
+  const P = e.P;
+  if (!P || !P.st || P.pos === 'GOL') return e.eff;
+  const c = COMP[k].reduce((s, w, i) => s + w * P.st[i], 0);
+  return e.eff + ATTR_K * (c - P.ovr) + psBonus(P, k);
+}
+/** Goleiro: MER, POS e REF pesam mais (atributos de goleiro: MER MAN CHU REF VEL POS). */
+export function gkEff(e: RateEntry): number {
+  const P = e.P;
+  if (!P || !P.st || P.pos !== 'GOL') return e.eff;
+  const c = .3 * P.st[3] + .25 * P.st[0] + .2 * P.st[5] + .15 * P.st[1] + .1 * P.st[4];
+  return e.eff + ATTR_K * (c - P.ovr) + psBonus(P, 'gk');
+}
+
+/** Força por setor, ponderada pela posição e pela função de cada jogador; expulsões pesam 5% cada. */
 export function rate(entries: RateEntry[]): Ratings {
-  const f = (W: Record<Pos, number>, ref: number) => {
+  const f = (W: Record<Pos, number>, ref: number, k: Sector) => {
     let s = 0, w = 0;
-    for (const e of entries) { if (e.red) continue; const k = W[e.pos]; s += e.eff * k; w += k; }
+    for (const e of entries) { if (e.red) continue; const kw = W[e.pos] * (e.ofx ? e.ofx[k] : 1); s += sectorEff(e, k) * kw; w += kw; }
     return w ? (s / w) * Math.pow(w / ref, .3) : 30;
   };
   const gk = entries.find(e => e.pos === 'GOL' && !e.red);
   const reds = entries.filter(e => e.red).length, pen = Math.pow(.95, reds);
-  return { att: f(W_ATT, REF.att) * pen, def: f(W_DEF, REF.def) * pen, mid: f(W_MID, REF.mid) * pen, gk: gk ? gk.eff : 30 };
+  return { att: f(W_ATT, REF.att, 'att') * pen, def: f(W_DEF, REF.def, 'def') * pen, mid: f(W_MID, REF.mid, 'mid') * pen, gk: gk ? gkEff(gk) : 30 };
 }

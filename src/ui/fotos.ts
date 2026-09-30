@@ -1,6 +1,6 @@
 // Fotos dos jogadores: a sua (escolhida no celular, fica no aparelho) ou a livre da Wikimedia Commons (precisa de internet).
 import FOTOS from '../../data/fotos.json';
-import { paginaFoto, urlFoto, type FotoRef } from '../engine/data/fotos';
+import { paginaFoto, urlFoto, urlFotoDireta, type FotoRef } from '../engine/data/fotos';
 import { STORE_FOTOS, openDb, tx } from '../save/db';
 import { app } from './ctx';
 
@@ -20,11 +20,11 @@ export async function loadMinhasFotos(): Promise<void> {
 }
 
 export type FonteFoto = 'minha' | 'commons';
-export function fotoDe(id: string): { url: string; fonte: FonteFoto; pagina?: string } | null {
+export function fotoDe(id: string): { url: string; fonte: FonteFoto; pagina?: string; alt?: string } | null {
   const m = minhas.get(id);
   if (m) return { url: m, fonte: 'minha' };
   const c = commons[id];
-  if (c && app.S?.fotos !== false) return { url: urlFoto(c.f), fonte: 'commons', pagina: paginaFoto(c.f) };
+  if (c && app.S?.fotos !== false) return { url: urlFotoDireta(c.f), alt: urlFoto(c.f), fonte: 'commons', pagina: paginaFoto(c.f) };
   return null;
 }
 export const temFotoCommons = (id: string): boolean => !!commons[id];

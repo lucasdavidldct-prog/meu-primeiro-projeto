@@ -1,5 +1,5 @@
 // npm run calibrar — simulação em massa para conferir se o motor está realista.
-// Alvo: ~2,6 gols por jogo entre times do mesmo nível e resultados coerentes quando os níveis diferem.
+// Alvo: ~2,3 gols por jogo entre times do mesmo nível, mando de campo pesando e goleadas só com diferença grande.
 import { CALIB, sideOpp, simulate } from '../src/engine/match';
 import { seedRng } from '../src/engine/rng';
 import { clubStrength, squadOf, aiTactics } from '../src/engine/squads';
@@ -46,17 +46,20 @@ const hm = await run(pairs(0, Math.round(N / 2)), 0);
 console.log(`Mesmo nível, com mando: mandante V ${hm.w} · E ${hm.d} · D ${hm.l} (${hm.avg.toFixed(2)} gols/jogo)\n`);
 console.log('Diferença de força (mais forte primeiro, campo neutro):');
 const rows: { diff: number; wr: number; lr: number }[] = [];
+let rows15avg = 0;
 for (const diff of [3, 6, 10, 15]) {
   const r = await run(pairs(diff, Math.round(N / 2)), null);
   rows.push({ diff, wr: r.wr, lr: r.lr });
+  if (diff === 15) rows15avg = r.avg;
   console.log(`  +${String(diff).padEnd(2)} → V ${r.w} · E ${r.d} · D ${r.l} · ${r.avg.toFixed(2)} gols/jogo (${r.n} jogos)`);
 }
 const ok = [
-  ['Média de gols entre 2,45 e 2,75', eq.avg >= 2.45 && eq.avg <= 2.75],
+  ['Média de gols entre 2,15 e 2,5', eq.avg >= 2.15 && eq.avg <= 2.5],
   ['Pênaltis convertidos entre 0,15 e 0,35 por jogo', eq.pen >= .15 && eq.pen <= .35],
-  ['Mandante vence mais do que perde', hm.wr > hm.lr],
+  ['Mandante vence bem mais do que perde (≥ 1,5×)', hm.wr >= hm.lr * 1.5],
   ['Vitórias do mais forte crescem com a diferença', rows.every((r, i) => i === 0 || r.wr >= rows[i - 1].wr - .03)],
-  ['+15 vence pelo menos 70%', rows[rows.length - 1].wr >= .7],
+  ['+15 vence pelo menos 75%', rows[rows.length - 1].wr >= .75],
+  ['+15 tem mais gols por jogo que o mesmo nível', rows15avg > eq.avg + .3],
 ] as const;
 console.log('');
 for (const [n, v] of ok) console.log(`${v ? '✓' : '✗'} ${n}`);

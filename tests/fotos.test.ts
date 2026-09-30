@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FUTEBOLISTA, escolherFoto, nomesDeBusca, urlFoto, type Candidato } from '../src/engine/data/fotos';
+import { FUTEBOLISTA, escolherFoto, md5, nomesDeBusca, urlFoto, urlFotoDireta, type Candidato } from '../src/engine/data/fotos';
+import { createHash } from 'node:crypto';
 import FOTOS from '../data/fotos.json';
 import { W } from '../src/engine/world';
 
@@ -21,7 +22,13 @@ describe('fotos dos jogadores', () => {
     expect(nomesDeBusca('Gabriel Delfim', 'Gabriel Delfim')).toEqual(['Gabriel Delfim']);
   });
   it('monta a URL da miniatura na Commons', () => {
-    expect(urlFoto('Hulk no Atlético 2023.jpg', 200)).toBe('https://commons.wikimedia.org/wiki/Special:FilePath/Hulk_no_Atl%C3%A9tico_2023.jpg?width=200');
+    expect(urlFoto('Hulk no Atlético 2023.jpg', 250)).toBe('https://commons.wikimedia.org/wiki/Special:FilePath/Hulk_no_Atl%C3%A9tico_2023.jpg?width=250');
+  });
+  it('URL direta usa o MD5 do nome do arquivo (igual ao da Wikimedia)', () => {
+    for (const n of ['Hulk_2019.jpg', 'Kevin_Castaño,_Colombia_NT_presidential_send-off,_Jun_2026.jpg', 'Džeko.png'])
+      expect(md5(n)).toBe(createHash('md5').update(n, 'utf8').digest('hex'));
+    // Exemplo conhecido da Wikimedia: Example.jpg -> /a/a9/
+    expect(urlFotoDireta('Example.jpg', 330)).toBe('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Example.jpg/330px-Example.jpg');
   });
   it('data/fotos.json só tem jogadores que existem', () => {
     const ids = Object.keys(FOTOS as object);

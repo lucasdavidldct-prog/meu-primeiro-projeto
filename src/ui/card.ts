@@ -46,5 +46,6 @@ export function cardCaption(P: CardPlayer): string {
 /** Foto por cima da silhueta; se não carregar (sem internet), a silhueta continua. */
 function photoHTML(id: string): string {
   const f = fotoDe(id);
-  return f ? `<img class="c-photo" src="${esc(f.url)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
+  // Se a URL direta falhar, tenta o redirecionamento da Commons; se também falhar, fica a silhueta
+  return f ? `<img class="c-photo" src="${esc(f.url)}"${f.alt ? ` data-alt="${esc(f.alt)}"` : ''} alt="" loading="lazy" decoding="async" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt=''}else this.remove()">` : '';
 }
