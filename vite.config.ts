@@ -68,5 +68,6 @@ export default defineConfig({
   server: { host: true, port: 5173 },
   // Os dados reais das 7 ligas vão no bundle.
   build: { chunkSizeWarningLimit: 2500 },
-  test: { environment: 'node', include: ['tests/**/*.test.ts'] },
+  test: { environment: 'node', include: ['tests/**/*.test.ts'], // simulações de centenas de jogos: folga para runners lentos do CI
+    testTimeout: 30000 },
 });
