@@ -2,6 +2,7 @@ import { classico } from '../../engine/rivals';
 // Tela da carreira: próximo jogo, tabela, Libertadores, outras ligas e sala de troféus.
 import { MAIN_LEAGUES, groupStandings, leagueStandings, libUserStatus, nextFixture, phaseName, seasonOver, type CupTie, type Career } from '../../engine/career';
 import { oppFromId, type Standing } from '../../engine/season';
+import { copaFase, copaStatus, type Copa, type CopaId } from '../../engine/copas';
 import { teamInfo, teamStrength } from '../../engine/state';
 import { STYLES, counterOf } from '../../engine/tactics';
 import { W, getPlayer } from '../../engine/world';
@@ -35,6 +36,24 @@ function viewLib(C: Career): string {
   ${L.groups.map((g, i) => `<h3>Grupo ${'ABCD'[i]}</h3>${table(C, groupStandings(g), { up: 2 }, true)}`).join('')}`;
 }
 
+/** Copa do Brasil e Super Mundial: sua campanha, o mata-mata (da fase mais avançada para trás) e os grupos. */
+function viewCopa(C: Career, Cp: Copa | undefined, id: CopaId): string {
+  if (!Cp) return `<div class="panel small muted">${id === 'mundial' ? `Seu clube não está no Super Mundial de ${C.year}. Para jogar o próximo: termine entre os 4 primeiros da Série A ou seja campeão brasileiro, da Libertadores ou da Copa do Brasil.` : 'A Copa do Brasil começa na próxima temporada.'}</div>`;
+  const ko = Cp.rounds.filter(r => r.ties.length).slice().reverse();
+  const st = copaStatus(Cp, C.club);
+  return `<div class="panel small" style="margin-bottom:10px"><b>${esc(copaFase(Cp))}</b> · Você: ${esc(st === 'Fora' ? 'fora' : st)}${Cp.champion ? ` · Campeão: <b>${esc(nm(C, Cp.champion))}</b>` : ''}</div>
+  ${ko.map(r => `<h3>${esc(r.nome)}${r.legs === 2 ? ' <small class="muted">(ida e volta)</small>' : ''}</h3><div class="panel">${r.ties.map(t => tieHTML(C, t)).join('')}</div>`).join('')}
+  ${Cp.groups.map((g, i) => `<h3>Grupo ${'ABCDEFGH'[i]}</h3>${table(C, groupStandings(g), { up: 2 }, true)}`).join('')}`;
+}
+
+/** Aba Copas: Libertadores, Copa do Brasil e Super Mundial num lugar só. */
+function viewCopas(C: Career): string {
+  const k = app.copaView;
+  const tabs: [typeof k, string][] = [['lib', 'Libertadores'], ['cdb', 'Copa do Brasil'], ['mundial', '🌍 Super Mundial']];
+  const body = k === 'lib' ? viewLib(C) : viewCopa(C, C.copas?.find(x => x.id === k), k);
+  return `<div class="chips sub">${tabs.map(([v, n]) => `<button class="chip" data-act="copaV" data-v="${v}" aria-pressed="${v === k}">${n}</button>`).join('')}</div><div style="margin-top:10px">${body}</div>`;
+}
+
 function viewOthers(C: Career): string {
   const ids = C.others.map(o => o.id);
   const cur = ids.includes(app.otherLeague) ? app.otherLeague : ids[0];
@@ -47,11 +66,11 @@ function viewOthers(C: Career): string {
 
 function viewTrophies(C: Career): string {
   const count = (k: string) => C.trophies.filter(t => t.comp === k).length;
-  const cab = [['brasileirao', 'Brasileirão', '🏆'], ['libertadores', 'Libertadores', '🏆'], ['serie-b', 'Série B', '🥇']] as const;
+  const cab = [['brasileirao', 'Brasileirão', '🏆'], ['libertadores', 'Libertadores', '🏆'], ['copa-do-brasil', 'Copa do Brasil', '🏆'], ['mundial', 'Super Mundial', '🌍'], ['serie-b', 'Série B', '🥇']] as const;
   return `<div class="trophies">${cab.map(([k, n, ic]) => `<div class="trophy ${count(k) ? 'won' : ''}"><span class="ic">${ic}</span><b>${count(k)}</b><span>${n}</span></div>`).join('')}</div>
   ${C.trophies.length ? `<div class="panel" style="margin-top:10px">${C.trophies.slice().reverse().map(t => `<div class="res"><span>${t.year}</span><b>${esc(t.name)}</b><span></span></div>`).join('')}</div>` : '<p class="empty-note">A sala de troféus ainda está vazia. Bora encher!</p>'}
   <h3>Temporadas</h3>
-  ${C.history.length ? `<div class="panel tbl-wrap" style="padding:6px 8px"><table><thead><tr><th>Ano</th><th>Divisão</th><th>Pos.</th><th>Pts</th><th>Libertadores</th><th>Artilheiro</th></tr></thead><tbody>${C.history.slice().reverse().map(h => `<tr><td>${h.year}</td><td style="text-align:left">Série ${h.div}</td><td>${h.pos}º</td><td>${h.pts}</td><td>${h.lib ? esc(h.lib) : '—'}</td><td style="text-align:left">${h.art ? esc(h.art) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-note">Nenhuma temporada encerrada ainda.</p>'}`;
+  ${C.history.length ? `<div class="panel tbl-wrap" style="padding:6px 8px"><table><thead><tr><th>Ano</th><th>Divisão</th><th>Pos.</th><th>Pts</th><th>Libertadores</th><th>Copa do Brasil</th><th>Mundial</th><th>Artilheiro</th></tr></thead><tbody>${C.history.slice().reverse().map(h => `<tr><td>${h.year}</td><td style="text-align:left">Série ${h.div}</td><td>${h.pos}º</td><td>${h.pts}</td><td>${h.lib ? esc(h.lib) : '—'}</td><td>${h.cdb ? esc(h.cdb) : '—'}</td><td>${h.mundial ? esc(h.mundial) : '—'}</td><td style="text-align:left">${h.art ? esc(h.art) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-note">Nenhuma temporada encerrada ainda.</p>'}`;
 }
 
 /** Estatísticas: seu time (ordenável) e a artilharia/assistências da liga. */
@@ -85,7 +104,7 @@ export function viewSeason(): string {
     const f = nextFixture(C)!, T = teamInfo(S), o = oppFromId(f.opp, teamStrength(T)), cl = classico(C.club, f.opp);
     const you = `<div>${crestHTML(userClub(), 'team')}<div class="nm">${esc(S.name)}</div><div class="small muted">Força ${teamStrength(T)} · ${S.squad.form}</div></div>`;
     const them = `<div>${crestHTML(clubC(f.opp), 'team')}<div class="nm">${esc(o.n)}</div><div class="small muted">Força ${o.str} · ${o.form}</div></div>`;
-    const ko = f.ko && f.ko.leg === 1 ? `<div class="tip">Jogo de volta. Agregado: <b>${f.ko.agg[0]} × ${f.ko.agg[1]}</b>. Empate no agregado vai para os pênaltis.</div>` : f.ko?.phase === 'final' ? '<div class="tip">Final em jogo único, campo neutro. Empate vai para os pênaltis.</div>' : '';
+    const ko = f.ko && f.ko.leg === 1 ? `<div class="tip">Jogo de volta. Agregado: <b>${f.ko.agg[0]} × ${f.ko.agg[1]}</b>. Empate no agregado vai para os pênaltis.</div>` : f.ko?.decisive ? `<div class="tip">${f.ko.final ? '🏆 Final em' : 'Mata-mata em'} jogo único${f.home === null ? ', campo neutro' : ''}. Empate vai para os pênaltis.</div>` : '';
     next = `<div class="panel"><div class="small muted" style="text-align:center;margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">${esc(f.label)}</div>
      <div class="fixture">${f.home === 1 ? them + '<div class="vs">×</div>' + you : you + '<div class="vs">×</div>' + them}</div>
      <div class="small muted" style="text-align:center;margin-top:6px">${f.home === null ? 'Campo neutro' : `Mando: ${esc(f.home === 0 ? S.name : o.n)}`}</div>
@@ -95,12 +114,12 @@ export function viewSeason(): string {
      <div class="row" style="margin-top:12px"><button class="btn pri" style="flex:1" data-act="play">Jogar partida</button><button class="btn" data-act="simPlay">Simular</button><button class="btn" data-act="friendly">Amistoso</button></div></div>`;
   }
   const v = app.careerView;
-  const body = v === 'lib' ? viewLib(C) : v === 'outras' ? viewOthers(C) : v === 'trofeus' ? viewTrophies(C) : v === 'stats' ? viewStats(C)
+  const body = v === 'copas' || v === 'lib' ? viewCopas(C) : v === 'outras' ? viewOthers(C) : v === 'trofeus' ? viewTrophies(C) : v === 'stats' ? viewStats(C)
     : `${table(C, leagueStandings(C.league), C.div === 'A' ? { lib: 5, down: 4 } : { up: 4, down: 4 })}
        ${C.league.last.length ? `<h3>Última rodada</h3><div class="panel" style="padding:8px 12px">${C.league.last.map(m => `<div class="res"><span>${esc(nm(C, m.h))}</span><b>${m.gh} × ${m.ga}</b><span>${esc(nm(C, m.a))}</span></div>`).join('')}</div>` : ''}`;
   return `<h2>${esc(C.league.name)} <span class="muted" style="font-size:18px">· ${C.year}</span></h2>
   <p class="small muted" style="margin-top:-4px">${C.div === 'A' ? 'Os 5 primeiros vão para a Libertadores; os 4 últimos caem.' : 'Os 4 primeiros sobem para a Série A; os 4 últimos caem.'}${C.short ? ' Temporada curta (só turno).' : ''}</p>
   ${next}
-  <div class="chips" style="margin-top:16px">${[['tabela', 'Tabela'], ['stats', 'Estatísticas'], ['lib', 'Libertadores'], ['outras', 'Outras ligas'], ['trofeus', 'Troféus']].map(([k, n]) => `<button class="chip" data-act="cv" data-v="${k}" aria-pressed="${k === v}">${n}</button>`).join('')}</div>
+  <div class="chips" style="margin-top:16px">${[['tabela', 'Tabela'], ['copas', 'Copas'], ['stats', 'Estatísticas'], ['outras', 'Outras ligas'], ['trofeus', 'Troféus']].map(([k, n]) => `<button class="chip" data-act="cv" data-v="${k}" aria-pressed="${k === v}">${n}</button>`).join('')}</div>
   <div style="margin-top:10px">${body}</div>`;
 }

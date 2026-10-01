@@ -5,6 +5,7 @@ import type { Pos } from './types';
 import { applyResult, doubleRoundRobin, emptyRow, quickSim, roundRobin, sortTable, type Row, type Standing } from './season';
 import { clubStrength } from './squads';
 import { W, leagueClubs } from './world';
+import { copaItems, copaPremio, copaStatus, makeCdb, makeMundial, mundialTeams, playCopaItem, userInCopa, type Copa, type CopaId, type CopaItem } from './copas';
 
 export const MAIN_LEAGUES = ['premier-league', 'laliga', 'serie-a', 'bundesliga', 'saudi-pro-league', 'mls'];
 export const LIB_SIZE = 16;
@@ -19,9 +20,9 @@ export type LibPhase = 'grupos' | 'quartas' | 'semi' | 'final' | 'fim';
 export interface LibGroup { teams: string[]; rounds: [number, number][][]; table: Row[] }
 export interface CupComp { year: number; groups: LibGroup[]; groupRound: number; phase: LibPhase; ties: Record<'quartas' | 'semi' | 'final', CupTie[]>; champion?: string; last: Res[] }
 
-export type CalItem = { c: 'liga'; round: number } | { c: 'lib'; phase: 'grupos'; round: number } | { c: 'lib'; phase: 'quartas' | 'semi'; leg: 0 | 1 } | { c: 'lib'; phase: 'final' };
-export interface Trophy { comp: 'brasileirao' | 'serie-b' | 'libertadores'; name: string; year: number }
-export interface SeasonRecord { year: number; div: 'A' | 'B'; pos: number; pts: number; lib: string | null; coins: number; /** Artilheiro do seu time na temporada. */ art?: string }
+export type CalItem = { c: 'liga'; round: number } | { c: 'lib'; phase: 'grupos'; round: number } | { c: 'lib'; phase: 'quartas' | 'semi'; leg: 0 | 1 } | { c: 'lib'; phase: 'final' } | CopaItem;
+export interface Trophy { comp: 'brasileirao' | 'serie-b' | 'libertadores' | 'copa-do-brasil' | 'mundial'; name: string; year: number }
+export interface SeasonRecord { year: number; div: 'A' | 'B'; pos: number; pts: number; lib: string | null; coins: number; /** Campanha na Copa do Brasil e no Super Mundial. */ cdb?: string; mundial?: string; /** Artilheiro do seu time na temporada. */ art?: string }
 
 export interface Career {
   club: string;
@@ -45,6 +46,10 @@ export interface Career {
   stats?: Record<string, { g: number; a: number; j: number; n: number; /** desarmes, erros, defesas, finalizações e id do jogador */ d?: number; e?: number; s?: number; f?: number; id?: string }>;
   /** Fase alcançada na Libertadores desta temporada (para o histórico e os prêmios). */
   libReached: string | null;
+  /** Copa do Brasil e Super Mundial desta temporada (saves antigos não têm: entram na próxima temporada). */
+  copas?: Copa[];
+  /** Classificado para o Super Mundial da próxima temporada. */
+  mundialNext?: boolean;
   /** Jogadores fora (id do jogador): suspensos ou lesionados, com quantos jogos faltam. */
   fora?: Record<string, { t: 'susp' | 'les'; n: number }>;
   /** Amarelos acumulados (3 = suspensão de 1 jogo). */
@@ -66,14 +71,16 @@ export function applyIncidents(C: Career, inc: { y: string[]; r: string[]; les: 
 }
 
 export interface Fixture {
-  comp: 'liga' | 'lib';
+  comp: 'liga' | 'lib' | 'copa';
+  /** Qual copa (Copa do Brasil ou Super Mundial). */
+  copa?: CopaId;
   label: string;
   opp: string;
   /** Mandante: 0 = você, 1 = adversário, null = campo neutro. */
   home: 0 | 1 | null;
   mult: number;
   /** Mata-mata: placar agregado antes do jogo (você, adversário) e se é o jogo decisivo. */
-  ko?: { phase: 'quartas' | 'semi' | 'final'; leg: 0 | 1; agg: [number, number]; decisive: boolean };
+  ko?: { phase: string; leg: 0 | 1; agg: [number, number]; decisive: boolean; final?: boolean };
 }
 
 const LEAGUE_NAMES: Record<string, string> = { brasileirao: 'Brasileirão Série A', 'serie-b': 'Brasileirão Série B' };
@@ -235,27 +242,33 @@ export function libUserStatus(L: CupComp, club: string): string {
 }
 
 // ---------- Calendário ----------
-function buildCalendar(ligaRounds: number, withLib: boolean): CalItem[] {
+/** Espalha as datas das copas entre as rodadas da liga (cada copa num trecho da temporada). */
+function buildCalendar(ligaRounds: number, withLib: boolean, extras: { items: CalItem[]; de: number; ate: number }[] = []): CalItem[] {
   const lib: CalItem[] = withLib ? [
     ...[0, 1, 2, 3, 4, 5].map(round => ({ c: 'lib', phase: 'grupos', round }) as CalItem),
     { c: 'lib', phase: 'quartas', leg: 0 }, { c: 'lib', phase: 'quartas', leg: 1 },
     { c: 'lib', phase: 'semi', leg: 0 }, { c: 'lib', phase: 'semi', leg: 1 },
     { c: 'lib', phase: 'final' },
   ] : [];
-  // Distribui as datas da Libertadores ao longo de ~90% da temporada.
-  const at = lib.map((_, i) => Math.max(1, Math.round((i + 1) * ligaRounds * .9 / (lib.length + 1))));
+  const listas = [{ items: lib, de: 0, ate: .9 }, ...extras];
+  const marcados: { at: number; ord: number; it: CalItem }[] = [];
+  listas.forEach((L, li) => L.items.forEach((it, i) => {
+    const f = L.de + (L.ate - L.de) * (i + 1) / (L.items.length + 1);
+    marcados.push({ at: Math.max(1, Math.round(f * ligaRounds)), ord: li * 1000 + i, it });
+  }));
+  marcados.sort((p, q) => p.at - q.at || p.ord - q.ord);
   const cal: CalItem[] = [];
   let k = 0;
   for (let r = 0; r < ligaRounds; r++) {
     cal.push({ c: 'liga', round: r });
-    while (k < lib.length && at[k] === r + 1) cal.push(lib[k++]);
+    while (k < marcados.length && marcados[k].at === r + 1) cal.push(marcados[k++].it);
   }
-  while (k < lib.length) cal.push(lib[k++]);
+  while (k < marcados.length) cal.push(marcados[k++].it);
   return cal;
 }
 
 // ---------- Temporada ----------
-function newSeasonComps(c: Pick<Career, 'club' | 'year' | 'short' | 'div' | 'brTeams' | 'sbTeams' | 'libNext'>): Pick<Career, 'league' | 'lib' | 'others' | 'cal' | 'idx' | 'libReached'> {
+function newSeasonComps(c: Pick<Career, 'club' | 'year' | 'short' | 'div' | 'brTeams' | 'sbTeams' | 'libNext' | 'mundialNext'>): Pick<Career, 'league' | 'lib' | 'others' | 'cal' | 'idx' | 'libReached' | 'copas'> {
   const league = c.div === 'A' ? makeLeague('brasileirao', c.brTeams, c.short) : makeLeague('serie-b', c.sbTeams, c.short);
   const withLib = c.div === 'A' && c.libNext.includes(c.club);
   const brLib = c.libNext.slice(0, LIB_BR);
@@ -265,7 +278,12 @@ function newSeasonComps(c: Pick<Career, 'club' | 'year' | 'short' | 'div' | 'brT
     ...(c.div === 'B' ? [makeLeague('brasileirao', c.brTeams, false)] : []),
     ...MAIN_LEAGUES.map(id => makeLeague(id, leagueClubs(id).map(x => x.id), id === 'mls')),
   ];
-  return { league, lib, others, cal: buildCalendar(league.rounds.length, withLib), idx: 0, libReached: withLib ? 'Fase de grupos' : null };
+  // Copa do Brasil (todo ano, Séries A e B) e Super Mundial (só para quem se classificou)
+  const cdb = makeCdb(c.year, c.brTeams, c.sbTeams, c.club);
+  const mundial = c.mundialNext ? makeMundial(c.year, mundialTeams(c.club, c.brTeams)) : null;
+  const copas = [cdb, ...(mundial ? [mundial] : [])];
+  const extras = [{ items: copaItems(cdb), de: .04, ate: .95 }, ...(mundial ? [{ items: copaItems(mundial), de: .3, ate: .75 }] : [])];
+  return { league, lib, others, copas, cal: buildCalendar(league.rounds.length, withLib, extras), idx: 0, libReached: withLib ? 'Fase de grupos' : null };
 }
 
 export interface CareerOpts { short?: boolean; libNow?: boolean; year?: number; evo?: boolean; mercado?: boolean }
@@ -276,17 +294,19 @@ export function newCareer(club: string, o: CareerOpts = {}): Career {
   const byStr = [...brTeams].sort((a, b) => clubStrength(b) - clubStrength(a));
   let libNext = byStr.filter(id => id !== club).slice(0, LIB_BR);
   if (o.libNow !== false && div === 'A') libNext = [...libNext.slice(0, LIB_BR - 1), club];
-  const base = { club, year: o.year ?? 2026, short: !!o.short, div, brTeams, sbTeams, libNext };
+  // O Super Mundial da 1ª temporada vem junto com a vaga na Libertadores (mesma opção ao começar)
+  const base = { club, year: o.year ?? 2026, short: !!o.short, div, brTeams, sbTeams, libNext, mundialNext: o.libNow !== false && div === 'A' };
   return { ...base, ...newSeasonComps(base), trophies: [], history: [], evo: o.evo ?? false, mercado: o.mercado ?? false };
 }
 
-const MULT = { A: 2.2, B: 1.3, lib: 3 };
+const MULT = { A: 2.2, B: 1.3, lib: 3, cdb: 2.6, mundial: 3.6 };
 
 /** Próximo jogo do usuário. Datas em que ele não joga (eliminado da Libertadores) são simuladas antes. */
 export function nextFixture(c: Career): Fixture | null {
   skipNonUser(c);
   const it = c.cal[c.idx];
   if (!it) return null;
+  if (it.c === 'copa') return copaFixture(c, it);
   if (it.c === 'liga') {
     const L = c.league, ui = L.teams.indexOf(c.club);
     const [h, a] = L.rounds[it.round].find(p => p.includes(ui))!;
@@ -311,7 +331,28 @@ export function nextFixture(c: Career): Fixture | null {
   };
 }
 
+/** Jogo do usuário numa copa (grupo do Mundial ou mata-mata). */
+function copaFixture(c: Career, it: CopaItem): Fixture | null {
+  const C = c.copas?.find(x => x.id === it.id);
+  if (!C) return null;
+  const mult = MULT[C.id];
+  if ('g' in it) {
+    const g = C.groups.find(x => x.teams.includes(c.club))!, ui = g.teams.indexOf(c.club);
+    const [h, a] = g.rounds[C.groupRound].find(p => p.includes(ui))!;
+    return { comp: 'copa', copa: C.id, label: `${C.nome} · Grupo ${'ABCDEFGH'[C.groups.indexOf(g)]} · Rodada ${C.groupRound + 1} de ${g.rounds.length}`, opp: g.teams[h === ui ? a : h], home: null, mult };
+  }
+  const R0 = C.rounds[it.r], t = R0.ties.find(x => x.a === c.club || x.b === c.club)!;
+  const youA = t.a === c.club, opp = youA ? t.b : t.a;
+  const home: 0 | 1 | null = C.neutral ? null : ((it.leg === 0) === youA ? 0 : 1);
+  const agg: [number, number] = [0, 0];
+  t.legs.forEach(l => { if (l) { agg[0] += youA ? l[0] : l[1]; agg[1] += youA ? l[1] : l[0]; } });
+  const decisive = it.leg === t.legs.length - 1, final = it.r === C.rounds.length - 1;
+  return { comp: 'copa', copa: C.id, label: `${C.nome} · ${R0.nome}${R0.legs === 2 ? (it.leg ? ' · volta' : ' · ida') : ' (jogo único)'}`, opp, home, mult: mult * (final ? 1.3 : 1),
+    ko: { phase: R0.nome, leg: it.leg, agg, decisive, final } };
+}
+
 function userInItem(c: Career, it: CalItem): boolean {
+  if (it.c === 'copa') { const C = c.copas?.find(x => x.id === it.id); return !!C && userInCopa(C, it, c.club); }
   if (it.c === 'liga') return true;
   const L = c.lib;
   if (!L) return false;
@@ -321,8 +362,9 @@ function userInItem(c: Career, it: CalItem): boolean {
 
 function skipNonUser(c: Career): void {
   while (c.idx < c.cal.length && !userInItem(c, c.cal[c.idx])) {
-    const it = c.cal[c.idx] as Extract<CalItem, { c: 'lib' }>;
-    playLibItem(c.lib!, it);
+    const it = c.cal[c.idx];
+    if (it.c === 'copa') { const C = c.copas?.find(x => x.id === it.id); if (C) playCopaItem(C, it); }
+    else if (it.c === 'lib' && c.lib) playLibItem(c.lib, it);
     c.idx++;
   }
 }
@@ -340,6 +382,9 @@ export function recordResult(c: Career, gf: number, ga: number, pens?: [number, 
     playLeagueRound(c.league, { club: c.club, gf, ga, nums });
     const frac = c.league.round / c.league.rounds.length;
     for (const L of c.others) while (L.round < Math.floor(frac * L.rounds.length + 1e-9)) playLeagueRound(L);
+  } else if (it.c === 'copa') {
+    const C = c.copas?.find(x => x.id === it.id);
+    if (C) playCopaItem(C, it, { club: c.club, gf, ga, pens });
   } else {
     playLibItem(c.lib!, it, { club: c.club, gf, ga, pens });
     c.libReached = libUserStatus(c.lib!, c.club);
@@ -377,6 +422,20 @@ export function endSeason(c: Career): SeasonSummary {
     if (p) { coins += p; msgs.push(`Libertadores (${libStatus.toLowerCase()}): +${p.toLocaleString('pt-BR')} moedas.`); }
     if (c.lib.champion === c.club) { trophies.push({ comp: 'libertadores', name: 'Copa Libertadores', year: c.year }); msgs.push(`🏆 Campeão da Libertadores de ${c.year}!`); }
   }
+  // Copa do Brasil e Super Mundial: termina o que faltar, prêmios e troféus
+  const st: Partial<Record<CopaId, string>> = {};
+  for (const C of c.copas ?? []) {
+    for (const it of copaItems(C)) if (!('g' in it) || C.groupRound <= it.g) playCopaItem(C, it);
+    const s0 = copaStatus(C, c.club);
+    if (s0 === 'Fora') continue;
+    st[C.id] = s0;
+    const p = Math.round(copaPremio(C.id, s0) * shortMult);
+    if (p) { coins += p; msgs.push(`${C.nome} (${s0.toLowerCase()}): +${p.toLocaleString('pt-BR')} moedas.`); }
+    if (C.champion === c.club) {
+      trophies.push({ comp: C.id === 'cdb' ? 'copa-do-brasil' : 'mundial', name: C.nome, year: c.year });
+      msgs.push(C.id === 'cdb' ? `🏆 Campeão da Copa do Brasil de ${c.year}!` : `🌍🏆 Campeão do Super Mundial de Clubes de ${c.year}!`);
+    }
+  }
   // Acesso e rebaixamento (4 sobem, 4 caem). A outra divisão é simulada de forma simples.
   const aTable = c.div === 'A' ? table : leagueStandings(c.others.find(l => l.id === 'brasileirao')!);
   let bTable: Standing[];
@@ -390,11 +449,14 @@ export function endSeason(c: Career): SeasonSummary {
   let libNext = aTable.slice(0, LIB_BR).map(s => s.id);
   if (c.lib?.champion && W.clubs.get(c.lib.champion)?.lg === 'brasileirao' && !libNext.includes(c.lib.champion)) libNext = [...libNext.slice(0, LIB_BR - 1), c.lib.champion];
   if (newDiv === 'A' && libNext.includes(c.club)) msgs.push(`Classificado para a Libertadores de ${c.year + 1}.`);
-  c.history.push({ year: c.year, div: c.div, pos, pts: table.find(s => s.id === c.club)!.Pts, lib: libStatus, coins });
+  // Super Mundial do ano que vem: campeão brasileiro, da Libertadores ou da Copa do Brasil, ou top 4 da Série A
+  const mundialNext = (c.div === 'A' && pos <= 4) || c.lib?.champion === c.club || c.copas?.find(x => x.id === 'cdb')?.champion === c.club;
+  if (mundialNext) msgs.push(`🌍 Classificado para o Super Mundial de Clubes de ${c.year + 1}!`);
+  c.history.push({ year: c.year, div: c.div, pos, pts: table.find(s => s.id === c.club)!.Pts, lib: libStatus, coins, cdb: st.cdb, mundial: st.mundial });
   c.trophies.push(...trophies);
   c.brTeams = [...c.brTeams.filter(id => !down.includes(id)), ...up];
   c.sbTeams = [...c.sbTeams.filter(id => !up.includes(id)), ...down];
-  c.div = newDiv; c.year++; c.libNext = libNext;
+  c.div = newDiv; c.year++; c.libNext = libNext; c.mundialNext = !!mundialNext;
   Object.assign(c, newSeasonComps(c));
   return { pos, coins, msgs, trophies, pack: trophies.length ? 'premium' : pos <= 4 ? 'ouro' : null, newDiv };
 }

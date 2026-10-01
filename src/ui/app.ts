@@ -25,6 +25,11 @@ import { viewClub } from './views/club';
 import { viewSeason } from './views/season';
 import { viewSquad } from './views/squad';
 import { viewStore } from './views/store';
+import { viewDraft } from './views/draft';
+import { bindMusica, initMusica, musicaActions } from './musica';
+import { DRAFT_CUSTO, FASES_DRAFT, draftPremio, draftSide, escolherCapitao, escolherFormacao, escolherJogador, novoDraft, registrarJogo } from '../engine/draft';
+import { penaltyShootout, sideOpp, simulate, type Match, type Shootout } from '../engine/match';
+import { addCard } from '../engine/state';
 import { sfx, unlockAudio } from './sfx';
 import { applyEvolution, evolveSeason } from '../engine/evolution';
 import { initNative, isNative, shareFile } from './native';
@@ -37,6 +42,65 @@ import { slotMenuHTML } from './slotMenu';
 import { definirMinhaFoto, fotoDe, removerMinhaFoto, temFotoCommons } from './fotos';
 import { bindEditorInputs, editorActions, resumeEditorIfNeeded, viewEditor } from './editor';
 
+// ---------- Draft dos Craques ----------
+/** Paga o prêmio do draft uma vez (quando ele acaba) e atualiza os recordes. */
+function pagarDraft(): void {
+  const S = app.S, D = S.draft;
+  if (!D || D.fase !== 'fim' || D.pago) return;
+  const p = draftPremio(D.wins), rec = S.draftRec ??= { jogos: 0, titulos: 0, melhor: 0, vitorias: 0 };
+  S.coins += p.coins; D.pago = true;
+  rec.vitorias += D.wins; rec.melhor = Math.max(rec.melhor, D.wins); if (D.wins >= 4) rec.titulos++;
+  sfx.coin(); saveNow();
+}
+/** Texto do resultado de um jogo do draft (aparece no fim da partida). */
+function resultadoDraft(gf: number, ga: number, pens?: Shootout): string {
+  const D = app.S.draft!, r = registrarJogo(D, gf, ga, pens ? [pens.a, pens.b] : undefined);
+  pagarDraft();
+  return r === 'campeao' ? '<b class="up">🏆 Campeão do Draft!</b> Volte para a aba Desafios e escolha a carta que vai levar.'
+    : r === 'avancou' ? `<b class="up">Classificado!</b> Próximo: ${FASES_DRAFT[D.jogos.length]}.`
+    : `<b class="down">Eliminado.</b> Prêmio: +${fmt(draftPremio(D.wins).coins)} moedas.`;
+}
+const draftActions: Record<string, (d: DOMStringMap) => void> = {
+  draftNovo() {
+    const S = app.S, gratis = S.draftDia !== today();
+    if (!gratis && S.coins < DRAFT_CUSTO) { toast(`Faltam moedas: o draft custa ${fmt(DRAFT_CUSTO)}`); return; }
+    if (gratis) S.draftDia = today(); else S.coins -= DRAFT_CUSTO;
+    S.draft = novoDraft(); (S.draftRec ??= { jogos: 0, titulos: 0, melhor: 0, vitorias: 0 }).jogos++;
+    saveNow(); render();
+  },
+  draftForm(d) { const D = app.S.draft; if (!D) return; escolherFormacao(D, d.f as FormationId); save(); render(); },
+  draftCap(d) { const D = app.S.draft; if (!D) return; escolherCapitao(D, d.id!); sfx.reveal(1); save(); render(); },
+  draftPick(d) { const D = app.S.draft; if (!D) return; escolherJogador(D, d.id!); sfx.reveal(0); save(); render(); window.scrollTo({ top: 0 }); },
+  draftJogar() {
+    const S = app.S, D = S.draft;
+    if (!D || D.fase !== 'jogos') return;
+    const i = D.jogos.length, opp = oppFromClub(W.clubs.get(D.rivais[i])!);
+    startMatch(opp, null, { A: draftSide(D, S.name), titulo: `Draft · ${FASES_DRAFT[i]}`, voltar: 'desafios', onEnd: (m: Match, pens?: Shootout) => resultadoDraft(m.A.goals, m.B.goals, pens) });
+  },
+  async draftSimular() {
+    const S = app.S, D = S.draft;
+    if (!D || D.fase !== 'jogos') return;
+    const i = D.jogos.length, m = await simulate(draftSide(D, S.name), sideOpp(oppFromClub(W.clubs.get(D.rivais[i])!)));
+    const pens = m.A.goals === m.B.goals ? penaltyShootout(m.A, m.B) : undefined;
+    resultadoDraft(m.A.goals, m.B.goals, pens);
+    toast(`${FASES_DRAFT[i]}: ${m.A.goals} × ${m.B.goals}${pens ? ` (pênaltis ${pens.a}–${pens.b})` : ''}`);
+    render();
+  },
+  draftDesistir() { const D = app.S.draft; if (!D) return; D.fase = 'fim'; pagarDraft(); render(); },
+  draftLevar(d) {
+    const S = app.S, D = S.draft, P = W.players.get(d.id!);
+    if (!D || D.levou || !P) return;
+    addCard(S, P.id, P.leg ? 'lenda' : 'base'); D.levou = true;
+    toast(`${P.short} agora é do seu clube!`); sfx.reveal(3); saveNow(); render();
+  },
+  draftPacote() {
+    const D = app.S.draft; if (!D || D.abriu) return;
+    const p = draftPremio(D.wins).pack; if (!p) return;
+    D.abriu = true; saveNow(); openPack(p as PackId);
+  },
+  draftFechar() { app.S.draft = null; save(); render(); },
+};
+
 function renderApp(): void {
   const S = app.S;
   document.getElementById('coins')!.textContent = fmt(S.coins);
@@ -46,9 +110,10 @@ function renderApp(): void {
   const tabNow = app.tab === 'editor' || app.tab === 'lab' || app.tab === 'ranking' || app.tab === 'taticas' ? 'club' : app.tab;
   document.querySelectorAll<HTMLElement>('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.t === tabNow ? 'true' : 'false'));
   const v = document.getElementById('view')!;
-  v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : app.tab === 'editor' ? viewEditor() : app.tab === 'lab' ? viewLab() : app.tab === 'ranking' ? viewRanking() : app.tab === 'taticas' ? viewTaticas() : app.tab === 'start' ? viewStart() : viewSeason();
+  v.innerHTML = app.tab === 'squad' ? viewSquad() : app.tab === 'store' ? viewStore() : app.tab === 'club' ? viewClub() : app.tab === 'editor' ? viewEditor() : app.tab === 'lab' ? viewLab() : app.tab === 'ranking' ? viewRanking() : app.tab === 'taticas' ? viewTaticas() : app.tab === 'start' ? viewStart() : app.tab === 'desafios' ? viewDraft() : viewSeason();
   if (app.tab === 'editor') bindEditorInputs(v);
   if (app.tab === 'store') bindMarket(v);
+  if (app.tab === 'club') bindMusica(v);
 }
 
 /** Redesenha a tela e reabre o detalhe da carta aberta (após trocar a foto). */
@@ -258,6 +323,10 @@ const ACT: Record<string, Handler> = {
     openSheet(`<h2>Fim de temporada</h2>${rec0}${awards.length ? `<div class="awards">${awards.map(a => `<p>${a}</p>`).join('')}</div>` : ''}${r.msgs.map(m => `<p>${esc(m)}</p>`).join('')}${evoHTML}<p class="small muted">Total: +${fmt(r.coins)} moedas.</p>${r.pack ? `<p>Prêmio extra: pacote <b>${packById(r.pack).n}</b>.</p><button class="btn pri block" data-act="freePack" data-p="${r.pack}">Abrir pacote</button>` : '<button class="btn block" data-act="closeSheet">Fechar</button>'}`);
   },
   cv(d) { app.careerView = d.v as typeof app.careerView; render(); },
+  ...draftActions,
+  ...musicaActions,
+  clubV(d) { app.clubView = d.v as typeof app.clubView; render(); },
+  copaV(d) { app.copaView = d.v as typeof app.copaView; render(); },
   cvLeague(d) { app.otherLeague = d.l!; render(); },
   stLiga(d) { app.startLiga = d.l!; render(); },
   stClub(d) { app.startClub = d.c!; render(); },
@@ -296,6 +365,7 @@ export function startApp(S: GameState): void {
     app.sel = null; save(); render();
   });
   void initNative(() => { void flushSave(app.S); });
+  void initMusica().then(() => { if (app.tab === 'club') render(); });
   // Erros inesperados: avisa em vez de deixar a tela travada sem explicação
   window.addEventListener('error', e => { console.error(e.error ?? e.message); toast('Ops, algo deu errado. Seu progresso está salvo.'); });
   window.addEventListener('unhandledrejection', e => { console.error(e.reason); toast('Ops, algo deu errado. Seu progresso está salvo.'); });

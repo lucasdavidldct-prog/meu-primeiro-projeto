@@ -591,3 +591,43 @@ table tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
 .m3d-name.eR::after{content:' ▸';color:var(--gold)}
 .m3d-full .m3d-name.def.alvo{box-shadow:0 0 0 3px #9ec9ec,0 0 16px rgba(158,201,236,.9);animation:pulse 1s infinite}
 .k3-read{white-space:normal;max-width:calc(100% - 24px);text-align:center}
+/* ---------- Draft dos Craques ---------- */
+.dr-hero{background:linear-gradient(160deg,rgba(232,195,95,.16),rgba(232,195,95,.02) 60%),var(--panel,rgba(255,255,255,.04));border:1px solid rgba(232,195,95,.4)}
+.dr-premios{display:grid;gap:4px;margin:10px 0 14px}
+.dr-premios div{display:flex;justify-content:space-between;gap:10px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.05);font-size:13px}
+.dr-premios div span{color:var(--muted);text-align:right}
+.dr-premios .top{background:linear-gradient(90deg,rgba(232,195,95,.3),rgba(232,195,95,.08));color:#fff}
+.dr-premios .top span{color:#f6dc8c}
+.dr-ops{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dr-form{padding:22px 6px;font-size:20px}
+.dr-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;justify-items:center}
+.dr-card{border:0;background:transparent;padding:0;cursor:pointer;transition:transform .15s}
+.dr-card:active{transform:scale(.95)}
+.dr-campo{position:relative;aspect-ratio:1/1.05;max-width:360px;margin:6px auto 0;border-radius:14px;background:repeating-linear-gradient(0deg,#1d5d3a 0 12.5%,#1a5536 12.5% 25%);border:2px solid rgba(255,255,255,.25)}
+.dr-vaga{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;min-width:40px;padding:3px 5px;border-radius:8px;background:rgba(0,0,0,.45);border:1px dashed rgba(255,255,255,.35);font-size:11px;color:#cfd8d3}
+.dr-vaga b{font-family:var(--f-disp);font-size:15px;color:#fff}
+.dr-vaga i{font-style:normal;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dr-vaga.ok{background:linear-gradient(180deg,#f6dc8c,var(--gold));border:0;color:#1d1403}
+.dr-vaga.ok b{color:#1d1403}
+.dr-vaga.agora{border:2px solid #fff;animation:pulse 1s infinite}
+.dr-etapa{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.08)}
+.dr-etapa:last-child{border-bottom:0}
+.dr-etapa small{min-width:84px;color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:.05em}
+.dr-etapa.ok b{color:var(--good)}
+.dr-etapa.x b{color:#f06a5a}
+.dr-etapa.agora{background:rgba(232,195,95,.12);border-radius:8px}
+.dr-fim.campeao{border:1px solid var(--gold);background:linear-gradient(160deg,rgba(232,195,95,.25),transparent)}
+.chips.sub .chip{font-size:12.5px;padding:6px 10px}
+/* ---------- Clube: abas, linhas de opção e músicas ---------- */
+.chips.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.chips.seg .chip{justify-content:center;text-align:center;padding:9px 6px}
+.opt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.opt-row:last-child{border-bottom:0}
+.opt-row>span{font-size:13.5px;color:#cfd8d3}
+.btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-grid .btn{padding:12px 8px}
+.mus-list{display:grid;gap:4px;margin-bottom:8px;max-height:220px;overflow:auto}
+.mus-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.05);font-size:13px}
+.mus-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mus-item.on{background:rgba(232,195,95,.18);color:#fff}
+@media (max-width:420px){.tabs button{font-size:10.5px;letter-spacing:.02em}}

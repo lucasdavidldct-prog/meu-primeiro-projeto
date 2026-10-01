@@ -4,6 +4,7 @@ import { calcChem, effOvr, power, rate, type Chem, type Ratings } from './chemis
 import { slotsOf } from './positions';
 import { pick } from './rng';
 import { newCareer, type Career, type CareerOpts } from './career';
+import type { Draft } from './draft';
 import type { FormationId, OwnedCard, Pos, SlotDef, StyleId, Variant } from './types';
 import { W, getPlayer } from './world';
 import { withChem } from './chemStyles';
@@ -58,6 +59,12 @@ export interface GameState {
   clima?: 'auto' | 'dia' | 'sol' | 'noite' | 'chuva' | 'neve';
   /** Desenho do gramado. */
   gramado?: 'faixas' | 'xadrez' | 'circulos' | 'diagonal' | 'liso';
+  /** Draft dos Craques: o draft em andamento, o dia da entrada grátis e os recordes. */
+  draft?: Draft | null;
+  draftDia?: string;
+  draftRec?: { jogos: number; titulos: number; melhor: number; vitorias: number };
+  /** Músicas: tocar nos menus e nas partidas, e o volume (0 a 1). Os arquivos ficam no IndexedDB. */
+  musica?: { menu: boolean; jogo: boolean; vol: number };
   /** Já viu as dicas de como jogar. */
   dicasVistas?: boolean;
   titles: number;

@@ -60,7 +60,7 @@ describe('carreira', () => {
   it('as outras ligas avançam junto com o Brasileirão e ficam completas no fim', () => {
     seedRng(4);
     const C = newCareer('CAM', { libNow: false });
-    for (let i = 0; i < 19; i++) recordResult(C, 1, 1);
+    while (C.league.round < 19) { const f = nextFixture(C)!; recordResult(C, 1, 1, needsPens(f, 1, 1) ? [5, 4] : undefined); }
     const pl = C.others.find(o => o.id === 'premier-league')!;
     expect(pl.round).toBe(19);
     const mls = C.others.find(o => o.id === 'mls')!;
@@ -77,7 +77,7 @@ describe('carreira', () => {
     playSeason(C, () => [3, 0]);
     const r = endSeason(C);
     expect(r.pos).toBe(1);
-    expect(C.trophies.map(t => t.comp).sort()).toEqual(['brasileirao', 'libertadores']);
+    expect(C.trophies.map(t => t.comp).sort()).toEqual(['brasileirao', 'copa-do-brasil', 'libertadores', 'mundial']);
     expect(r.coins).toBeGreaterThan(100000);
     expect(C.year).toBe(2027);
     expect(C.history).toHaveLength(1);
@@ -152,5 +152,35 @@ describe('pênaltis e IA', () => {
     const B = newCareerGame('GOI');
     expect(B.cards.length).toBeGreaterThanOrEqual(18);
     expect(teamInfo(B).full).toBe(true);
+  });
+
+  it('Copa do Brasil todo ano (32 clubes, mata-mata) e Super Mundial para quem se classifica', () => {
+    seedRng(11);
+    const C = newCareer('CAM');
+    const cdb = C.copas!.find(x => x.id === 'cdb')!, mun = C.copas!.find(x => x.id === 'mundial')!;
+    expect(cdb.rounds[0].ties).toHaveLength(16);
+    expect(cdb.rounds[0].ties.some(t => t.a === 'CAM' || t.b === 'CAM')).toBe(true);
+    expect(mun.groups).toHaveLength(8);
+    expect(new Set(mun.groups.flatMap(g => g.teams)).size).toBe(32);
+    expect(mun.groups.flatMap(g => g.teams)).toContain('CAM');
+    // Perdendo tudo: cai cedo nas copas, mas elas terminam com campeão
+    playSeason(C, () => [0, 1]);
+    expect(cdb.champion).toBeTruthy();
+    expect(mun.champion).toBeTruthy();
+    const r = endSeason(C);
+    expect(r.msgs.some(m => m.includes('Copa do Brasil'))).toBe(true);
+    expect(C.mundialNext).toBe(false);
+    // Na temporada seguinte só há a Copa do Brasil
+    expect(C.copas!.map(x => x.id)).toEqual(['cdb']);
+  });
+
+  it('sem a vaga inicial, não joga o Mundial; jogos da Copa do Brasil aparecem no calendário', () => {
+    seedRng(12);
+    const C = newCareer('CAM', { libNow: false });
+    expect(C.copas!.map(x => x.id)).toEqual(['cdb']);
+    let copa = 0;
+    for (let f = nextFixture(C); f; f = nextFixture(C)) { if (f.comp === 'copa') copa++; recordResult(C, 2, 0); }
+    expect(copa).toBe(9); // 1ª fase + 4 fases de ida e volta (ganhando todas)
+    expect(C.copas![0].champion).toBe('CAM');
   });
 });

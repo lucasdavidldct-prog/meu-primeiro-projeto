@@ -145,6 +145,16 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.10.0
+
+- **Draft dos Craques** (nova aba **Desafios**): escolha a formação, o capitão e, em cada posição, 1 entre 5 cartas (jogadores, lendas e Fora de Série). Depois, mata-mata de 4 jogos contra rivais cada vez mais fortes: perdeu, acabou. Prêmios crescem a cada vitória; campeão leva uma carta do draft para o clube. Uma entrada grátis por dia, recordes salvos.
+- **Copa do Brasil** todo ano na carreira: 32 clubes das Séries A e B, 1ª fase em jogo único e o resto em ida e volta.
+- **Super Mundial de Clubes**: 32 gigantes do mundo, 8 grupos e mata-mata em campo neutro. Classifica quem fica entre os 4 primeiros da Série A ou ganha o Brasileirão, a Libertadores ou a Copa do Brasil (na 1ª temporada, junto com a vaga na Libertadores). Prêmios e troféus próprios.
+- **Suas músicas**: em Clube → Ajustes → Som, adicione músicas do seu celular; elas tocam embaralhadas nos menus e, se quiser, nas partidas (volume, pausar e próxima).
+- **Menus organizados**: a aba Clube agora tem Coleção, Ajustes e Extras; na Temporada, Libertadores, Copa do Brasil e Mundial ficam juntas em Copas.
+- **Câmeras**: enquadramento automático em todas (Padrão, TV, Atrás, bola parada e defesa): a câmera se afasta o necessário para caber quem tem a bola, os companheiros por perto e o gol, sem sair do estádio.
+- **Correções**: chute mirado fora das traves nunca mais vira gol; no goleiro, arrastar para cima e um pouco para o lado agora conta como aquele canto (antes podia virar "meio"), e o mergulho alcança mais longe.
+
 ## Versão 1.9.1
 
 - **Troca rápida** aparece mesmo quando o banco não tem reserva para o mais cansado: o jogo procura o próximo cansado que tenha substituto. O botão "Trocar" não é mais refeito a cada minuto (só o fôlego muda), então o toque nunca se perde.

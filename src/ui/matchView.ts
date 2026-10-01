@@ -11,13 +11,14 @@ import { cardByUid, orderAt, replaceUnavailable, teamInfo } from '../engine/stat
 import { MENT, STYLES, STYLE_IDS } from '../engine/tactics';
 import type { CardPlayer, StyleId } from '../engine/types';
 import { cardHTML } from './card';
-import { app, render, saveNow, userClub } from './ctx';
+import { app, render, saveNow, userClub, type Tab } from './ctx';
 import { crestHTML } from './crest';
 import { closeSheet, esc, fmt, openSheet, toast } from './dom';
 import { runMoment2D } from './moment2d';
 import { runKeeper2D } from './keeper2d';
 import { webglAvailable } from '../three/support';
 import { haptic, sfx } from './sfx';
+import { musicaContexto } from './musica';
 
 /** Lance 3D (carregado sob demanda); o 2D só entra sozinho se o aparelho não tiver WebGL ou se o 3D falhar. */
 export async function runMoment(m: Match, req: Parameters<typeof runMoment2D>[1]): Promise<Awaited<ReturnType<typeof runMoment2D>>> {
@@ -52,7 +53,9 @@ export function difficulty(home: 0 | 1 | null): { boost: number; keeper: number;
   return { boost, keeper, moments: Math.max(1, moments), gk: [2, 2, 1, 1][d] };
 }
 
-interface Live { desfalques?: string[]; m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; /** Sugestões de troca recusadas (nome de quem sairia). */ naoTrocar: Set<string>; avisado?: string; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout; notas?: Nota[] }
+/** Partida fora da carreira (Draft): time próprio e o que fazer no fim (devolve o texto do resultado). */
+export interface MatchCustom { A: Side; titulo: string; onEnd: (m: Match, pens?: Shootout) => string; voltar: Tab }
+interface Live { custom?: MatchCustom; customMsg?: string; desfalques?: string[]; m: Match; fx: Fixture | null; speed: number; paused: boolean; busy: boolean; /** Sugestões de troca recusadas (nome de quem sairia). */ naoTrocar: Set<string>; avisado?: string; timer?: ReturnType<typeof setTimeout>; reward?: number; pens?: Shootout; notas?: Nota[] }
 let L: Live | null = null;
 /** Último adversário (para a revanche). */
 let lastOpp: OppTeam | null = null;
@@ -103,8 +106,8 @@ function finalize(m: Match, fx: Fixture | null): { coins: number; pens?: Shootou
   return { coins, pens, desfalques };
 }
 
-export function startMatch(opp: OppTeam, fx: Fixture | null): void {
-  const S = app.S, A = userSide();
+export function startMatch(opp: OppTeam, fx: Fixture | null, custom?: MatchCustom): void {
+  const S = app.S, A = custom ? custom.A : userSide();
   if (!A) return;
   const home = fx ? fx.home : null, d = difficulty(home);
   // Clássico: o rival cresce e o jogo fica mais pegado
@@ -123,13 +126,14 @@ export function startMatch(opp: OppTeam, fx: Fixture | null): void {
   aplicarClima(m, opp.lg);
   if (cl) m.addEv(0, 'info', `🔥 ${cl.n}! Jogo de rivalidade: o ${opp.n} vem mais forte e mais pegado.`);
   if (fx) m.addEv(0, 'info', `${fx.label}${fx.home === 0 ? ' · em casa' : fx.home === 1 ? ' · fora de casa' : ' · campo neutro'}.`);
-  L = { m, fx, speed: 1, paused: false, busy: false, naoTrocar: new Set() };
+  if (custom) m.addEv(0, 'info', `${custom.titulo} · campo neutro. Empate vai para os pênaltis.`);
+  L = { m, fx, speed: 1, paused: false, busy: false, naoTrocar: new Set(), custom };
   const ov = document.createElement('div');
   ov.className = 'match'; ov.id = 'match';
   // O corpo é redesenhado a cada minuto; a troca rápida fica numa área fixa que só muda quando a sugestão muda
   ov.innerHTML = '<div id="mBody"></div><div class="sub-dock" id="subDock"></div>';
   document.body.appendChild(ov);
-  renderMatch(); loop(); sfx.whistle(1);
+  renderMatch(); loop(); sfx.whistle(1); musicaContexto('jogo');
 }
 
 function loop(): void {
@@ -151,6 +155,15 @@ function loop(): void {
 
 function endMatch(): void {
   if (!L) return;
+  if (L.custom) {
+    // Draft: mata-mata, sem moedas por jogo e sem mexer na carreira
+    const m = L.m, pens = m.A.goals === m.B.goals ? penaltyShootout(m.A, m.B) : undefined;
+    L.pens = pens; L.notas = m.notas(); L.reward = 0;
+    if (pens) m.addEv(pens.winner ? 1 : 0, 'info', `Pênaltis: ${m.A.name} ${pens.a} × ${pens.b} ${m.B.name}.`);
+    L.customMsg = L.custom.onEnd(m, pens);
+    saveNow();
+    return;
+  }
   const r = finalize(L.m, L.fx);
   L.reward = r.coins; L.pens = r.pens; L.notas = L.m.notas(); L.desfalques = r.desfalques;
   if (r.pens) L.m.addEv(r.pens.winner ? 1 : 0, 'info', `Pênaltis: ${L.m.A.name} ${r.pens.a} × ${r.pens.b} ${L.m.B.name}.`);
@@ -208,9 +221,9 @@ export function renderMatch(): void {
    ${M.over ? `<div class="ht"><h2 style="margin:0 0 4px">${res}${L.pens ? ` · pênaltis ${L.pens.a} × ${L.pens.b}` : ''}</h2>
      ${L.pens ? `<p class="small" style="margin:0 0 6px">${L.pens.winner === 0 ? '<b class="up">Classificado nos pênaltis!</b>' : '<b class="down">Eliminado nos pênaltis.</b>'}</p><details class="small muted" style="margin-bottom:8px"><summary>Cobranças</summary>${L.pens.log.map(esc).join('<br>')}</details>` : ''}
      ${L.desfalques?.length ? `<div class="desf">${L.desfalques.map(esc).join('<br>')}</div>` : ''}
-     <p style="margin:0 0 10px">+${fmt(L.reward ?? 0)} moedas${L.fx ? ' · ' + esc(L.fx.label) : ' · amistoso'}.</p>
+     ${L.custom ? `<div style="margin:0 0 10px">${L.customMsg ?? ''}</div>` : `<p style="margin:0 0 10px">+${fmt(L.reward ?? 0)} moedas${L.fx ? ' · ' + esc(L.fx.label) : ' · amistoso'}.</p>`}
      ${L.notas ? notasHTML(L.notas, B.s) : ''}
-     ${A.goals < B.goals ? '<button class="btn block" style="margin-bottom:8px" data-act="revanche">🔁 Revanche (amistoso, na hora)</button>' : ''}
+     ${A.goals < B.goals && !L.custom ? '<button class="btn block" style="margin-bottom:8px" data-act="revanche">🔁 Revanche (amistoso, na hora)</button>' : ''}
      <button class="btn pri block" data-act="closeMatch">Continuar</button></div>` : ''}
    ${M.ht && !M.over ? `<div class="ht"><b>Intervalo.</b> <span class="muted small">Ajuste o time e volte para o segundo tempo.</span><div class="row" style="margin-top:10px"><button class="btn pri" style="flex:1" data-act="secondHalf">Começar 2º tempo</button><button class="btn" data-act="subs">Substituições (${A.subs})</button></div></div>` : ''}
    ${!M.over ? `<div class="mctl">
@@ -330,7 +343,7 @@ export function devMoment(kind: MomentKind, pen = false, oppId?: string, home: 0
 }
 
 export const matchActions = {
-  closeMatch() { document.getElementById('match')?.remove(); if (L) clearTimeout(L.timer); L = null; app.tab = 'season'; render(); },
+  closeMatch() { musicaContexto('menu'); const volta = L?.custom?.voltar ?? 'season'; document.getElementById('match')?.remove(); if (L) clearTimeout(L.timer); L = null; app.tab = volta; render(); },
   secondHalf() { if (!L) return; L.m.secondHalf(); sfx.whistle(1); renderMatch(); loop(); },
   mPause() { if (!L) return; L.paused = !L.paused; renderMatch(); loop(); },
   mSpeed(d: DOMStringMap) { if (!L) return; L.speed = +d.s!; renderMatch(); loop(); },
