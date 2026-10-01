@@ -537,8 +537,8 @@ table tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
 .kit-op[aria-pressed="true"] { border-color: var(--gold, #e8c35f); box-shadow: 0 0 0 1px var(--gold, #e8c35f) inset; }
 .kit-svg { display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
 /* Câmera do lance 3D: trocar e girar 360° */
-.m3d-cam{position:absolute;right:8px;top:40%;z-index:5;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.m3d-cam button{pointer-events:auto;height:34px;min-width:34px;padding:0 10px;border-radius:17px;border:1px solid rgba(255,255,255,.28);background:rgba(7,11,18,.62);color:#fff;font:700 13px var(--f-body,inherit);touch-action:none;-webkit-user-select:none;user-select:none;backdrop-filter:blur(4px)}
+.m3d-cam{position:absolute;right:8px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.m3d-cam button{pointer-events:auto;height:30px;min-width:30px;padding:0 8px;border-radius:15px;opacity:.85;border:1px solid rgba(255,255,255,.28);background:rgba(7,11,18,.62);color:#fff;font:700 13px var(--f-body,inherit);touch-action:none;-webkit-user-select:none;user-select:none;backdrop-filter:blur(4px)}
 .m3d-cam button:active{background:rgba(232,195,95,.35)}
 
 /* ---------- Menus dos lances (chute, passe, defesa) ---------- */
@@ -586,3 +586,8 @@ table tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
 .m3d-full .m3d-name.atk{pointer-events:none;background:rgba(192,57,43,.9);color:#fff}
 .def2d{max-width:520px;margin:10px auto;padding:0 12px}
 .def2d .ch-ops{margin-top:10px}
+/* Nome preso na borda: seta para o lado onde o jogador está (fora da tela) */
+.m3d-name.eL::before{content:'◂ ';color:var(--gold)}
+.m3d-name.eR::after{content:' ▸';color:var(--gold)}
+.m3d-full .m3d-name.def.alvo{box-shadow:0 0 0 3px #9ec9ec,0 0 16px rgba(158,201,236,.9);animation:pulse 1s infinite}
+.k3-read{white-space:normal;max-width:calc(100% - 24px);text-align:center}

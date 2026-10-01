@@ -45,15 +45,15 @@ export const LAB: Record<string, LabInfo> = {
   // Passe
   'passe-preciso': { lado: 'ataque', pos: 'MC', lances: ['ataque'], dica: 'Toque em companheiros marcados: o passe passa mais.',
     efeitos: [L('Raio de interceptação do passe', FX.passeRaio, 'mult', 'menor'), S('Força do meio-campo (posse)', FX.passe, 'add', 'maior')] },
-  'passe-tenso': { lado: 'ataque', pos: 'MC', lances: ['ataque'], dica: 'Passe rasteiro (1 toque) entre marcadores.',
+  'passe-tenso': { lado: 'ataque', pos: 'MC', lances: ['ataque'], dica: 'Toque num companheiro e escolha o passe Rasteiro entre marcadores.',
     efeitos: [L('Raio de interceptação do passe rasteiro', FX.passeTenso, 'mult', 'menor')] },
   'passe-em-profundidade': { lado: 'ataque', pos: 'MEI', lances: ['ataque'], dica: 'Passes longos e lançamentos no espaço.',
     efeitos: [L('Penalidade do passe longo', FX.passeLongo, 'mult', 'menor'), S('Peso nas assistências', FX.profundidade, 'mult', 'maior'), S('Força do meio-campo (posse)', FX.passe, 'add', 'maior')] },
-  'lancamento': { lado: 'ataque', pos: 'MC', lances: ['ataque'], dica: 'Passe alto longo (2 toques) para o outro lado.',
+  'lancamento': { lado: 'ataque', pos: 'MC', lances: ['ataque'], dica: 'Toque num companheiro longe e escolha o passe Alto para o outro lado.',
     efeitos: [L('Penalidade de distância no passe alto', FX.lancamento, 'mult', 'menor')] },
   'tiki-taka': { lado: 'ataque', pos: 'MC', lances: ['ataque'], dica: 'Toques curtos (até 15 m), mesmo com marcador perto.',
     efeitos: [L('Chance mínima do passe curto', FX.tikiTaka, 'prob', 'maior')] },
-  'cruzamento': { lado: 'ataque', pos: 'PD', lances: ['ataque', 'escanteio'], dica: 'Vá até a ponta e cruze com passe alto (2 toques).',
+  'cruzamento': { lado: 'ataque', pos: 'PD', lances: ['ataque', 'escanteio'], dica: 'Vá até a ponta, toque num companheiro na área e escolha Cruzamento.',
     efeitos: [L('Acerto do cruzamento da ponta', [1, 1.12, 1.22], 'mult', 'maior'), S('Peso nas assistências de cabeça', FX.cruzamento, 'mult', 'maior')] },
   // Controle
   'primeiro-toque': { lado: 'ataque', pos: 'MEI', lances: ['ataque'], dica: 'Passe para ele: ao receber, ganha uma ação a mais no lance (aparece na tela).',
@@ -156,7 +156,7 @@ export function labSetup(ps: string, lvl: Lvl, base?: BasePlayer, lance?: Moment
     // Lance de defesa: a SUA zaga tem o estilo (o testado e mais dois zagueiros/laterais)
     const order = ['ZAG', 'LD', 'LE', 'VOL', 'MC'];
     const ids = slots.map((s, i) => [order.indexOf(s.p), i]).filter(([o]) => o >= 0).sort((a, b) => a[0] - b[0]).slice(0, 3).map(([, i]) => i);
-    ids.forEach((i, k) => { mine[i] = k === 0 ? { ...P, pos: slots[i].p } : withStyle(neutral(slots[i].p, 'Neutro'), ps, lvl); });
+    ids.forEach((i, k) => { mine[i] = k === 0 ? { ...P, pos: slots[i].p } : withStyle(neutral(slots[i].p, 'Com o estilo'), ps, lvl); });
     idx = ids[0];
   } else {
     // Três marcadores rivais com o estilo (zagueiros primeiro, depois laterais)

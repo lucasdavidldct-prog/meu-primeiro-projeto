@@ -553,24 +553,24 @@ export class Match {
   suggestSub(limite = 70, ignorar: ReadonlySet<string> = new Set()): { out: number; inIdx: number; folego: number; ganho: number } | null {
     const A = this.A;
     if (A.subs <= 0 || !A.bench.length || this.over) return null;
-    let best: { out: number; folego: number } | null = null;
-    A.xi.forEach((e, i) => {
-      if (e.red || e.pos === 'GOL' || ignorar.has(e.name)) return;
-      const folego = Math.round(100 - fatigue(e, this.min) * 60);
-      if (folego < limite && (!best || folego < best.folego)) best = { out: i, folego };
-    });
-    if (!best) return null;
-    const b = best as { out: number; folego: number }, e0 = A.xi[b.out];
+    // Do mais cansado para o menos: o primeiro que tiver um reserva que valha a pena (antes só olhava o mais cansado
+    // e desistia se o banco não tivesse ninguém da posição dele)
+    const cansados = A.xi.map((e, i) => ({ e, i, folego: Math.round(100 - fatigue(e, this.min) * 60) }))
+      .filter(x => !x.e.red && x.e.pos !== 'GOL' && !ignorar.has(x.e.name) && x.folego < limite)
+      .sort((p, q) => p.folego - q.folego);
     const emCampo = new Set(A.xi.filter(x => !x.red).map(x => x.P.id));
-    let pick: { j: number; v: number } | null = null;
-    A.bench.forEach((P, j) => {
-      if (emCampo.has(P.id)) return;
-      const v = effOvr(P, e0.pos, 1);
-      if (!pick || v > pick.v) pick = { j, v };
-    });
-    if (!pick) return null;
-    const pk = pick as { j: number; v: number }, ganho = pk.v - effNow(e0, this.min);
-    return ganho > -2 ? { out: b.out, inIdx: pk.j, folego: b.folego, ganho } : null;
+    for (const c of cansados) {
+      let pick: { j: number; v: number } | null = null;
+      A.bench.forEach((P, j) => {
+        if (emCampo.has(P.id)) return;
+        const v = effOvr(P, c.e.pos, 1);
+        if (!pick || v > pick.v) pick = { j, v };
+      });
+      if (!pick) return null;
+      const pk = pick as { j: number; v: number }, ganho = pk.v - effNow(c.e, this.min);
+      if (ganho > -2) return { out: c.i, inIdx: pk.j, folego: c.folego, ganho };
+    }
+    return null;
   }
 
   /** Substituição do usuário (lado A). */

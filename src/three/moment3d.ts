@@ -50,7 +50,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
         <div class="m3d-top"><span class="mo-tag">${M.label}</span><b>${req.treino ? 'Treino de lances' : sc.title}</b><span class="acts" id="moActs"></span><button class="m3d-q" id="m3dQ" aria-label="Ajuda">?</button></div>
         <div class="m3d-label" id="m3dLabel"></div>
         <div class="m3d-help show" id="m3dHelp">${HELP3D[kind === 'contra' || kind === 'goleiro' ? 'ataque' : kind as keyof typeof HELP3D]}</div>
-        <div class="m3d-replay" id="m3dReplay">REPLAY</div>
+        <div class="m3d-replay" id="m3dReplay">REPLAY · toque para pular</div>
         <div class="ps-flash" id="psFlash"></div>
         <div class="ps-hud" id="psHud"></div>
         ${choiceHTML()}
@@ -199,8 +199,9 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
         flash(plan.end.text, plan.end.color); endSound(plan.end);
         if (plan.end.goal) {
           const res = plan.end.res;
-          setTimeout(() => { msgEl.textContent = ''; replay = { frames: frames.slice(-Math.min(frames.length, 170)), i: 0, res }; replayEl.classList.add('on'); }, 1300);
-        } else setTimeout(() => cleanup(plan.end!.res), 1500);
+          // Replay só do finalzinho (o chute e a bola entrando); toque na tela pula
+          setTimeout(() => { msgEl.textContent = ''; replay = { frames: frames.slice(-Math.min(frames.length, 100)), i: 0, res }; replayEl.classList.add('on'); }, 1300);
+        } else setTimeout(() => cleanup(plan.end!.res), 2300);
       }
     }
     const busy = () => !!anim || finished || menu;
@@ -419,8 +420,10 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       // Atrás do jogador: baixa, por cima do ombro, olhando para o gol
       if (camMode === 'atras') return portrait ? [V(c.x + (c.x - 34) * .08, depth + 7, 3.6), V(34 + (c.x - 34) * .35, Math.max(0, depth - 13), 1)] : [V(c.x + (c.x - 34) * .08, depth + 7.5, 3), V(34 + (c.x - 34) * .35, Math.max(0, depth - 14), 1)];
       // Padrão: atrás da jogada, a meia altura (vê o gol, a área e os jogadores em pé, com a torcida ao fundo)
+      // Tela em pé (visão estreita): a câmera fica atrás de quem tem a bola, mesmo na ponta, e só gira um pouco para o gol
+      if (portrait) return [V(c.x * .92 + 34 * .08, depth + 14, 12.5), V(c.x * .85 + 34 * .15, depth - 5, 0)];
       const cx = c.x * .75 + 34 * .25;
-      return portrait ? [V(cx, depth + 14, 12.5), V(cx * .8 + 34 * .2, depth - 5, 0)] : [V(cx, depth + 15, 9.5), V(cx * .7 + 34 * .3, depth - 9, 0)];
+      return [V(cx, depth + 15, 9.5), V(cx * .7 + 34 * .3, depth - 9, 0)];
     }
     // Abertura: a câmera começa no alto, mostrando o estádio e a torcida, e desce até a jogada
     const introAte = performance.now() + (pen || fk ? 1100 : 1700);
@@ -499,9 +502,12 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       for (const [id, elN] of names) {
         const a = sc.mates.find(m => m.id === id)!, s = V(a.x, a.y, 2.3 * SCALE).project(camera);
         let x = (s.x + 1) / 2 * W, y = (1 - s.y) / 2 * H;
-        const off = x < 8 || x > W - 8 || y < 56 || y > H - 8;
-        x = clamp(x, 50, W - 50); y = clamp(y, 76, H - 16);
-        elN.style.display = s.z < 1 && !finished ? 'block' : 'none';
+        const off = x < 8 || x > W - 8 || y < 56 || y > H - 8, hw = elN.offsetWidth / 2 + 4;
+        // Preso na borda: seta para o lado em que o companheiro está
+        elN.classList.toggle('eL', x < hw); elN.classList.toggle('eR', x > W - hw);
+        x = clamp(x, hw, W - hw); y = clamp(y, 76, H - 120); // embaixo ficam os estilos e os botões de câmera
+        // Pênalti e falta: o nome do cobrador ficaria em cima do goleiro/barreira, então some
+        elN.style.display = s.z < 1 && !finished && !pen && !fk ? 'block' : 'none';
         elN.classList.toggle('on', a === sc.carrier);
         elN.classList.toggle('edge', off);
         tags.push({ el: elN, x, y });
@@ -530,7 +536,7 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
     // Replay: câmera lateral, perto do gol, em câmera lenta
     function playReplay() {
       const R = replay!, f = R.frames[Math.min(R.frames.length - 1, Math.floor(R.i))];
-      R.i += .33;
+      R.i += .4;
       ballM.position.copy(f.ball);
       ballSh.position.set(f.ball.x, .016, f.ball.z);
       for (const row of f.actors) {
@@ -551,6 +557,8 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
       view.render(scene, camera);
       if (R.i >= R.frames.length + 25) { replay = null; replayEl.classList.remove('on'); cleanup(R.res); }
     }
+    // Toque em qualquer lugar durante o replay: pula
+    ov.addEventListener('pointerdown', () => { if (!replay) return; const r = replay.res; replay = null; replayEl.classList.remove('on'); cleanup(r); }, true);
     haptic('leve');
     frame();
   });

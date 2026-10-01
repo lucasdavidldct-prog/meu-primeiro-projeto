@@ -66,4 +66,12 @@ describe('lance de defesa (você comanda a zaga)', () => {
       expect(fim).toBe(true);
     }
   });
+
+  it('quem está mais bem colocado sempre tem a ação certa contra a jogada do rival', () => {
+    const certa = { drible: 'bote', passe: 'cortar', chute: 'fechar' } as const;
+    for (let s = 1; s <= 80; s++) {
+      const sc = cena(s), d = sc.resposta()!;
+      expect(sc.opcoes(d).some(o => o.acao === certa[sc.intencao.a])).toBe(true);
+    }
+  });
 });

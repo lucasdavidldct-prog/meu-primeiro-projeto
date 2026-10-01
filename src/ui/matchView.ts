@@ -237,20 +237,27 @@ export function renderMatch(): void {
 function updateSubDock(dock: HTMLElement): void {
   const h = subHint();
   const key = h ? h.key : '';
+  // Mesma troca sugerida: só os números mudam (os botões continuam os mesmos, o toque nunca se perde)
+  if (h && dock.dataset.key === key) {
+    const f = dock.querySelector<HTMLElement>('.sh-f'), g = dock.querySelector<HTMLElement>('.sh-g');
+    if (f) { f.textContent = `${h.folego}%`; f.classList.toggle('down', h.folego < 55); }
+    if (g) g.textContent = h.ganho > 0 ? ` · +${Math.round(h.ganho)} de rendimento` : '';
+    return;
+  }
   if (dock.dataset.key === key) return;
   dock.dataset.key = key;
   dock.innerHTML = h ? h.html : '';
 }
 
 /** Aviso de troca rápida quando um titular está cansado (um toque troca; "Agora não" some com a sugestão). */
-function subHint(): { key: string; html: string } | null {
+function subHint(): { key: string; html: string; folego: number; ganho: number } | null {
   if (!L || L.m.over || L.m.ht || L.busy) return null;
   const M = L.m, s = M.suggestSub(70, L.naoTrocar);
   if (!s) return null;
   const e = M.A.xi[s.out], P = M.A.bench[s.inIdx];
   if (L.avisado !== e.name) { L.avisado = e.name; haptic('leve'); }
-  return { key: `${s.out}|${s.inIdx}|${Math.round(s.folego / 5)}|${Math.round(s.ganho)}`, html: `<div class="sub-hint"><span class="sh-ic">🔋</span><div><b>${esc(e.name)}</b> está cansado · fôlego <b class="${s.folego < 55 ? 'down' : ''}">${s.folego}%</b>
-      <div class="small muted">Entra <b>${esc(P.short)}</b> (${P.pos} · ${P.ovr})${s.ganho > 0 ? ` · +${Math.round(s.ganho)} de rendimento` : ''}</div></div>
+  return { key: `${s.out}|${s.inIdx}|${e.name}|${P.id}`, folego: s.folego, ganho: s.ganho, html: `<div class="sub-hint"><span class="sh-ic">🔋</span><div><b>${esc(e.name)}</b> está cansado · fôlego <b class="sh-f ${s.folego < 55 ? 'down' : ''}">${s.folego}%</b>
+      <div class="small muted">Entra <b>${esc(P.short)}</b> (${P.pos} · ${P.ovr})<span class="sh-g">${s.ganho > 0 ? ` · +${Math.round(s.ganho)} de rendimento` : ''}</span></div></div>
     <div class="sh-acts"><button class="btn pri" data-act="quickSub" data-o="${s.out}" data-i="${s.inIdx}">Trocar</button><button class="btn" data-act="skipSub" data-n="${esc(e.name)}">Agora não</button></div></div>` };
 }
 
@@ -313,7 +320,7 @@ export function devMoment(kind: MomentKind, pen = false, oppId?: string, home: 0
   const A = sideFromTeam(T, { name: S.name, form: S.squad.form, style: S.tac.style, ment: S.tac.ment, bench });
   const uc = userClub();
   Object.assign(A, { s: uc.s, c1: uc.c1, c2: uc.c2, club: S.career?.club, kitEscolha: S.uniforme });
-  const opp = allClubs().find(c => c.id === oppId) ?? allClubs()[0];
+  const opp = allClubs().find(c => c.id === oppId) ?? allClubs().find(c => c.id !== S.career?.club)!;
   const m = new Match(A, sideOpp(oppFromClub(opp)), { home });
   aplicarClima(m, opp.lg);
   if (kind === 'goleiro') return runMoment(m, { kind, taker: penaltyTaker(m.B), pen });

@@ -98,7 +98,7 @@ export const PLAYSTYLES: PlaystyleDef[] = [
   { id: 'passe-preciso', cat: 'passe', nome: 'Passe Preciso', gol: false, icone: '📐', desc: 'Passes curtos e médios mais certeiros.', descPlus: 'Raramente perde a bola no passe.' },
   { id: 'passe-tenso', cat: 'passe', nome: 'Passe Tenso', gol: false, icone: '➡️', desc: 'Passe rasteiro forte: chega antes do marcador cortar.', descPlus: 'Passe à queima-roupa que ninguém intercepta.' },
   { id: 'passe-em-profundidade', cat: 'passe', nome: 'Passe Incisivo', gol: false, icone: '🔑', desc: 'Enxerga o passe que quebra a linha: lançamentos no espaço melhores.', descPlus: 'Deixa o atacante na cara do gol.' },
-  { id: 'lancamento', cat: 'passe', nome: 'Lançamento', gol: false, icone: '🏹', desc: 'Passe alto longo com precisão (2 toques).', descPlus: 'Lança de campo a campo no pé do companheiro.' },
+  { id: 'lancamento', cat: 'passe', nome: 'Lançamento', gol: false, icone: '🏹', desc: 'Passe Alto longo com precisão.', descPlus: 'Lança de campo a campo no pé do companheiro.' },
   { id: 'tiki-taka', cat: 'passe', nome: 'Tiki-Taka', gol: false, icone: '🔁', desc: 'Toques curtos de primeira quase sem erro.', descPlus: 'Tabelinhas perfeitas: a bola não para.' },
   { id: 'cruzamento', cat: 'passe', nome: 'Cruzamento', gol: false, icone: '↪️', desc: 'Cruzamentos na medida para a área.', descPlus: 'Cruzamentos que viram gol com frequência.' },
   // Controle de bola

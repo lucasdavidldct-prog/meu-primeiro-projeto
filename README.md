@@ -145,6 +145,16 @@ npm run android   # ou abre o projeto no Android Studio para rodar num aparelho/
 - **Dificuldade** em Clube (Fácil, Normal, Difícil, Lenda): força do rival, goleiro nos lances e quantos lances você joga.
   Fora de casa você tem um lance a menos e o goleiro rival fica mais difícil.
 
+## Versão 1.9.1
+
+- **Troca rápida** aparece mesmo quando o banco não tem reserva para o mais cansado: o jogo procura o próximo cansado que tenha substituto. O botão "Trocar" não é mais refeito a cada minuto (só o fôlego muda), então o toque nunca se perde.
+- **Câmera**: no celular em pé, a câmera Padrão segue quem tem a bola, mesmo na ponta. No lance de defesa, a câmera acompanha o atacante.
+- **Nomes na tela**: os presos na borda mostram uma seta ◂ ▸ para o lado do jogador e não ficam mais cortados; os botões de câmera foram para o canto de baixo, menores, e não tampam mais nomes.
+- **Antecipação**: a leitura diz o que o atacante vai fazer e qual defensor usar (ele fica destacado e sempre tem a ação certa).
+- **Menus** de passe e chute mostram também os estilos da defesa rival que atrapalham (em vermelho).
+- **Replay** do gol mais curto e com toque para pular. O resultado do lance ("Pra fora!", "Bloqueado!") fica mais tempo na tela.
+- Pênalti e falta sem o nome do cobrador em cima do goleiro; ajuda "Como jogar" e dicas do Laboratório atualizadas para os menus.
+
 ## Versão 1.9.0
 
 - **Goleiro**: o batedor ajeita a bola e **espera você escolher** (com o tempo na tela). Só 3 chutes: **alto esquerdo**, **meio** e **alto direito**. Arraste para o lado ou toque para ficar no meio: acertou, o goleiro defende. Câmera mais afastada, e o goleiro agora defende com as mãos (mergulho com os braços esticados), com o corpo (bloqueio no meio) e com o pé.

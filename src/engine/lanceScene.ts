@@ -494,7 +494,10 @@ export class LanceScene {
   /** Menu do chute depois do traço: Rasteiro, Superchute e Colocado (+ Cavadinha para quem tem o estilo); na bola alta, Cabeçada ou Voleio. */
   shotOptions(base: { ax: number; curve: number }): Opcao[] {
     const c = this.carrier, D = Math.hypot(c.x - 34, c.y), P = c.e!.P, fp: PsId[] = ['finalizacao-precisa'];
-    const op = (tipo: ShotType, nome: string, dica: string, ids: PsId[]): Opcao => { const t = this.shotAs(base, tipo); return { t, nome, dica, p: this.prob(t), ps: this.tags(ids) }; };
+    // Estilos que atrapalham: bloqueio da zaga rival (no chute rasteiro, reto ou colocado) e o goleiro rival
+    const gkT = psTag('reflexos', psLevel(this.gkE?.P, 'reflexos'), true), blq = this.rivalTag('bloqueio');
+    const contra = (tipo: ShotType) => [...(blq && tipo !== 'cabeca' && tipo !== 'cavadinha' ? [blq] : []), ...(gkT ? [gkT] : [])];
+    const op = (tipo: ShotType, nome: string, dica: string, ids: PsId[]): Opcao => { const t = this.shotAs(base, tipo); return { t, nome, dica, p: this.prob(t), ps: [...this.tags(ids), ...contra(tipo)] }; };
     if (this.firstTime) return [
       op('cabeca', 'Cabeçada', 'Cabeceie para baixo, no canto. Longe do gol perde força.', [...fp, 'cabeceio', 'imposicao-fisica']),
       op('voleio', psLevel(P, 'acrobatico') ? 'Bicicleta' : 'Voleio', 'De primeira, sem deixar a bola cair.', [...fp, 'acrobatico']),
@@ -510,12 +513,13 @@ export class LanceScene {
   /** Menu do passe ao tocar num companheiro: rasteiro, alto ou enfiado no espaço à frente dele. */
   passOptions(m: Actor): Opcao[] {
     const c = this.carrier, L = dist(c, m), wing = c.x < 16 || c.x > 52;
+    const riv = (...ids: PsId[]) => ids.map(id => this.rivalTag(id)).filter((x): x is PsTag => !!x);
     const spot = { x: clamp(m.x + (34 - m.x) * .15, 3, 65), y: clamp(m.y - 6, 3, 44) };
     const opts: Opcao[] = [
-      { t: { kind: 'pass', m }, nome: 'Rasteiro', dica: 'Rápido e no pé. Cuidado com quem está na linha do passe.', p: this.passP(m), ps: this.tags(L < 15 ? ['passe-preciso', 'passe-tenso', 'tiki-taka'] : ['passe-preciso', 'passe-tenso']) },
-      { t: { kind: 'pass', m, alto: true }, nome: wing ? 'Cruzamento' : 'Alto', dica: m.y < 17 ? 'Por cima da marcação. Na área, ele finaliza de primeira (cabeçada ou voleio).' : 'Por cima da marcação, mas mais lento: o marcador disputa no alto.', p: this.passP(m, true), ps: this.tags(wing ? ['cruzamento'] : ['lancamento']) },
+      { t: { kind: 'pass', m }, nome: 'Rasteiro', dica: 'Rápido e no pé. Cuidado com quem está na linha do passe.', p: this.passP(m), ps: [...this.tags(L < 15 ? ['passe-preciso', 'passe-tenso', 'tiki-taka'] : ['passe-preciso', 'passe-tenso']), ...riv('interceptacao', 'antecipacao')] },
+      { t: { kind: 'pass', m, alto: true }, nome: wing ? 'Cruzamento' : 'Alto', dica: m.y < 17 ? 'Por cima da marcação. Na área, ele finaliza de primeira (cabeçada ou voleio).' : 'Por cima da marcação, mas mais lento: o marcador disputa no alto.', p: this.passP(m, true), ps: [...this.tags(wing ? ['cruzamento'] : ['lancamento']), ...riv('imposicao-fisica', 'cabeceio')] },
     ];
-    if (m.y > 5) opts.push({ t: { kind: 'lanc', m, x: spot.x, y: spot.y }, nome: 'Enfiado', dica: 'Na frente dele, no espaço: ele corre até a bola e ganha metros.', p: this.lancP(m, spot), ps: [...this.tags(['passe-em-profundidade']), ...this.tags(['velocista'], m)] });
+    if (m.y > 5) opts.push({ t: { kind: 'lanc', m, x: spot.x, y: spot.y }, nome: 'Enfiado', dica: 'Na frente dele, no espaço: ele corre até a bola e ganha metros.', p: this.lancP(m, spot), ps: [...this.tags(['passe-em-profundidade']), ...this.tags(['velocista'], m), ...riv('antecipacao')] });
     return opts;
   }
   prob(t: Target): number {

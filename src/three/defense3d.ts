@@ -50,10 +50,10 @@ export function runDefense3D(M: Match, req: MomentRequest): Promise<MomentResult
     const camera = new THREE.PerspectiveCamera(portrait ? 58 : 44, W / H, .1, 500);
     const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
     const camAlvo = (): [THREE.Vector3, THREE.Vector3] => {
-      const c = sc.carrier, x = 34 + (c.x - 34) * .35;
-      return portrait ? [V(x, c.y * .15 - 9, 14), V(x, c.y * .75 + 2, 0)] : [V(x, c.y * .15 - 8, 10.5), V(x, c.y * .72 + 2, 0)];
+      // Segue quem tem a bola (posição na tela, que anda suave), mais aberta no celular em pé
+      const v = view3.get(sc.carrier.id) ?? sc.carrier, x = 34 + (v.x - 34) * (portrait ? .75 : .5);
+      return portrait ? [V(x, v.y * .2 - 12, 16), V(34 + (v.x - 34) * .85, v.y * .7 + 2, 0)] : [V(x, v.y * .15 - 9, 11), V(x, v.y * .72 + 2, 0)];
     };
-    [camPos, camLook].forEach((v, i) => v.copy(camAlvo()[i]));
     const SCALE = portrait ? 1.22 : 1.08;
 
     const aKit = kitDe(M.A), bKit = kitDe(M.B), gk = goleiroKit(aKit, bKit, 0);
@@ -65,6 +65,7 @@ export function runDefense3D(M: Match, req: MomentRequest): Promise<MomentResult
       meshes.set(a.id, pm); view3.set(a.id, { x: a.x, y: a.y });
     }
     const { ball: ballM, shadow: ballSh } = makeBall(); scene.add(ballM, ballSh);
+    [camPos, camLook].forEach((v, i) => v.copy(camAlvo()[i]));
     // Nomes dos seus defensores (alvos de toque), com os estilos de defesa de cada um
     const names = new Map<number, HTMLButtonElement>();
     for (const d of sc.campo()) {
@@ -90,7 +91,9 @@ export function runDefense3D(M: Match, req: MomentRequest): Promise<MomentResult
       if (sc.lida && it.a === 'drible') add(V(it.x, it.y, .1), true);
       const who = sc.antecipador();
       read.hidden = !sc.lida;
-      if (sc.lida) read.innerHTML = `👁️ Antecipação${who?.e ? ` (${esc(who.e.name)})` : ''}: ele vai <b>${it.a === 'chute' ? 'chutar' : it.a === 'drible' ? 'driblar' : `passar para ${esc(it.para?.e?.name ?? 'o companheiro')}`}</b>`;
+      const resp = sc.lida ? sc.resposta() : undefined;
+      if (sc.lida) read.innerHTML = `👁️ Antecipação${who?.e ? ` (${esc(who.e.name)})` : ''}: ele vai <b>${it.a === 'chute' ? 'chutar' : it.a === 'drible' ? 'driblar' : `passar para ${esc(it.para?.e?.name ?? 'o companheiro')}`}</b>${resp?.e ? ` · use <b>${esc(resp.e.name)}</b>: ${it.a === 'chute' ? 'Fechar o chute' : it.a === 'drible' ? 'Bote' : 'Cortar o passe'}` : ''}`;
+      for (const [id, el] of names) el.classList.toggle('alvo', !!resp && resp.id === id);
     }
 
     let plano: { p: DefPlano; t0: number } | null = null, fim = false, menu = false;
@@ -178,7 +181,9 @@ export function runDefense3D(M: Match, req: MomentRequest): Promise<MomentResult
       for (const [id, el] of names) {
         const a = sc.def.find(x => x.id === id)!, v = view3.get(id)!, s = V(v.x, v.y, 2.3 * SCALE).project(camera);
         el.style.display = s.z < 1 && !fim ? 'block' : 'none';
-        tags.push({ el, x: clamp((s.x + 1) / 2 * W, 50, W - 50), y: clamp((1 - s.y) / 2 * H, 76, H - 16) });
+        const x0 = (s.x + 1) / 2 * W, hw = el.offsetWidth / 2 + 4;
+        el.classList.toggle('eL', x0 < hw); el.classList.toggle('eR', x0 > W - hw);
+        tags.push({ el, x: clamp(x0, hw, W - hw), y: clamp((1 - s.y) / 2 * H, 76, H - 60) });
         el.classList.toggle('off', !!a.batido);
       }
       // Empurra os nomes para não ficarem um em cima do outro (senão um tapa o toque do outro)
@@ -188,7 +193,8 @@ export function runDefense3D(M: Match, req: MomentRequest): Promise<MomentResult
       for (const t of tags) { t.el.style.left = `${t.x}px`; t.el.style.top = `${t.y}px`; }
       const cv = view3.get(sc.carrier.id)!, cs = V(cv.x, cv.y, 2.4 * SCALE).project(camera);
       atkTag.textContent = `⚽ ${sc.carrier.e?.name ?? ''}`;
-      atkTag.style.left = `${clamp((cs.x + 1) / 2 * W, 50, W - 50)}px`; atkTag.style.top = `${clamp((1 - cs.y) / 2 * H, 76, H - 16)}px`;
+      const ahw = atkTag.offsetWidth / 2 + 4;
+      atkTag.style.left = `${clamp((cs.x + 1) / 2 * W, ahw, W - ahw)}px`; atkTag.style.top = `${clamp((1 - cs.y) / 2 * H, 76, H - 16)}px`;
       atkTag.style.display = fim ? 'none' : 'block';
       labelEl.style.display = 'none';
       acts.textContent = `Rodada ${Math.min(3, 4 - sc.actions)}/3`;

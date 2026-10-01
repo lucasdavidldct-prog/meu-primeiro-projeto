@@ -33,4 +33,15 @@ describe('sugestão de troca rápida', () => {
     const m = jogo(); m.min = 86; m.A.subs = 0;
     expect(m.suggestSub()).toBeNull();
   });
+  it('se o mais cansado não tem reserva que sirva, sugere o próximo cansado que tem', () => {
+    const m = jogo(); m.min = 86;
+    const xi = m.A.xi.filter(e => e.pos !== 'GOL');
+    // Banco só com um meia: os mais cansados (craques, de outras posições) não têm substituto à altura; o meia cansado tem
+    const meia = xi.find(e => ['MC', 'VOL', 'MEI'].includes(e.pos))!;
+    m.A.bench = [{ ...meia.P, id: meia.P.id + '-reserva', short: meia.P.short + ' II' }];
+    for (const e of xi) { if (e === meia) { e.inMin = 0; e.base = 60; } else { e.inMin = -40; e.base = 99; } }
+    const s = m.suggestSub();
+    expect(s).not.toBeNull();
+    expect(m.A.xi[s!.out].pos).toBe(meia.pos);
+  });
 });

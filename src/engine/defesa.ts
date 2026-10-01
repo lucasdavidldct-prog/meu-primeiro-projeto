@@ -99,15 +99,24 @@ export class DefesaScene {
   antecipador(): DActor | undefined { return this.campo().find(d => this.lv(d, 'antecipacao')); }
 
   /** Opções de cada defensor: só as que dão para fazer de onde ele está. */
+  /** O defensor mais bem colocado para responder à jogada que o rival vai fazer (o que a Antecipação destaca). */
+  resposta(): DActor | undefined {
+    const c = this.carrier, it = this.intencao, livres = this.campo().filter(d => !d.batido);
+    const k = (d: DActor) => (it.a === 'drible' ? dist(d, c) : it.a === 'passe' && it.para ? segD(d, c, it.para) : segD(d, c, { x: 34, y: 0 }));
+    return livres.sort((p, q) => k(p) - k(q))[0];
+  }
+
   opcoes(d: DActor): DefOpcao[] {
     if (d.gk || d.batido) return [];
+    // Quem está mais bem colocado sempre tem a ação certa contra a jogada (a leitura da Antecipação nunca fica sem resposta)
+    const chave = this.resposta() === d ? this.intencao.a : null;
     const c = this.carrier, D = dist(d, c), out: DefOpcao[] = [], P = d.e?.P;
     const def = d.e?.P.st?.[4] ?? 70, fis = d.e?.P.st?.[5] ?? 70, atkDri = sb(c.e, 'Drible', 3);
     const tag = (ids: PsId[]) => ids.map(id => psTag(id, psLevel(P, id))).filter((x): x is PsTag => !!x);
     // O mais perto da bola sempre pode dar o bote (mesmo de longe, com chance menor): o lance nunca trava
     const maisPerto = this.campo().filter(x => !x.batido).sort((p, q) => dist(p, c) - dist(q, c))[0] === d;
-    if (D < 7 || maisPerto) {
-      const p = clamp((.5 + (sb(d.e, 'Desarme em pé', 4) - atkDri) * .012 - Math.max(0, D - 2.5) * .06) * [1, 1.12, 1.25][this.lv(d, 'desarme')] * [1, 1.15, 1.3][this.lv(d, 'contencao')] * [1, 1.06, 1.12][this.lv(d, 'imposicao-fisica')] * (fis > 80 ? 1.05 : 1), .1, .92);
+    if (D < 7 || maisPerto || chave === 'drible') {
+      const p = clamp((.5 + (sb(d.e, 'Desarme em pé', 4) - atkDri) * .012 - Math.min(.3, Math.max(0, D - 2.5) * .06)) * [1, 1.12, 1.25][this.lv(d, 'desarme')] * [1, 1.15, 1.3][this.lv(d, 'contencao')] * [1, 1.06, 1.12][this.lv(d, 'imposicao-fisica')] * (fis > 80 ? 1.05 : 1), .1, .92);
       out.push({ d, acao: 'bote', p, ps: tag(['desarme', 'contencao', 'imposicao-fisica']), falta: .04, dica: this.lv(d, 'contencao') ? 'Contra o drible. Com Contenção, se errar ele não fica para trás.' : 'Contra o drible. Se ele passar ou chutar, você fica para trás.' });
     }
     if (D < 10) {
@@ -116,13 +125,13 @@ export class DefesaScene {
       out.push({ d, acao: 'carrinho', p, ps: tag(['desarme']), falta: [.3, .12, .05][lv], dica: lv ? 'Pega de longe o drible e o passe. Com o estilo Carrinho, quase nunca é falta.' : 'Pega de longe o drible e o passe, mas pode ser falta (e cartão).' });
     }
     const it = this.intencao, alvo = it.para ?? this.atk.filter(a => a !== c).sort((p, q) => dist(p, d) - dist(q, d))[0];
-    if (alvo && segD(d, c, alvo) < 11) {
-      const p = clamp((.45 + (sb(d.e, 'Interceptação', 4) - 70) * .012 - segD(d, c, alvo) * .025) * [1, 1.25, 1.45][this.lv(d, 'interceptacao')] * [1, 1.1, 1.2][this.lv(d, 'antecipacao')]
+    if (alvo && (segD(d, c, alvo) < 11 || chave === 'passe')) {
+      const p = clamp((.45 + (sb(d.e, 'Interceptação', 4) - 70) * .012 - Math.min(.3, segD(d, c, alvo) * .025)) * [1, 1.25, 1.45][this.lv(d, 'interceptacao')] * [1, 1.1, 1.2][this.lv(d, 'antecipacao')]
         * (it.alto ? [1, 1.15, 1.3][this.lv(d, 'cabeceio')] * [1, 1.08, 1.15][this.lv(d, 'imposicao-fisica')] : 1), .1, .92);
       out.push({ d, acao: 'cortar', p, ps: tag(['interceptacao', 'antecipacao', ...(it.alto ? ['cabeceio', 'imposicao-fisica'] as PsId[] : [])]), falta: 0, dica: `Fica na linha do passe para ${alvo.e?.name ?? 'o companheiro'}.` });
     }
-    if (segD(d, c, { x: 34, y: 0 }) < 8 && c.y < 34) {
-      const p = clamp((.5 + (def - 70) * .01 - segD(d, c, { x: 34, y: 0 }) * .04) * [1, 1.3, 1.55][this.lv(d, 'bloqueio')], .1, .92);
+    if ((segD(d, c, { x: 34, y: 0 }) < 8 && c.y < 34) || chave === 'chute') {
+      const p = clamp((.5 + (def - 70) * .01 - Math.min(.3, segD(d, c, { x: 34, y: 0 }) * .04)) * [1, 1.3, 1.55][this.lv(d, 'bloqueio')], .1, .92);
       out.push({ d, acao: 'fechar', p, ps: tag(['bloqueio']), falta: 0, dica: 'Se joga na frente do chute.' });
     }
     return out;

@@ -29,7 +29,7 @@ export function viewLab(): string {
   const info = LAB[lab.ps], d = PLAYSTYLES.find(p => p.id === lab.ps)!, base = basePlayer();
   const cats = Object.keys(PS_CATS) as PsCat[];
   const tally = lab.tally[lab.ps + '|' + (lab.u ?? 'n')] ?? [[0, 0], [0, 0], [0, 0]];
-  const quem = info.lado === 'defesa' ? 'Três marcadores do rival' : info.lado === 'goleiro' ? 'O goleiro' : base ? esc(base.short) : 'O jogador de teste (80 em tudo)';
+  const quem = info.lado === 'defesa' ? 'Três zagueiros com o estilo (do rival quando você ataca; os seus no lance de defesa)' : info.lado === 'goleiro' ? 'O goleiro' : base ? esc(base.short) : 'O jogador de teste (80 em tudo)';
   return `<div class="row" style="justify-content:space-between;align-items:center;margin-top:8px"><h2 style="margin:0">🧪 Laboratório de estilos</h2><button class="btn" data-act="labBack">Voltar</button></div>
   <p class="small muted">Todo mundo é neutro (80, sem estilos). Só quem está sendo testado recebe o estilo, no nível escolhido: jogue o lance em <b>Sem</b>, <b>Prata</b> e <b>+</b> e compare.</p>
   ${cats.map(c => { const l = PLAYSTYLES.filter(p => p.cat === c); return l.length ? `<div class="ps-cat">${PS_CATS[c]}</div><div class="chips lab-ps">${l.map(p => `<button class="chip" data-act="labPs" data-id="${p.id}" aria-pressed="${p.id === lab.ps}">${psIcon(p.id)} ${esc(p.nome)}</button>`).join('')}</div>` : ''; }).join('')}
@@ -58,7 +58,7 @@ function simTable(r: LabStats[]): string {
   if (info.lado === 'ataque') rows.splice(1, 0, ['Gols do jogador testado / jogo', s => s.tg]);
   return `<table class="lab-t" style="margin-top:12px"><tr><th></th>${LVL_N.map(n => `<th>${n}</th>`).join('')}</tr>
     ${rows.map(([n, g]) => `<tr><td>${n}</td>${r.map(s => `<td>${f(g(s))}</td>`).join('')}</tr>`).join('')}</table>
-    <p class="small muted" style="margin:8px 0 0">${info.lado === 'defesa' ? 'Estilo de defesa: está no time rival, então o que importa é os seus gols e finalizações caírem.' : info.lado === 'goleiro' ? 'Estilo de goleiro: está no seu goleiro, então o que importa é os gols sofridos caírem.' : 'Um jogador só muda pouco o placar do time: olhe principalmente os gols e finalizações dele.'}</p>`;
+    <p class="small muted" style="margin:8px 0 0">${info.lado === 'defesa' ? 'Estilo de defesa: na simulação está no time rival, então o que importa é os seus gols e finalizações caírem.' : info.lado === 'goleiro' ? 'Estilo de goleiro: está no seu goleiro, então o que importa é os gols sofridos caírem.' : 'Um jogador só muda pouco o placar do time: olhe principalmente os gols e finalizações dele.'}</p>`;
 }
 
 export const labActions = {
