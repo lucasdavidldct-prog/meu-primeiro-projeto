@@ -408,7 +408,7 @@ export class LanceScene {
     // Tipo escolhido ajusta a força efetiva: forte bate forte, rasteiro firme, cavadinha de leve
     const sk = this.shotKind(power, curve, tipo);
     if (tipo !== 'auto') power = sk.forte ? Math.max(power, .78) : sk.rasteiro ? clamp(power, .5, .8) : sk.cav ? .3 : sk.colocado ? clamp(power, .45, .75) : sk.cabeca ? .6 : sk.voleio ? clamp(power, .6, .85) : power;
-    const D = Math.hypot(c.x - 34, c.y), edge = Math.min(1, Math.abs(ax - 34) / GOAL.half);
+    const D = Math.hypot(c.x - 34, c.y), edge = Math.min(1, Math.abs(ax - 34) / GOAL.half), fora = Math.abs(ax - 34) > GOAL.half + .15;
     // O subatributo depende do chute: pênalti, cabeçada, de primeira (voleio), de fora da área ou finalização normal
     const fin = this.sb(pen ? 'Pênalti' : sk.cabeca ? 'Cabeceio' : sk.voleio || this.firstTime ? 'Voleio' : D >= 18 ? 'Chute de longe' : 'Finalização', 1);
     // Tipo de chute pelo gesto: curvo = colocado, forte = super chute, curto e lento perto do gol = cavadinha
@@ -417,6 +417,7 @@ export class LanceScene {
     if (pen) {
       const miss = clamp((.03 + Math.pow(edge, 3) * .28 - (fin - 70) * .003 + hard * 2.5) * md.shotMiss, .02, .7);
       const save = clamp(.45 * (1 - .6 * edge) * (this.gkOvr / 80) * this.km.penSave * (1 + weak * 2) * this.cf.goleiro, .06, .85);
+      if (fora) return { goal: 0, miss: 1, save: 0, block: 0 };
       return { goal: (1 - miss) * (1 - save), miss, save, block: 0 };
     }
     // De primeira é mais difícil: cabeçada (longe do gol perde força) e voleio (Acrobático ajuda)
@@ -445,6 +446,8 @@ export class LanceScene {
     if (c.e?.P.fs) save *= .88; // Fora de Série: o goleiro sofre
     save *= clamp(1 - Math.abs(gk.x - ax) / 11, .45, 1) * (1 - .15 * ac * md.curve) * (1 + weak * 1.6);
     save = clamp(save * this.cf.goleiro, .04, .97);
+    // Mira fora das traves: nunca é gol (antes ainda sobrava chance e a bola "entrava" vindo de fora)
+    if (fora) return { goal: 0, miss: 1, save: 0, block };
     return { goal: (1 - miss) * (1 - block) * (1 - save), miss, save, block };
   }
 
@@ -713,8 +716,8 @@ export class LanceScene {
         end: { res: { goal: false, shot: true, onTarget: false, text: `chute de ${nm} bloqueado pela zaga.` }, text: 'Bloqueado!', color: '#f2b640', goal: false } };
     }
     if (r() < sp.miss) {
-      const side = t.ax >= 34 ? 1 : -1, post = r() < .25, over = !post && (t.power > .85 || sk.cabeca) && r() < .6;
-      const endX = post ? 34 + side * GOAL.half : over ? t.ax : t.ax + side * rn(1.5, 4, r);
+      const side = t.ax >= 34 ? 1 : -1, foraMira = Math.abs(t.ax - 34) > GOAL.half + .15, post = !foraMira && r() < .25, over = !post && (t.power > .85 || sk.cabeca) && r() < .6;
+      const endX = post ? 34 + side * GOAL.half : over ? t.ax : foraMira ? t.ax + side * rn(0, 1.5, r) : t.ax + side * rn(1.5, 4, r);
       const pts = path.length === 2 ? [c, { x: endX, y: 0 }] : this.shotPath(endX, t.curve);
       pts.push({ x: endX + side * (post ? -1 : .5), y: -3 });
       return { kind: 'shot', ok: false, anim, ps, ball: toKeys([from, ...pts.slice(1)], post ? 1.4 : over ? 3.4 : hTarget, .4), dur, gk: { x: clamp(t.ax, 31, 37), y: .5, dive: gkDive(t.ax), h: .6 }, commit: () => {},

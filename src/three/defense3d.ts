@@ -13,6 +13,7 @@ import { endSound, haptic, sfx } from '../ui/sfx';
 import { app } from '../ui/ctx';
 import { ambienteDaPartida } from '../engine/clima';
 import { headerPose, keeperReady, kickPose, pokePose, runPose, tacklePose } from './anim';
+import { centro, direcao, enquadrar } from './framing';
 import { makeBall, makePlayer, restPose, type PlayerMesh } from './players';
 import { createView } from './quality';
 import { addLights, ambientScene, buildGoal, buildPitch, buildStadium, buildWeather, tickNet, tickStadium } from './stadium';
@@ -50,9 +51,12 @@ export function runDefense3D(M: Match, req: MomentRequest): Promise<MomentResult
     const camera = new THREE.PerspectiveCamera(portrait ? 58 : 44, W / H, .1, 500);
     const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
     const camAlvo = (): [THREE.Vector3, THREE.Vector3] => {
-      // Segue quem tem a bola (posição na tela, que anda suave), mais aberta no celular em pé
-      const v = view3.get(sc.carrier.id) ?? sc.carrier, x = 34 + (v.x - 34) * (portrait ? .75 : .5);
-      return portrait ? [V(x, v.y * .2 - 12, 16), V(34 + (v.x - 34) * .85, v.y * .7 + 2, 0)] : [V(x, v.y * .15 - 9, 11), V(x, v.y * .72 + 2, 0)];
+      // Enquadramento automático, de trás do seu gol: cabem quem tem a bola, os atacantes e a sua zaga
+      const pos = (a: { id: number; x: number; y: number }) => view3.get(a.id) ?? a;
+      const v = pos(sc.carrier), car = V(v.x, v.y, 1);
+      const pts = [car, V(v.x, v.y, 2.4), ...sc.atk.map(a => { const p = pos(a); return V(p.x, p.y, 1); }), ...sc.campo().map(d => { const p = pos(d); return V(p.x, p.y, 1); })];
+      const meio = centro([car, ...sc.campo().map(d => { const p = pos(d); return V(p.x, p.y, 0); })], 3);
+      return enquadrar(pts, meio, direcao(Math.PI - Math.atan2(v.x - 34, v.y + 10) * .5, portrait ? .85 : .7), camera.fov, W / H, { dMin: 14, dMax: 70 });
     };
     const SCALE = portrait ? 1.22 : 1.08;
 

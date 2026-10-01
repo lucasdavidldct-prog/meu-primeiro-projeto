@@ -52,5 +52,8 @@ describe('lance de goleiro (3 chutes: alto esquerdo, meio, alto direito)', () =>
     expect(cantoDoGesto(140, -20)).toBe(2);
     expect(cantoDoGesto(3, 2)).toBe(1);
     expect(cantoDoGesto(5, -150)).toBe(1);
+    // Arrasto bem para cima e um pouco para o lado: é o canto (antes virava meio)
+    expect(cantoDoGesto(-25, -80)).toBe(0);
+    expect(cantoDoGesto(28, -90)).toBe(2);
   });
 });

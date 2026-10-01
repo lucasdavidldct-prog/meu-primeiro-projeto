@@ -59,7 +59,9 @@ export function tempoEscolha(gk: BasePlayer | undefined, pen: boolean): number {
 
 /** Gesto → canto: arrastar para a esquerda/direita (ou para cima em diagonal) = alto naquele lado; toque = meio. */
 export function cantoDoGesto(dx: number, dy: number, limiar = 30): Canto {
-  if (Math.abs(dx) < limiar && Math.abs(dy) < limiar) return 1;
-  if (Math.abs(dx) < limiar * .6) return 1; // para cima ou para baixo, reto: meio
+  if (Math.hypot(dx, dy) < limiar) return 1;
+  // Vale a direção: qualquer arrasto que puxe para um lado (mesmo subindo bastante) é aquele canto;
+  // só o traço quase reto para cima ou para baixo é meio
+  if (Math.abs(dx) < Math.abs(dy) * .3) return 1;
   return dx < 0 ? 0 : 2;
 }

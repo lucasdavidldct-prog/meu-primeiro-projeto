@@ -12,6 +12,7 @@ import { clamp } from '../engine/rng';
 import { goleiroKit, kitDe } from '../engine/kits';
 import { esc } from '../ui/dom';
 import { choiceHTML, openChoice, probColor, psChips } from '../ui/choice';
+import { centro, direcao, enquadrar } from './framing';
 import { carrierRing, makeBall, makePlayer, restPose, type PlayerMesh } from './players';
 import { headerPose, keeperCenter, keeperDive, keeperReady, kickPose, runPose, tacklePose } from './anim';
 import { addLights, ambientScene, buildGoal, buildPitch, buildStadium, buildWeather, resetNet, setNetForce, tickNet, tickStadium } from './stadium';
@@ -408,22 +409,23 @@ export function runMoment3D(M: Match, req: MomentRequest): Promise<MomentResult>
         return portrait ? [V(b.x + dx / L * back, b.y + dy / L * back, 4.6), V(34 + dx * .15, 2, .9)]
           : [V(b.x + dx / L * back, b.y + dy / L * back, 3.4), V(34 + dx * .12, 0, .9)];
       }
-      // Bola parada (escanteio/lateral): alta atrás da cobrança, olhando para a área
-      if (sc.setPiece) {
-        const side = c.x < 34 ? -1 : 1;
-        return portrait ? [V(34 + side * 12, c.y + 16, 15), V(34 + side * 3, Math.max(6, c.y - 6), 0)]
-          : [V(34 + side * 16, c.y + 15, 10), V(34 + side * 3, Math.max(6, c.y - 4), 0)];
+      // Jogada aberta e bola parada: enquadramento automático. Cabem na tela quem tem a bola, a bola, o gol e os
+      // companheiros por perto; a distância se ajusta sozinha (nunca perto demais, nunca cortando o portador).
+      const car = V(c.x, c.y, 1), gol = V(34, 0, 1.2);
+      const perto = sc.mates.filter(m => m !== sc.carrier).sort((p, q) => Math.hypot(p.x - c.x, p.y - c.y) - Math.hypot(q.x - c.x, q.y - c.y)).slice(0, sc.setPiece ? 4 : 2)
+        .filter(m => Math.hypot(m.x - c.x, m.y - c.y) < 24).map(m => V(m.x, m.y, 1));
+      const longe = c.y > 30; // longe do gol: o gol fica de fora para os jogadores não ficarem pequenos
+      const pts = [car, V(c.x, c.y, 2.4), V(c.x, c.y, 0), ...perto, ...(longe && !sc.setPiece ? [V(34 + (c.x - 34) * .5, c.y - 14, 0)] : [gol, V(34, 0, 0)])];
+      const meio = centro([car, ...perto, longe && !sc.setPiece ? V(34 + (c.x - 34) * .5, c.y - 12, 0) : gol], 2.5);
+      const fov = baseFov(), asp = W / H;
+      if (camMode === 'tv') return enquadrar(pts, meio, direcao(Math.PI / 2 - .12, portrait ? .62 : .5), fov, asp, { dMin: 20, dMax: 60 });
+      if (camMode === 'atras') {
+        const ang = Math.atan2(34 - c.x, c.y) * .6;
+        return enquadrar([car, V(c.x, c.y, 2.4), gol], V(c.x + (34 - c.x) * .15, Math.max(0, c.y - 6), 1.2), direcao(ang, .2), fov, asp, { dMin: 6, dMax: 30, folga: .85 });
       }
-      const depth = Math.max(c.y, 12); // perto do gol a câmera não avança mais
-      // TV: de lado, do alto da arquibancada, como na transmissão (o gol fica de um lado da tela)
-      if (camMode === 'tv') return portrait ? [V(-15, depth * .6 + 2, 19), V(c.x * .5 + 34 * .5, depth * .6, 0)] : [V(-13, depth * .65 + 2, 15), V(c.x * .6 + 34 * .4, depth * .65, 0)];
-      // Atrás do jogador: baixa, por cima do ombro, olhando para o gol
-      if (camMode === 'atras') return portrait ? [V(c.x + (c.x - 34) * .08, depth + 7, 3.6), V(34 + (c.x - 34) * .35, Math.max(0, depth - 13), 1)] : [V(c.x + (c.x - 34) * .08, depth + 7.5, 3), V(34 + (c.x - 34) * .35, Math.max(0, depth - 14), 1)];
-      // Padrão: atrás da jogada, a meia altura (vê o gol, a área e os jogadores em pé, com a torcida ao fundo)
-      // Tela em pé (visão estreita): a câmera fica atrás de quem tem a bola, mesmo na ponta, e só gira um pouco para o gol
-      if (portrait) return [V(c.x * .92 + 34 * .08, depth + 14, 12.5), V(c.x * .85 + 34 * .15, depth - 5, 0)];
-      const cx = c.x * .75 + 34 * .25;
-      return [V(cx, depth + 15, 9.5), V(cx * .7 + 34 * .3, depth - 9, 0)];
+      // Padrão (e bola parada): de trás da jogada, a meia altura, virando um pouco para o gol
+      const giro = sc.setPiece ? Math.atan2(34 - c.x, Math.max(6, c.y)) * .7 : Math.atan2(34 - c.x, Math.max(10, c.y)) * .45;
+      return enquadrar(pts, meio, direcao(giro, sc.setPiece ? (portrait ? .72 : .62) : (portrait ? .58 : .5)), fov, asp, { dMin: 13, dMax: 70 });
     }
     // Abertura: a câmera começa no alto, mostrando o estádio e a torcida, e desce até a jogada
     const introAte = performance.now() + (pen || fk ? 1100 : 1700);

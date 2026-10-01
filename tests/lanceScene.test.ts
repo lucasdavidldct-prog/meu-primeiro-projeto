@@ -159,4 +159,17 @@ describe('cena do lance', () => {
     }
     throw new Error('nenhum passe completou');
   });
+
+  it('mira fora das traves nunca vira gol (a bola não entra vindo de fora)', () => {
+    for (let s = 1; s <= 150; s++) {
+      const sc = new LanceScene(match(), { kind: 'ataque' }, mulberry32(s));
+      sc.carrier.x = 34; sc.carrier.y = 14; sc.foes.forEach(f => { if (!f.gk) { f.x = 3; f.y = 44; } });
+      for (const tipo of ['rasteiro', 'forte', 'colocado'] as const) {
+        const t = sc.shotAs({ ax: 40.5, curve: 0 }, tipo);
+        expect(sc.prob(t)).toBe(0);
+      }
+      const p = sc.perform(sc.shotAs({ ax: 41, curve: 0 }, 'forte'));
+      expect(p.end!.goal).toBe(false);
+    }
+  });
 });

@@ -68,7 +68,7 @@ export function runKeeper3D(M: Match, req: MomentRequest): Promise<MomentResult>
 
     const kA = kitDe(M.A), kit = kitDe(M.B);
     const gkMesh = makePlayer(goleiroKit(kA, kit), (gk as { num?: number } | undefined)?.num ?? 1, { gk: true, facing: 1, seed: 3, P: gk });
-    gkMesh.root.position.copy(V(34, .5));
+    gkMesh.root.position.copy(V(34, .5)); gkMesh.root.scale.setScalar(1.08);
     const sh = makePlayer(kit, (shooter as { num?: number }).num ?? 9, { facing: -1, seed: 7, P: shooter });
     const sx = pen ? 34 : clamp(34 + (R() - .5) * 16, 22, 46), sy = pen ? 11 : 15 + R() * 6;
     // A pista: o corpo aberto para o canto "anunciado" (nem sempre verdadeiro) e a corrida vem do outro lado

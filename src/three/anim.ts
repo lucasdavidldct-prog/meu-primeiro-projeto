@@ -93,7 +93,7 @@ export function keeperDive(pm: PlayerMesh, lado: 1 | -1, alto: boolean, k: numbe
   const ang = (alto ? 1.28 : 1.5) * fly;
   pm.core.rotation.z = -lado * ang;
   pm.core.rotation.x = -.15 * push;
-  pm.core.position.x = lado * (alto ? 1.75 : 1.95) * fly;
+  pm.core.position.x = lado * 2.1 * fly;
   pm.core.position.y = HIP - .2 * push * (1 - fly) + (alto ? .95 : .15) * bump(Math.min(1, k * 1.15)) - (alto ? .55 : .5) * land;
   // Braços: por cima da cabeça, na direção do voo (no referencial do corpo, "para cima")
   const reach = ease((k - .08) / .3);
